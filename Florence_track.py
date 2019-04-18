@@ -272,6 +272,71 @@ ax.legend(loc='upper left',fontsize = siz)
 plt.savefig("/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Florence/Florence_track.png")
 plt.show()
 
+#%% Map SAB + MAB surface Florence
+  
+#import seaborn as sns # package for nice plotting defaults
+#sns.set()
+
+url = 'https://data.ioos.us/thredds/dodsC/deployments/'
+
+# SAB + MAB
+lon_lim = [-81,-70]
+lat_lim = [25,35]       
+
+id_list = ['rutgers/blue-20180806T1400/blue-20180806T1400.nc3.nc',\
+                'rutgers/ru28-20180920T1334/ru28-20180920T1334.nc3.nc',\
+                'rutgers/ru30-20180705T1825/ru30-20180705T1825.nc3.nc',\
+                'rutgers/ru33-20180801T1323/ru33-20180801T1323.nc3.nc',\
+                'rutgers/sylvia-20180802T0930/sylvia-20180802T0930.nc3.nc',\
+                'rutgers/cp_376-20180724T1552/cp_376-20180724T1552.nc3.nc',\
+                'rutgers/cp_389-20180724T1620/cp_389-20180724T1620.nc3.nc',\
+                'rutgers/cp_336-20180724T1433/cp_336-20180724T1433.nc3.nc',\
+                'secoora/ramses-20180907T0000/ramses-20180907T0000.nc3.nc',\
+                'secoora/ramses-20180704T0000/ramses-20180704T0000.nc3.nc',\
+                'secoora/bass-20180808T0000/bass-20180808T0000.nc3.nc',\
+                'secoora/pelagia-20180910T0000/pelagia-20180910T0000.nc3.nc',\
+                ]
+#'drudnick/sp010-20180620T1455/sp010-20180620T1455.nc3.nc',\
+#'drudnick/sp022-20180422T1229/sp022-20180422T1229.nc3.nc',\
+#'drudnick/sp066-20180629T1411/sp066-20180629T1411.nc3.nc',\
+#'drudnick/sp069-20180411T1516/sp069-20180411T1516.nc3.nc',\
+  
+siz=12
+
+fig, ax = plt.subplots(figsize=(8, 6), dpi=80, facecolor='w', edgecolor='w') 
+ax.contour(bath_lon,bath_lat,bath_elev,colors='silver')
+ax.contour(bath_lon,bath_lat,bath_elev,[0],colors='k')
+ax.contourf(bath_lon,bath_lat,-bath_elev,cmap=plt.get_cmap('BrBG'))
+plt.axis('equal')
+plt.axis([-80,-65,25,42])
+ax.plot(lonFl,latFl,'o-',markersize = 5,color = 'dimgray') #label = 'Florence Track',
+for x in range(2,len(tFl)-2):
+    ax.text(lonFl[x],latFl[x],timeFl[x].strftime('%d, %H:%M'),size = siz)
+#plt.title('Temperature Increments at surface on 2018-09-11',size = 18)
+
+#for x in range(0, len(tMc), 2):
+#    ax.text(lonMc[x],latMc[x],timeMc[x].strftime('%d, %H:%M'),size = siz)
+
+for l in id_list:
+    #print(l)
+    ncng = Dataset(url + l)
+    time_n = ncng.variables['time']
+    time_ng = netCDF4.num2date(time_n[:],time_n.units)
+    oktime = np.logical_and(time_ng >= datetime.datetime(2018,9,11,0,0,0),time_ng <= datetime.datetime(2018,9,12,0,0,0))
+    if np.sum(np.where(oktime)) != 0:
+        lat_ng = ncng.variables['latitude'][:]
+        lon_ng = ncng.variables['longitude'][:]
+        print(np.sum(np.where(oktime)))
+        #print(np.mean(lat_ng[oktime]))
+        ax.plot(np.mean(lon_ng[oktime]),np.mean(lat_ng[oktime]),'o',markersize = 10,\
+                markeredgecolor='black', markeredgewidth=2,label = ncng.id.split('-')[0]) 
+        ax.legend(loc='upper left',fontsize = siz)
+        
+plt.savefig("/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/Florence_track_gliders.png"\
+            ,bbox_inches = 'tight',pad_inches = 0)
+plt.show()  
+
+
 #%% Air Temperature vs Water Temperature
 
 siz=16

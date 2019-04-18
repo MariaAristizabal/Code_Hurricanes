@@ -21,10 +21,10 @@ e = ERDDAP(server = server)
 datasets = pd.read_csv(e.get_search_url(response='csv', search_for='all'))
 
 kw2017 = {
-    'min_lon': -92.0,
-    'max_lon': -81.0,
-    'min_lat': 24.0,
-    'max_lat': 30.0,
+    'min_lon': -81.0,
+    'max_lon': -75.0,
+    'min_lat': 25.0,
+    'max_lat': 40.0,
     'min_time': '2018-06-01T00:00:00Z',
     'max_time': '2018-11-30T00:00:00Z',
 }

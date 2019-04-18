@@ -6,15 +6,37 @@ clear all;
 
 % Glider data location
 
-% ng288 (Golf of Mexico)
-lon_lim = [-98 -78];
-lat_lim = [18 32];
-gdata = 'https://data.ioos.us/thredds/dodsC/deployments/rutgers/ng288-20180801T0000/ng288-20180801T0000.nc3.nc';
-
-% RAMSES (MAB + SAB)
+% RU33 (MAB + SAB)
 %lon_lim = [-81 -70];
 %lat_lim = [30 42];
-%gdata = 'https://data.ioos.us/thredds/dodsC/deployments/secoora/ramses-20180907T0000/ramses-20180907T0000.nc3.nc';
+%gdata = 'https://data.ioos.us/thredds/dodsC/deployments/rutgers/ru33-20180801T1323/ru33-20180801T1323.nc3.nc';
+
+% RU22
+%lon_lim = [120 134];
+%lat_lim = [30 40];
+%gdata = 'https://data.ioos.us/thredds/dodsC/deployments/rutgers/ru22-20180815T0107/ru22-20180815T0107.nc3.nc';
+
+% ng467 (Virgin Islands)
+%lon_lim = [-68 -64];
+%lat_lim = [15 20];
+%gdata = 'http://data.ioos.us/thredds/dodsC/deployments/rutgers/ng467-20180701T0000/ng467-20180701T0000.nc3.nc';
+
+% ng288 (Golf of Mexico)
+%lon_lim = [-98 -78];
+%lat_lim = [18 32];
+%gdata = 'https://data.ioos.us/thredds/dodsC/deployments/rutgers/ng288-20180801T0000/ng288-20180801T0000.nc3.nc';
+
+% Initial and final date
+% Initial and final date
+date_ini = '07-Sep-2018 00:00:00';
+date_end = '15-Sep-2018 00:00:00';
+%date_ini = ''; %if empty, date_ini is the firts time stamp in data
+%date_end = ''; %if empty, date_end is the last time stamp in data
+
+% RAMSES (MAB + SAB)
+lon_lim = [-81 -70];
+lat_lim = [30 42];
+gdata = 'https://data.ioos.us/thredds/dodsC/deployments/secoora/ramses-20180907T0000/ramses-20180907T0000.nc3.nc';
 
 % RU33 (MAB + SAB)
 %lon_lim = [-81 -70];
@@ -61,12 +83,6 @@ gdata = 'https://data.ioos.us/thredds/dodsC/deployments/rutgers/ng288-20180801T0
 %lat_lim = [30 42];
 %gdata = 'https://data.ioos.us/thredds/dodsC/deployments/rutgers/cp_389-20180724T1620/cp_389-20180724T1620.nc3.nc';
 
-% Initial and final date
-date_ini = '06-Oct-2018 00:00:00';
-date_end = '14-Oct-2018 00:00:00';
-%date_ini = ''; %if empty, date_ini is the firts time stamp in data
-%date_end = ''; %if empty, date_end is the last time stamp in data
-
 % GOFS3.1 outout model location
 catalog31 = 'http://tds.hycom.org/thredds/dodsC/GLBv0.08/expt_93.0/ts3z';
 
@@ -75,7 +91,8 @@ catalog30 = 'http://tds.hycom.org/thredds/dodsC/GLBu0.08/expt_91.2/ts3z';
 
 % Bathymetry data
 %bath_data = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/GEBCO_2014_2D_-100.0_0.0_-60.0_45.0.nc';
-bath_data = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/GEBCO_2014_2D_-100.0_0.0_-10.0_70.0.nc';
+%bath_data = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/GEBCO_2014_2D_-100.0_0.0_-10.0_70.0.nc';
+bath_data = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/GEBCO_2014_2D_90.0_0.0_180.0_45.0.nc';
 
 % Folder where to save figure
 folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/';
@@ -131,10 +148,7 @@ lat31 = ncread(catalog31,'lat');
 lon31 = ncread(catalog31,'lon');
 depth31 = ncread(catalog31,'depth');
 tim31 = ncread(catalog31,'time'); % hours since 2000-01-01 00:00:00
-
 time31 = tim31/24 + datenum(2000,01,01,0,0,0);
-
-%oktime31 = find(time31 >= time(1) & time31 < time(end));
 oktime31 = find(time31 >= tti & time31 < tte);
 
 % Conversion from glider longitude and latitude to GOFS3.1 convention
@@ -160,18 +174,30 @@ for i=1:length(oklon31)
     disp(['GOFS31',' i= ',num2str(i)])
     if isfinite(oklon31(i)) && isfinite(oklat31(i)) && isfinite(oktime31(i))
        target_temp31(:,i) = squeeze(double(ncread(catalog31,'water_temp',[oklon31(i) oklat31(i) 1 oktime31(i)],[1 1 inf 1])));
+    else
+       target_temp31(:,i) = nan; 
     end
 end
 
-%% GOFS 3.0
+%% save to a mat file
+%{
+latGOFS31 = lat31;
+lonGOFS31 = lon31;
+depthGOFS31 = depth31;
+timeGOFS31 = time31(oktime31);
+tempGOFS31 =target_temp31;
 
+save([folder,inst_name,'.mat'],'tempg','presg','latg','long','timeg','inst_id','inst_name',...
+                         'latGOFS31','lonGOFS31','timeGOFS31','depthGOFS31','tempGOFS31')
+
+%}
+%% GOFS 3.0
+%{
 lat30 = ncread(catalog30,'lat');
 lon30 = ncread(catalog30,'lon');
 depth30 = ncread(catalog30,'depth');
 time30 = ncread(catalog30,'time'); % hours since 2000-01-01 00:00:00
 time30 = time30/24 + datenum(2000,01,01,0,0,0);
-
-%oktime30 = find(time30 >= time(1) & time30 < time(end));
 oktime30 = find(time30 >= tti & time30 < tte);
 
 sublon30=interp1(timeg,target_lon,time30(oktime30));
@@ -188,7 +214,7 @@ for i=1:length(oklon30)
        target_temp30(:,i) = squeeze(double(ncread(catalog30,'water_temp',[oklon30(i) oklat30(i) 1 oktime30(i)],[1 1 inf 1])));
     end
 end
-
+%}
 
 %% Bathymetry data
 
@@ -290,7 +316,7 @@ print([Fig_name,'.png'],'-dpng','-r300')
 %}
 
 %% Figure with 2 models: GOFS3.1, GOFS3.0
-
+%{
 siz_title = 20;
 siz_text = 16;
 
@@ -446,5 +472,261 @@ ax.GridAlpha = 0.3;
 %%
 % Figure name
 Fig_name = [folder,'Along_track_temp_prof_glider_2models_',inst_name,'_',datestr(timeg(1),'mm-dd-yy'),'-',datestr(timeg(end),'mm-dd-yy')];
+wysiwyg
+print([Fig_name,'.png'],'-dpng','-r300') 
+%}
+
+%% Track map #1
+
+figure
+contour(bath_lon(oklonbath),bath_lat(oklatbath),bath_elev(oklonbath,oklatbath)',[0,-50,-100,-200,-1000,-2000,-4000,-8000],...
+        'color','k','linewidth',2)
+hold on
+axis equal
+xlim(lon_lim)
+ylim(lat_lim)
+set(gca,'fontsize',16)
+t = title([inst_name,' ',' Track'],'fontsize',siz_title);
+
+for i=1:length(latg)
+    plot(long(i),latg(i),'.','markersize',12,'color',color(pos(i),:,:))
+end
+colormap('jet')
+c = colorbar('v');
+caxis([timeg(1) timeg(end)])
+tt_vec = unique([timeg(1),timeg(1)+(timeg(end)-timeg(1))/5:(timeg(end)-timeg(1))/5:timeg(end),timeg(end)]);
+time_lab = datestr(tt_vec,'mm/dd/yy');
+set(c,'ytick',tt_vec)
+datetick(c,'keepticks')
+set(c,'yticklabel',time_lab)
+
+%% Track map #2
+bath_elev(bath_elev > 0) = 0;
+
+figure
+contourf(bath_lon(oklonbath),bath_lat(oklatbath),bath_elev(oklonbath,oklatbath)',...
+    [0,-500,-1000,-2000,-4000],...
+        'color','k','linewidth',2)
+hold on
+axis equal
+%xlim(lon_lim)
+%ylim(lat_lim)
+set(gca,'fontsize',16)
+%t = title([inst_name,' ',' Track'],'fontsize',20);
+plot(mean(long),mean(latg),'^k','markersize',10,'markerfacecolor','k')
+text(mean(long),mean(latg)-0.3,inst_name,'fontsize',20)
+cmap = cmocean('haline');
+colormap(cmap)
+colorbar()
+
+% Figure name
+Fig_name = [folder,'position_',inst_name,'_',datestr(timeg(1),'mm-dd-yy'),'-',datestr(timeg(end),'mm-dd-yy')];
+wysiwyg
+print([Fig_name,'.png'],'-dpng','-r300')
+
+%% Figure Only glider data and GOFS 3.1
+
+siz_title = 30;
+siz_text = 20;
+
+color = colormap(jet(length(latg)+1));
+norm = (timeg-timeg(1))./(timeg(end)-timeg(1));
+pos = round(norm.*length(latg))+1;
+
+time_mat = repmat(timeg,1,size(tempg,1))';
+time_vec = reshape(time_mat,1,size(time_mat,1)*size(time_mat,2));
+
+depth_vec = reshape(presg,1,size(presg,1)*size(presg,2));
+tempg_vec = reshape(tempg,1,size(tempg,1)*size(tempg,2));
+
+marker.MarkerSize = 16;
+
+figure
+set(gcf,'position',[ 366  273 1152 682])
+
+okt26 = tempg_vec > 25.9 & tempg_vec < 26.1;
+temp26 = tempg_vec(okt26);
+t26 = time_vec(okt26);
+dep26 = depth_vec(okt26);
+
+subplot(211)
+fast_scatter(time_vec',-depth_vec',tempg_vec','colorbar','vert','marker',marker);
+hold on
+plot(t26,-dep26,'.k')
+
+set(gca,'fontsize',siz_text)
+ylabel('Depth (m)')
+title(['Along Track Temperature Profile ',inst_name],'fontsize',siz_title)
+
+c = colorbar;
+colormap('jet')
+caxis([floor(min(tempg_vec)) ceil(max(tempg_vec))])
+cc_vec = unique(round(floor(min(tempg_vec)):(max(tempg_vec)-min(tempg_vec))/5:ceil(max(tempg_vec))));
+set(c,'ytick',cc_vec,'fontsize',siz_text)
+c.Label.String = 'Temperature (^oC)';
+
+tt_vec = unique(floor([time_vec(1),time_vec(1)+(time_vec(end)-time_vec(1))/10:(time_vec(end)-time_vec(1))/10:time_vec(end),time_vec(end)]));
+xticks(tt_vec)
+set(gca,'xticklabel',{[]})
+xlim([tt_vec(1) time_vec(end)])
+%xlim([datenum(2018,10,01) datenum(2018,10,12)])
+
+ylim([-max(depth_vec) 0])
+yticks(floor(-max(depth_vec):max(depth_vec)/5:0))
+
+set(gca,'TickDir','out') 
+set(gca,'xgrid','on','ygrid','on','layer','top')
+
+
+ax = gca;
+ax.GridAlpha = 0.3;
+%%
+subplot(212)
+pcolor(time31(oktime31),-depth31,target_temp31)
+hold on
+contour(time31(oktime31),-depth31,target_temp31,[26,26],'color','k','linewidth',3)
+shading interp
+
+set(gca,'fontsize',siz_text)
+ylabel('Depth (m)')
+title('GOFS 3.1','fontsize',siz_title)
+
+c = colorbar;
+colormap('jet')
+caxis([floor(min(tempg_vec)) ceil(max(tempg_vec))])
+cc_vec = unique(round(floor(min(tempg_vec)):(max(tempg_vec)-min(tempg_vec))/5:ceil(max(tempg_vec))));
+set(c,'ytick',cc_vec)
+c.Label.String = 'Temperature (^oC)';
+c.Label.FontSize = siz_text;
+
+tt_vec = unique(floor([time_vec(1),time_vec(1)+(time_vec(end)-time_vec(1))/10:(time_vec(end)-time_vec(1))/10:time_vec(end),time_vec(end)]));
+xticks(tt_vec)
+set(gca,'xticklabel',{[]})
+%xlim([tt_vec(1) time_vec(end)])
+xlim([datenum(2018,10,01) datenum(2018,10,12)])
+
+ylim([-max(depth_vec) 0])
+yticks(floor(-max(depth_vec):max(depth_vec)/5:0))
+
+set(gca,'TickDir','out') 
+set(gca,'xgrid','on','ygrid','on','layer','top')
+
+ax = gca;
+ax.GridAlpha = 0.3;
+
+tt_vec = unique(floor([time_vec(1),time_vec(1)+(time_vec(end)-time_vec(1))/10:(time_vec(end)-time_vec(1))/10:time_vec(end),time_vec(end)]));
+xticks(tt_vec)
+xticklabels(datestr(tt_vec,'mm/dd/yy'))
+xlim([tt_vec(1) time_vec(end)])
+xtickangle(0)
+
+% Figure name
+Fig_name = [folder,'Along_track_temp_prof_glider_GOFS31_',inst_name,'_',datestr(timeg(1),'mm-dd-yy'),'-',datestr(timeg(end),'mm-dd-yy')];
+wysiwyg
+print([Fig_name,'.png'],'-dpng','-r300') 
+
+%% Figure for ng288 Only glider data and GOFS 3.1
+
+siz_title = 20;
+siz_text = 16;
+
+color = colormap(jet(length(latg)+1));
+norm = (timeg-timeg(1))./(timeg(end)-timeg(1));
+pos = round(norm.*length(latg))+1;
+
+time_mat = repmat(timeg,1,size(tempg,1))';
+time_vec = reshape(time_mat,1,size(time_mat,1)*size(time_mat,2));
+
+depth_vec = reshape(presg,1,size(presg,1)*size(presg,2));
+tempg_vec = reshape(tempg,1,size(tempg,1)*size(tempg,2));
+
+marker.MarkerSize = 16;
+
+figure
+set(gcf,'position',[1 526 1143 459])
+
+okt26 = tempg_vec > 25.9 & tempg_vec < 26.1;
+temp26 = tempg_vec(okt26);
+t26 = time_vec(okt26);
+dep26 = depth_vec(okt26);
+
+subplot(211)
+[h,c_h] = fast_scatter(time_vec',-depth_vec',tempg_vec','colorbar','vert','marker',marker);
+hold on
+plot(t26,-dep26,'.k')
+
+set(gca,'fontsize',siz_text)
+ylabel('Depth (m)')
+title(['Along track temperature profile ',inst_name],'fontsize',siz_title)
+
+c = colorbar;
+colormap('jet')
+caxis([floor(min(tempg_vec)) ceil(max(tempg_vec))])
+%cc_vec = unique(round(floor(min(tempg_vec)):(max(tempg_vec)-min(tempg_vec))/5:ceil(max(tempg_vec))));
+cc_vev = round(floor(min(tempg_vec))):2:round(ceil(max(tempg_vec)));
+%cc_vec = 17:2:30;
+set(c,'ytick',cc_vec)
+c.Label.String = 'Water Temperature (^oC)';
+
+tt_vec = unique(floor([time_vec(1),time_vec(1)+(time_vec(end)-time_vec(1))/10:(time_vec(end)-time_vec(1))/10:time_vec(end),time_vec(end)]));
+xticks(tt_vec)
+set(gca,'xticklabel',{[]})
+xlim([tt_vec(1) time_vec(end)])
+%xlim([datenum(2018,10,01) datenum(2018,10,12)])
+
+ylim([-max(depth_vec) 0])
+%yticks(floor(-max(depth_vec):max(depth_vec)/5:0))
+yticks(-200:50:0)
+
+set(gca,'TickDir','out') 
+set(gca,'xgrid','on','ygrid','on','layer','top')
+
+
+ax = gca;
+ax.GridAlpha = 0.3;
+
+subplot(212)
+pcolor(time31(oktime31),-depth31,target_temp31)
+hold on
+contour(time31(oktime31),-depth31,target_temp31,[26,26],'color','k','linewidth',3)
+shading interp
+
+set(gca,'fontsize',siz_text)
+ylabel('Depth (m)')
+title('GOFS 3.1','fontsize',siz_title)
+
+c = colorbar;
+colormap('jet')
+caxis([floor(min(tempg_vec)) ceil(max(tempg_vec))])
+%cc_vec = unique(round(floor(min(tempg_vec)):(max(tempg_vec)-min(tempg_vec))/5:ceil(max(tempg_vec))));
+cc_vev = round(floor(min(tempg_vec))):2:round(ceil(max(tempg_vec)));
+set(c,'ytick',cc_vec)
+c.Label.String = 'Water Temperature (^oC)';
+c.Label.FontSize = siz_text;
+
+tt_vec = unique(floor([time_vec(1),time_vec(1)+(time_vec(end)-time_vec(1))/10:(time_vec(end)-time_vec(1))/10:time_vec(end),time_vec(end)]));
+xticks(tt_vec)
+set(gca,'xticklabel',{[]})
+%xlim([tt_vec(1) time_vec(end)])
+xlim([datenum(2018,10,01) datenum(2018,10,12)])
+
+ylim([-max(depth_vec) 0])
+%yticks(floor(-max(depth_vec):max(depth_vec)/5:0))
+yticks(-200:50:0)
+
+set(gca,'TickDir','out') 
+set(gca,'xgrid','on','ygrid','on','layer','top')
+
+ax = gca;
+ax.GridAlpha = 0.3;
+
+tt_vec = unique(floor([time_vec(1),time_vec(1)+(time_vec(end)-time_vec(1))/10:(time_vec(end)-time_vec(1))/10:time_vec(end),time_vec(end)]));
+xticks(tt_vec)
+xticklabels(datestr(tt_vec,'mm/dd'))
+xlim([tt_vec(1) time_vec(end)])
+%xtickangle(45)
+
+% Figure name
+Fig_name = [folder,'Along_track_temp_prof_glider_GOFS31_',inst_name,'_',datestr(timeg(1),'mm-dd-yy'),'-',datestr(timeg(end),'mm-dd-yy')];
 wysiwyg
 print([Fig_name,'.png'],'-dpng','-r300') 

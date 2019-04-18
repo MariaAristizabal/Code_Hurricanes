@@ -28,7 +28,6 @@ gdata = 'https://data.ioos.us/thredds/dodsC/deployments/rutgers/ng288-20180801T0
 %gdata = 'http://data.ioos.us/thredds/dodsC/deployments/rutgers/ng300-20180701T0000/ng300-20180701T0000.nc3.nc';
 
 % Initial and final date
-%date_ini = '01-Oct-2018 00:00:00';
 date_ini = '09-Oct-2018 00:00:00';
 date_end = '12-Oct-2018 00:00:00';
 
@@ -460,92 +459,5 @@ Fig_name = [folder,'time_ser_temp_10m_',inst_name,'_','GOFS31_',datestr(timeg(1)
 wysiwyg
 print([Fig_name,'.png'],'-dpng','-r300') 
 
-%% Figure vertical profiles temperature
-
-%{
-% Instrument name:
-inst = strsplit(inst_id,'-');
-inst_name = inst{1};
-
-%plat = strsplit(plat_type,' ');
-
-siz = 20;
-mar_siz = 30;
-
-figure
-set(gcf,'position',[139 144 1157 811])
-
-subplot(121)
-plot(temperature(:,ok_time_glider),-pressure(:,ok_time_glider),'.-g','markersize',mar_siz)
-hold on
-h1 = plot(tempgl_mean,-pres_gridded,'.-k','markersize',mar_siz,'linewidth',4);
-set(gca,'fontsize',siz)
-lgd = legend([h1],[inst_name,' ',plat_type,' ',datestr(time(ok_time_glider(1)))],...
-    'Location','SouthEast');
-set(lgd,'fontsize',14)
-title({'Tempearture profile ';[inst_name]},'fontsize',siz)
-xlabel('Temperature (^oC)','fontsize',siz)
-ylabel('Depth (m)','fontsize',siz);
-grid on;
-if max(max(pressure(:,ok_time_glider))) > 200
-    ylim([-(200+200*0.2) 0])
-else
-    ylim([-max(max(pressure(:,ok_time_glider)))-max(max(pressure(:,ok_time_glider)))*0.2 0])
 end
-
-subplot(122)
-plot(salinity(:,ok_time_glider),-pressure(:,ok_time_glider),'.-g','markersize',mar_siz)
-hold on
-h1 = plot(saltgl_mean,-pres_gridded,'.-k','markersize',mar_siz,'linewidth',4);
-set(gca,'fontsize',siz)
-lgd = legend([h1],[inst_name,' ',plat_type,' ',datestr(time(ok_time_glider(1)))],...
-    'Location','SouthEast');
-set(lgd,'fontsize',14)
-title({'Salinity profile ';[inst_name]},'fontsize',siz)
-xlabel('Salinity','fontsize',siz)
-ylabel('Depth (m)','fontsize',siz);
-grid on;
-if max(max(pressure(:,ok_time_glider))) > 200
-    ylim([-(200+200*0.2) 0])
-else
-    ylim([-max(max(pressure(:,ok_time_glider)))-max(max(pressure(:,ok_time_glider)))*0.2 0])
-end
-
-% Figure name
-Fig_name = [folder,'models_vs_',inst_name,'_',datestr(timeg(1),'mm-dd'),'_',datestr(timeg(end),'mm-dd')];
-
-print([Fig_name,'_.png'],'-dpng','-r300') 
-%print([Fig_name,'.eps'],'-depsc','-r300') 
-%}
-end
-
-%%
-%{
-s2 = subplot(122);
-contourf(bath_lon,bath_lat,bath_elev')
-hold on
-contour(bath_lon,bath_lat,bath_elev',[0,-50,-100,-200,-1000,-2000,-4000,-8000],'color','k')
-shading interp
-axis equal
-%h2 = openfig(filename,'reuse');
-%ax2 = gca;
-%fig2 =get(ax2,'children');
-%copyobj(fig2,s2);
-xlim(lon_lim)
-ylim(lat_lim)
-hold on
-plot(longitude,latitude,'.k')
-plot(Glon,Glat,'*r','markersize',12);
-xlabel('Lon (^o)')
-ylabel('Lat (^o)')
-set(gca,'fontsize',16)
-title([inst_name,' ',plat_type,' Track'],'fontsize',siz)
-%title(['cp376',' ',plat_type,' Track'],'fontsize',siz)
-%text(-77.5,42,['Glider Position  {\color{red}{\ast}}',{num2str(Glon)},{num2str(Glat)}],'fontsize',16)
-%text(-67.5,20.5,['Glider Position  {\color{red}{\ast}}',{num2str(Glon)},{num2str(Glat)}],'fontsize',16)
-text(lon_lim(1)+(lon_lim(end)-lon_lim(1))*0.05,lat_lim(end)-(lat_lim(end)-lat_lim(1))*0.1,...
-    ['Glider Position  {\color{red}{\ast}}',{num2str(Glon)},{num2str(Glat)}],...
-    'fontsize',16,'backgroundcolor','w')
-%legend(pos,['Glider Position',{[num2str(Glon)]},{[num2str(Glat)]}],'location','northwest')
-%}
 

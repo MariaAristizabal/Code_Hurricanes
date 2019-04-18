@@ -112,7 +112,7 @@ oklat31=round(interp1(lat31,1:length(lat31),sublat31));
 
 target_temp31(length(depth31),length(oktime31))=nan;
 for i=1:length(oklon31)
-    
+    disp(i)
     target_temp31(:,i) = squeeze(double(ncread(catalog31,'water_temp',[oklon31(i) oklat31(i) 1 oktime31(i)],[1 1 inf 1])));
 end
 
@@ -135,6 +135,7 @@ oklat30=round(interp1(lat30,1:length(lat30),sublat30));
 
 target_temp30(length(depth30),length(oktime30))=nan;
 for i=1:length(oklon30)
+    print(i)
     target_temp30(:,i) = squeeze(double(ncread(catalog30,'water_temp',[oklon30(i) oklat30(i) 1 oktime30(i)],[1 1 inf 1])));
 end
 

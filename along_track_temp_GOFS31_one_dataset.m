@@ -6,10 +6,15 @@ clear all;
 
 % Glider data location
 
+% RU22
+lon_lim = [125 127];
+lat_lim = [32 34];
+gdata = 'https://data.ioos.us/thredds/dodsC/deployments/rutgers/ru22-20180815T0107/ru22-20180815T0107.nc3.nc';
+
 % Golf of Mexico
-lon_lim = [-98 -78];
-lat_lim = [18 32];
-gdata = 'https://data.ioos.us/thredds/dodsC/deployments/rutgers/ng288-20180801T0000/ng288-20180801T0000.nc3.nc';
+%lon_lim = [-98 -78];
+%lat_lim = [18 32];
+%gdata = 'https://data.ioos.us/thredds/dodsC/deployments/rutgers/ng288-20180801T0000/ng288-20180801T0000.nc3.nc';
 
 % RAMSES (MAB + SAB)
 %lon_lim = [-81 -70];
@@ -27,8 +32,10 @@ gdata = 'https://data.ioos.us/thredds/dodsC/deployments/rutgers/ng288-20180801T0
 %gdata = 'http://data.ioos.us/thredds/dodsC/deployments/rutgers/ng300-20180701T0000/ng300-20180701T0000.nc3.nc';
 
 % Initial and final date
-date_ini = '01-Oct-2018 00:00:00';
-date_end = '11-Oct-2018 00:00:00';
+%date_ini = '01-Oct-2018 00:00:00';
+%date_end = '11-Oct-2018 00:00:00';
+date_ini = '16-Aug-2018 00:00:00';
+date_end = '25-Aug-2018 00:00:00';
 
 % GOFS3.1 outout model location
 catalog31 = 'http://tds.hycom.org/thredds/dodsC/GLBv0.08/expt_93.0/ts3z';

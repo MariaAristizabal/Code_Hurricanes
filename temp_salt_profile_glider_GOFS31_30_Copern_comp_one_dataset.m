@@ -6,10 +6,20 @@ clear all;
 
 % Glider data location
 
+% ng467 (Virgin Islands)
+%lon_lim = [-68 -64];
+%lat_lim = [15 20];
+%gdata = 'http://data.ioos.us/thredds/dodsC/deployments/rutgers/ng467-20180701T0000/ng467-20180701T0000.nc3.nc';
+
+% ng467 (Virgin Islands)
+lon_lim = [-68 -64];
+lat_lim = [15 20];
+gdata = 'http://data.ioos.us/thredds/dodsC/deployments/rutgers/ng302-20180701T0000/ng302-20180701T0000.nc3.nc';
+
 % Golf of Mexico
-lon_lim = [-98 -78];
-lat_lim = [18 32];
-gdata = 'https://data.ioos.us/thredds/dodsC/deployments/rutgers/ng288-20180801T0000/ng288-20180801T0000.nc3.nc';
+%lon_lim = [-98 -78];
+%lat_lim = [18 32];
+%gdata = 'https://data.ioos.us/thredds/dodsC/deployments/rutgers/ng288-20180801T0000/ng288-20180801T0000.nc3.nc';
 
 % ru22
 %gdata = 'https://data.ioos.us/thredds/dodsC/deployments/rutgers/ru22-20180815T0107/ru22-20180815T0107.nc3.nc';
@@ -112,6 +122,12 @@ tti = datenum(date_ini);
 tte = datenum(date_end);
 ok_time_glider = find(time >= tti & time < tte);
 
+tempg = temperature(:,ok_time_glider);
+presg = pressure(:,ok_time_glider);
+latg = latitude(ok_time_glider);
+long = longitude(ok_time_glider);
+timeg = time(ok_time_glider);
+
 % Final lat and lon of deployment for time period of interest 
 % This lat and lon is used to find the grid point in the model output
 % we can consider changing it to the average lat, lon for the entire
@@ -135,53 +151,91 @@ oklonbath = bath_lon >= lon_lim(1) & bath_lon <= lon_lim(2);
 
 lat31 = ncread(catalog31,'lat');
 lon31 = ncread(catalog31,'lon');
-depth = ncread(catalog31,'depth');
-time31 = ncread(catalog31,'time'); % hours since 2000-01-01 00:00:00
+depth31 = ncread(catalog31,'depth');
+tim31 = ncread(catalog31,'time'); % hours since 2000-01-01 00:00:00
+time31 = tim31/24 + datenum(2000,01,01,0,0,0);
+%oktime31 = find(time31 >= tti & time31 < tte);
+oktime31 = find(time31 >= timeg(1) & time31 < timeg(end));
 
-time_matlab31 = time31/24 + datenum(2000,01,01,0,0,0);
-
-% Conversion from glider longitude and latitude to GOFS convention
-if Glon < 0 
-    target_lon = 360 + Glon;
-else
-    target_lon = Glon;
+% Conversion from glider longitude and latitude to GOFS3.1 convention
+target_lon(1:length(timeg)) = nan;
+for i=1:length(timeg)
+    if long(i) < 0 
+       target_lon(i) = 360 + long(i);
+    else
+       target_lon(i) = long(i);
+    end
 end
-target_lat = Glat;
+target_lat = latg;
 
-%indlon = find(lon31 > target_lon);
-%oklon31 = indlon(1);
-oklon31=round(interp1(lon31,1:length(lon31),target_lon));
+sublon31=interp1(timeg,target_lon,time31(oktime31));
+sublat31=interp1(timeg,target_lat,time31(oktime31));
 
-%indlat31 = find(lat31 > target_lat);
-%oklat31 = indlat31(1);
-oklat31=round(interp1(lat31,1:length(lat31),target_lat));
+oklon31=round(interp1(lon31,1:length(lon31),sublon31));
+oklat31=round(interp1(lat31,1:length(lat31),sublat31));
 
-ok31 = find(time_matlab31 >= tti & time_matlab31 < tte);
+target_salt31(length(depth31),length(oktime31))=nan;
+target_temp31(length(depth31),length(oktime31))=nan;
+for i=1:length(oklon31)
+    disp(length(oklon31))
+    disp(['GOFS31',' i= ',num2str(i)])
+    if isfinite(oklon31(i)) && isfinite(oklat31(i)) && isfinite(oktime31(i))
+       target_temp31(:,i) = squeeze(double(ncread(catalog31,'water_temp',[oklon31(i) oklat31(i) 1 oktime31(i)],[1 1 inf 1])));
+       target_salt31(:,i) = squeeze(double(ncread(catalog31,'salinity',[oklon31(i) oklat31(i) 1 oktime31(i)],[1 1 inf 1])));
+    else
+       target_temp31(:,i) = nan;
+       target_salt31(:,i) = nan;
+    end
+end
 
-target_temp31 = squeeze(double(ncread(catalog31,'water_temp',[oklon31 oklat31 1 ok31(1)],[1 1 inf length(ok31)])));
-target_salt31 = squeeze(double(ncread(catalog31,'salinity',[oklon31 oklat31 1 ok31(1)],[1 1 inf length(ok31)])));
+%oklon31=round(interp1(lon31,1:length(lon31),target_lon));
+%oklat31=round(interp1(lat31,1:length(lat31),target_lat));
+%ok31 = find(time_matlab31 >= tti & time_matlab31 < tte);
+
+%target_temp31 = squeeze(double(ncread(catalog31,'water_temp',[oklon31 oklat31 1 ok31(1)],[1 1 inf length(ok31)])));
+%target_salt31 = squeeze(double(ncread(catalog31,'salinity',[oklon31 oklat31 1 ok31(1)],[1 1 inf length(ok31)])));
 
 %% GOFS 3.0
-
+%{
 lat30 = ncread(catalog30,'lat');
 lon30 = ncread(catalog30,'lon');
 depth30 = ncread(catalog30,'depth');
 time30 = ncread(catalog30,'time'); % hours since 2000-01-01 00:00:00
 
 time_matlab30 = time30/24 + datenum(2000,01,01,0,0,0);
-
 ok30 = find(time_matlab30 >= tti & time_matlab30 < tte);
 
-%indlon30 = find(lon30 > target_lon);
-%oklon30 = indlon30(1);
-oklon30=round(interp1(lon30,1:length(lon30),target_lon));
+time30 = ncread(catalog30,'time'); % hours since 2000-01-01 00:00:00
+time30 = time30/24 + datenum(2000,01,01,0,0,0);
+oktime30 = find(time30 >= tti & time30 < tte);
+%}
+%{
+sublon30=interp1(timeg,target_lon,time30(oktime30));
+sublat30=interp1(timeg,target_lat,time30(oktime30));
 
-%indlat30 = find(lat30 > target_lat);
-%oklat30 = indlat30(1);
-oklat30=round(interp1(lat30,1:length(lat30),target_lat));
+oklon30=round(interp1(lon30,1:length(lon30),sublon30));
+oklat30=round(interp1(lat30,1:length(lat30),sublat30));
+
+target_temp30(length(depth30),length(oktime30))=nan;
+target_salt30(length(depth30),length(oktime30))=nan;
+for i=1:length(oklon30)
+    disp(length(oklon30))
+    disp(['GOFS30',' i= ',num2str(i)])
+    if isfinite(oklon30(i)) && isfinite(oklat30(i)) && isfinite(oktime30(i))
+       target_temp30(:,i) = squeeze(double(ncread(catalog30,'water_temp',[oklon30(i) oklat30(i) 1 oktime30(i)],[1 1 inf 1])));
+       target_salt30(:,i) = squeeze(double(ncread(catalog30,'salinity',[oklon30(i) oklat30(i) 1 oktime30(i)],[1 1 inf 1])));
+    end
+end
+%}
+
+%{
+% GOFS 3.0 output is daily
+oklon30=round(interp1(lon30,1:length(lon30),mean(target_lon)));
+oklat30=round(interp1(lat30,1:length(lat30),mean(target_lat)));
 
 target_temp30 = squeeze(double(ncread(catalog30,'water_temp',[oklon30 oklat30 1 ok30(1)],[1 1 inf length(ok30)])));
 target_salt30 = squeeze(double(ncread(catalog30,'salinity',[oklon30 oklat30 1 ok30(1)],[1 1 inf length(ok30)])));
+%}
 
 %% RTOFS Global
 
@@ -244,7 +298,7 @@ target_tempRTOFS1 = squeeze(double(ncread(catalogRTOFS2,'temperature',[oklonRTOF
 %}
 
 %% Copernicus
-
+%{
 %ncdisp(copern);
 
 latcop = ncread(copern,'latitude');
@@ -266,7 +320,7 @@ oklatcop=round(interp1(latcop,1:length(latcop),Glat));
 
 target_tempcop = squeeze(double(ncread(copern,'thetao',[okloncop oklatcop 1 okcop(1)],[1 1 inf length(okcop)])));
 target_saltcop = squeeze(double(ncread(copern,'so',[okloncop oklatcop 1 okcop(1)],[1 1 inf length(okcop)])));
-
+%}
 
 %% Temporal frequency
 
@@ -274,29 +328,29 @@ target_saltcop = squeeze(double(ncread(copern,'so',[okloncop oklatcop 1 okcop(1)
 freq_glider = diff(time)*24*60;
 
 % GOFS3.1 
-freq_GOFS31 = (time_matlab31(2)-time_matlab31(1))*24;  %3 hourly
+freq_GOFS31 = (time31(2)-time31(1))*24;  %3 hourly
 
 % GOFS3.0
-freq_GOFS30 = (time_matlab30(2)-time_matlab30(1))*24; %daily
+%freq_GOFS30 = (time30(2)-time30(1))*24; %daily
 
 % Copernicus
-freq_Coper = (timecop(2)-timecop(1))*24; %daily
+%freq_Coper = (timecop(2)-timecop(1))*24; %daily
 
 %% Mean profiles
 
-depth_2d = repmat(depth,[1,length(ok31)]);
-depth30_2d = repmat(depth30,[1,length(ok30)]);
-depthcop_2d = repmat(depthcop,[1,length(okcop)]);
+depth_2d = repmat(depth31,[1,length(oktime31)]);
+%depth30_2d = repmat(depth30,[1,length(oktime30)]);
+%depthcop_2d = repmat(depthcop,[1,length(okcop)]);
 %depthRTOFS1_2d = repmat(depthRTOFS1,[1,length(okRTOFS1)]);
 
 temp31_mean = mean(target_temp31,2);
-temp30_mean = mean(target_temp30,2);
+%temp30_mean = mean(target_temp30,2);
 %tempcop_mean = mean(target_tempcop,2);
 %tempRTOFS1_mean = mean(target_tempRTOFS1,2);
 
 salt31_mean = mean(target_salt31,2);
-salt30_mean = mean(target_salt30,2);
-saltcop_mean = mean(target_saltcop,2);
+%salt30_mean = mean(target_salt30,2);
+%saltcop_mean = mean(target_saltcop,2);
 %saltRTOFS1_mean = mean(target_saltRTOFS1,2);
 
 pres_gridded = 0:0.5:max(max(pressure(:,ok_time_glider)));
@@ -323,7 +377,7 @@ saltgl_mean = nanmean(salt_gridded,2);
 
 
 %% Figure temperature
-%{
+
 % Instrument name:
 inst = strsplit(inst_id,'-');
 inst_name = inst{1};
@@ -332,20 +386,30 @@ inst_name = inst{1};
 
 siz = 20;
 mar_siz = 30;
+ok26 = find(tempgl_mean >= 26.0 & tempgl_mean < 26.2); 
 
 figure
 set(gcf,'position',[139 144 1157 811])
 
 subplot(121)
-plot(temperature(:,ok_time_glider),-pressure(:,ok_time_glider),'.-g','markersize',mar_siz)
+plot(temperature(:,ok_time_glider),-pressure(:,ok_time_glider),'.-c','markersize',mar_siz)
 hold on
-plot(target_temp31,-depth_2d,'.-c','markersize',mar_siz)
-plot(target_temp30,-depth30_2d,'.-r','markersize',mar_siz)
+plot(target_temp31,-depth_2d,'.-r','markersize',mar_siz)
+%plot(target_temp30,-depth30_2d,'.-r','markersize',mar_siz)
 %plot(target_tempcop,-depthcop_2d,'.-','color',[1 0.5 0],'markersize',mar_siz)
 %plot(target_tempRTOFS1,-depthRTOFS1_2d,'.-','color',[1 0.5 1],'markersize',mar_siz)
-h1 = plot(tempgl_mean,-pres_gridded,'.-k','markersize',mar_siz,'linewidth',4);
-h2 = plot(temp31_mean,-depth,'.-b','markersize',mar_siz,'linewidth',4);
-h3 = plot(temp30_mean,-depth30,'.-m','markersize',mar_siz,'linewidth',4);
+h1 = plot(tempgl_mean,-pres_gridded,'.-b','markersize',mar_siz,'linewidth',4);
+h2 = plot(temp31_mean,-depth31,'.-r','markersize',mar_siz,'linewidth',4);
+if ~isempty(ok26)
+%plot(26.0,-pres_gridded(ok26(1)),'^r','markersize',10,'markerfacecolor','r')
+dd1 = -max(pres_gridded):0;
+tt1 = repmat(26.0,1,length(dd1));
+plot(tt1,dd1,'--k')
+tt2 = 15:26;
+dd2 = repmat(-pres_gridded(ok26(1)),1,length(tt2));
+%plot(tt2,dd2,'--k')
+end
+%h3 = plot(temp30_mean,-depth30,'.-m','markersize',mar_siz,'linewidth',4);
 %h4 = plot(tempcop_mean,-depthcop,'.-','color',[1 0.5 0],'markersize',mar_siz,'linewidth',4);
 %h5 = plot(tempRTOFS1_mean,-depthRTOFS1,'.-','color',[1 0 0.2],'markersize',mar_siz,'linewidth',4);
 set(gca,'fontsize',siz)
@@ -355,14 +419,19 @@ set(gca,'fontsize',siz)
 %    ['HYCOM GOFS 3.0 Expt 91.2 (hindcast) ' datestr(time_matlab30(ok30(1)))],...
 %    'Location','SouthEast');
 
-lgd = legend([h1 h2 h3],[inst_name,' ',plat_type,' ',datestr(time(ok_time_glider(1)))],...
-    ['HYCOM GOFS 3.1 Expt 93.0 (hindcast) ' datestr(time_matlab31(ok31(1)))],...
-    ['HYCOM GOFS 3.0 Expt 91.2 (hindcast) ' datestr(time_matlab30(ok30(1)))],...
+%lgd = legend([h1 h2 h3],[inst_name,' ',plat_type,' ',datestr(time(ok_time_glider(1)))],...
+%    ['HYCOM GOFS 3.1 Expt 93.0 (hindcast) ' datestr(time31(oktime31(1)))],...
+%    ['HYCOM GOFS 3.0 Expt 91.2 (hindcast) ' datestr(time30(oktime30(1)))],...
+%    'Location','SouthEast');
+
+lgd = legend([h1 h2],[inst_name,' ',plat_type,' ',datestr(time(ok_time_glider(1)))],...
+    ['HYCOM GOFS 3.1 Expt 93.0 (hindcast) ' datestr(time31(oktime31(1)))],...
     'Location','SouthEast');
+
 %    ['Copernicus' datestr(timecop(okcop(1)))],...
 %    'Location','SouthEast');
 set(lgd,'fontsize',14)
-title({'HYCOM GOFS 3.1 and 3.0 and Copernicus vs ';[inst_name,' ',plat_type]},'fontsize',siz)
+title({'HYCOM GOFS 3.1 and ';[inst_name,' ',plat_type]},'fontsize',siz)
 %title({'HYCOM GOFS 3.1 and 3.0 and Copernicus vs ';['cp376',' ',plat_type]},'fontsize',siz)
 xlabel('Temperature (^oC)','fontsize',siz)
 ylabel('Depth (m)','fontsize',siz);
@@ -372,6 +441,7 @@ if max(max(pressure(:,ok_time_glider))) > 200
 else
     ylim([-max(max(pressure(:,ok_time_glider)))-max(max(pressure(:,ok_time_glider)))*0.2 0])
 end
+
 
 
 s2 = subplot(122);
@@ -407,7 +477,7 @@ Fig_name = [folder,'models_vs_',inst_name,'_',date_ini(1:11)];
 
 print([Fig_name,'_temp.png'],'-dpng','-r300') 
 %print([Fig_name,'.eps'],'-depsc','-r300') 
-%}
+
 
 %% Figure salinity
 
@@ -424,30 +494,33 @@ figure
 set(gcf,'position',[139 144 1157 811])
 
 subplot(121)
-plot(salinity(:,ok_time_glider),-pressure(:,ok_time_glider),'.-g','markersize',mar_siz)
+plot(salinity(:,ok_time_glider),-pressure(:,ok_time_glider),'.-c','markersize',mar_siz)
 hold on
-plot(target_salt31,-depth_2d,'.-c','markersize',mar_siz)
-plot(target_salt30,-depth30_2d,'.-r','markersize',mar_siz)
+plot(target_salt31,-depth_2d,'.-r','markersize',mar_siz)
+%plot(target_salt30,-depth30_2d,'.-r','markersize',mar_siz)
 %plot(target_saltcop,-depthcop_2d,'.-','color',[1 0.5 0],'markersize',mar_siz)
 %plot(target_tempRTOFS1,-depthRTOFS1_2d,'.-','color',[1 0.5 1],'markersize',mar_siz)
-h1 = plot(saltgl_mean,-pres_gridded,'.-k','markersize',mar_siz,'linewidth',4);
-h2 = plot(salt31_mean,-depth,'.-b','markersize',mar_siz,'linewidth',4);
-h3 = plot(salt30_mean,-depth30,'.-m','markersize',mar_siz,'linewidth',4);
-h4 = plot(saltcop_mean,-depthcop,'.-','color',[1 0.5 0],'markersize',mar_siz,'linewidth',4);
+h1 = plot(saltgl_mean,-pres_gridded,'.-b','markersize',mar_siz,'linewidth',4);
+h2 = plot(salt31_mean,-depth31,'.-r','markersize',mar_siz,'linewidth',4);
+%h3 = plot(salt30_mean,-depth30,'.-m','markersize',mar_siz,'linewidth',4);
+%h4 = plot(saltcop_mean,-depthcop,'.-','color',[1 0.5 0],'markersize',mar_siz,'linewidth',4);
 %h5 = plot(tempRTOFS1_mean,-depthRTOFS1,'.-','color',[1 0 0.2],'markersize',mar_siz,'linewidth',4);
 set(gca,'fontsize',siz)
 %lgd = legend([h1 h2 h3 h4],['cp376',' ',plat_type,' ',datestr(time(ok_time_glider(1)))],...
-lgd = legend([h1 h2 h3 h4],[inst_name,' ',plat_type,' ',datestr(time(ok_time_glider(1)))],...
-    ['HYCOM GOFS 3.1 Expt 93.0 (hindcast) ' datestr(time_matlab31(ok31(1)))],...
-    ['HYCOM GOFS 3.0 Expt 91.2 (hindcast) ' datestr(time_matlab30(ok30(1)))],...
-    ['Copernicus' datestr(timecop(okcop(1)))],...
-    'Location','SouthEast');
-%lgd = legend([h1 h2 h3],[inst_name,' ',plat_type,' ',datestr(time(ok_time_glider(1)))],...
-%    ['HYCOM GOFS 3.1 Expt 93.0 (hindcast) ' datestr(time_matlab31(ok31(1)))],...
-%    ['HYCOM GOFS 3.0 Expt 91.2 (hindcast) ' datestr(time_matlab30(ok30(1)))],...
+%lgd = legend([h1 h2 h3 h4],[inst_name,' ',plat_type,' ',datestr(time(ok_time_glider(1)))],...
+%    ['HYCOM GOFS 3.1 Expt 93.0 (hindcast) ' datestr(time31(ok31(1)))],...
+%    ['HYCOM GOFS 3.0 Expt 91.2 (hindcast) ' datestr(time_30(ok30(1)))],...
+%    ['Copernicus' datestr(timecop(okcop(1)))],...
 %    'Location','SouthEast');
+%lgd = legend([h1 h2 h3],[inst_name,' ',plat_type,' ',datestr(time(ok_time_glider(1)))],...
+%    ['HYCOM GOFS 3.1 Expt 93.0 (hindcast) ' datestr(time31(oktime31(1)))],...
+%    ['HYCOM GOFS 3.0 Expt 91.2 (hindcast) ' datestr(time30(oktime30(1)))],...
+%    'Location','SouthEast');
+lgd = legend([h1 h2],[inst_name,' ',plat_type,' ',datestr(time(ok_time_glider(1)))],...
+    ['HYCOM GOFS 3.1 Expt 93.0 (hindcast) ' datestr(time31(oktime31(1)))],...
+    'Location','SouthEast');
 set(lgd,'fontsize',14)
-title({'HYCOM GOFS 3.1 and 3.0 and Copernicus vs ';[inst_name,' ',plat_type]},'fontsize',siz)
+title({'HYCOM GOFS 3.1 vs ';[inst_name,' ',plat_type]},'fontsize',siz)
 %title({'HYCOM GOFS 3.1 and 3.0 and Copernicus vs ';['cp376',' ',plat_type]},'fontsize',siz)
 xlabel('Salinity (psu)','fontsize',siz)
 ylabel('Depth (m)','fontsize',siz);

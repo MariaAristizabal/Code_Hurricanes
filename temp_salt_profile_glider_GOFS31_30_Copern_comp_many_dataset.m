@@ -1,75 +1,10 @@
 clear all;
 
-%% User input
-
-% Glider data location
-
-% Golf of Mexico
-%lon_lim = [-98 -78];
-%lat_lim = [18 32];
-%gdata = 'https://data.ioos.us/thredds/dodsC/deployments/rutgers/ng288-20180801T0000/ng288-20180801T0000.nc3.nc';
-
-% ru22
-%gdata = 'https://data.ioos.us/thredds/dodsC/deployments/rutgers/ru22-20180815T0107/ru22-20180815T0107.nc3.nc';
-
-% RU33 (MAB + SAB)
-%lon_lim = [-81 -70];
-%lat_lim = [30 42];
-%gdata = 'https://data.ioos.us/thredds/dodsC/deployments/rutgers/ru33-20180801T1323/ru33-20180801T1323.nc3.nc';
-
-% RAMSES (MAB + SAB)
-%lon_lim = [-81 -70];
-%lat_lim = [30 42];
-%gdata = 'https://data.ioos.us/thredds/dodsC/deployments/secoora/ramses-20180907T0000/ramses-20180907T0000.nc3.nc';
-
-% Pelagia (MAB + SAB)
-%lon_lim = [-81 -70];
-%lat_lim = [30 42];
-%gdata = 'http://data.ioos.us/thredds/dodsC/deployments/secoora/pelagia-20180910T0000/pelagia-20180910T0000.nc3.nc';
-
-% ng300 (Virgin Islands)
-%lon_lim = [-68 -64];
-%lat_lim = [15 20];
-%gdata = 'http://data.ioos.us/thredds/dodsC/deployments/rutgers/ng300-20180701T0000/ng300-20180701T0000.nc3.nc';
-
-% sg630 (Virgin Islands)
-%lon_lim = [-68 -64];
-%lat_lim = [15 20];
-%gdata = 'http://data.ioos.us/thredds/dodsC/deployments/aoml/SG630-20180716T1220/SG630-20180716T1220.nc3.nc';
-
-% silbo (Equatorial Atlantic)
-%lon_lim = [-35 -10];
-%lat_lim = [12 32];
-%gdata = 'http://data.ioos.us/thredds/dodsC/deployments/rutgers/silbo-20180525T1016/silbo-20180525T1016.nc3.nc';
-
-% blue (MAB + SAB)
-%lon_lim = [-81 -70];
-%lat_lim = [30 42];
-%gdata = 'http://data.ioos.us/thredds/dodsC/deployments/rutgers/blue-20180806T1400/blue-20180806T1400.nc3.nc';
-
-% cp367 West Atlantic
-%lon_lim = [-78 -64];
-%lat_lim = [32 44];
-%gdata = 'http://data.ioos.us/thredds/dodsC/deployments/rutgers/cp_376-20180724T1552/cp_376-20180724T1552.nc3.nc';
-
-% ng288 (Golf of Mexico)
-%lon_lim = [-94 -78];
-%lat_lim = [20 36];
-%gdata = 'http://data.ioos.us/thredds/dodsC/deployments/rutgers/ng288-20180801T0000/ng288-20180801T0000.nc3.nc';
-
-% ng342 (Golf of Mexico)
-%lon_lim = [-94 -78];
-%lat_lim = [20 36];
-%gdata = 'http://data.ioos.us/thredds/dodsC/deployments/rutgers/ng342-20180701T0000/ng342-20180701T0000.nc3.nc';
-
-% ng429 (Golf of Mexico)
-%lon_lim = [-94 -78];
-%lat_lim = [20 36];
-%gdata = 'http://data.ioos.us/thredds/dodsC/deployments/rutgers/ng429-20180701T0000/ng429-20180701T0000.nc3.nc';
+ %% User input
 
 % Initial and final date
-date_ini = '10-Oct-2018 00:00:00';
-date_end = '11-Oct-2018 00:00:00';
+date_ini = '11-Sep-2018 00:00:00';
+date_end = '12-Sep-2018 00:00:00';
 
 % GOFS3.1 outout model location
 catalog31 = 'http://tds.hycom.org/thredds/dodsC/GLBv0.08/expt_93.0/ts3z';
@@ -77,24 +12,25 @@ catalog31 = 'http://tds.hycom.org/thredds/dodsC/GLBv0.08/expt_93.0/ts3z';
 % GOFS3.1 output model location
 catalog30 = 'http://tds.hycom.org/thredds/dodsC/GLBu0.08/expt_91.2/ts3z';
 
-% Copernicus
-%copern = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/global-analysis-forecast-phy-001-024_1536695141135.nc';
-%copern = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/global-analysis-forecast-phy-001-024_1536948820036.nc';
-copern = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/global-analysis-forecast-phy-001-024_1537209157740.nc';
-
 % Bathymetry data
 %bath_data = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/GEBCO_2014_2D_-100.0_0.0_-60.0_45.0.nc';
 bath_data = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/GEBCO_2014_2D_-100.0_0.0_-10.0_70.0.nc';
-%filename = [folder,'Bathymetry_North_Atlantic.fig'];
+
+% Copernicus
+%copern = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/global-analysis-forecast-phy-001-024_1537209157740.nc';
+copern = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/global-analysis-forecast-phy-001-024_1538489276306.nc';
 
 % Folder where to save figure
 folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/';
-%folder = 'htpps://marine.rutgers.edu/~aristizabal';
-%folder = '/Volumes/coolgroup/Glider_models_comparisons/';
-%folder = '/Volumes/aristizabal/public_html/MARACOOS_proj/Figures/Model_glider_comp/Michael/';
+%folder = '/Volumes/aristizabal/public_html/MARACOOS_proj/Figures/Model_glider_comp/';
 
+% Glider data location
 url = 'https://data.ioos.us/thredds/dodsC/deployments/';
 
+%{
+% Gulf Mexico
+lon_lim = [-98 -78];
+lat_lim = [18 32];
 id_list = char({'rutgers/ng288-20180801T0000/ng288-20180801T0000.nc3.nc',...
            'rutgers/ng261-20180801T0000/ng261-20180801T0000.nc3.nc',...
            'rutgers/ng257-20180801T0000/ng257-20180801T0000.nc3.nc',...
@@ -102,18 +38,96 @@ id_list = char({'rutgers/ng288-20180801T0000/ng288-20180801T0000.nc3.nc',...
            'rutgers/ng230-20180801T0000/ng230-20180801T0000.nc3.nc',...
            'rutgers/ng279-20180801T0000/ng279-20180801T0000.nc3.nc',...
            'rutgers/ng429-20180701T0000/ng429-20180701T0000.nc3.nc',...
+           'secoora/sam-20180824T0000/sam-20180824T0000.nc3.nc',...
+           'gcoos_dmac/Sverdrup-20180509T1742/Sverdrup-20180509T1742.nc3.nc',...
+           'rutgers/ng258-20180801T0000/ng258-20180801T0000.nc3.nc',...
+           'rutgers/ng295-20180701T0000/ng295-20180701T0000.nc3.nc',...
+           'rutgers/ng296-20180701T0000/ng296-20180701T0000.nc3.nc',...
+           'rutgers/ng228-20180801T0000/ng228-20180801T0000.nc3.nc',...
+           'rutgers/ng309-20180701T0000/ng309-20180701T0000.nc3.nc',...
+           'rutgers/ng342-20180701T0000/ng342-20180701T0000.nc3.nc',...
+           'rutgers/ng448-20180701T0000/ng448-20180701T0000.nc3.nc',...
+           'rutgers/ng450-20180701T0000/ng450-20180701T0000.nc3.nc',...
+           'rutgers/ng464-20180701T0000/ng464-20180701T0000.nc3.nc',...
+           'rutgers/ng466-20180701T0000/ng466-20180701T0000.nc3.nc',...
+           'rutgers/ng489-20180701T0000/ng489-20180701T0000.nc3.nc',...
+           'rutgers/ng512-20180701T0000/ng512-20180701T0000.nc3.nc',...
+           'rutgers/ng596-20180701T0000/ng596-20180701T0000.nc3.nc',...
+           'gcoos_dmac/Reveille-20180627T1500/Reveille-20180627T1500.nc3/nc',...
            }); 
-       
-%'rutgers/ng258-20180801T0000/ng258-20180801T0000.nc3.nc',...
+%}
+
+
+%{
+%Caribbean:
+lon_lim = [-68 -64];
+lat_lim = [15 20];
+id_list = char({'aoml/SG630-20180716T1220/SG630-20180716T1220.nc3.nc',...
+                'aoml/SG610-20180719T1146/SG610-20180719T1146.nc3.nc',...
+                'aoml/SG635-20180716T1248/SG635-20180716T1248.nc3.nc',...
+                'aoml/SG649-20180731T1418/SG649-20180731T1418.nc3.nc',...
+                'rutgers/ng300-20180701T0000/ng300-20180701T0000.nc3.nc',...
+                'rutgers/ng291-20180701T0000/ng291-20180701T0000.nc3.nc',...
+                'rutgers/ng302-20180701T0000/ng302-20180701T0000.nc3.nc',...
+                'rutgers/ng467-20180701T0000/ng467-20180701T0000.nc3.nc',...
+                'rutgers/ng487-20180701T0000/ng487-20180701T0000.nc3.nc',...
+                'rutgers/ng488-20180701T0000/ng488-20180701T0000.nc3.nc',...
+                'rutgers/ng616-20180701T0000/ng616-20180701T0000.nc3.nc',...
+                'rutgers/ng617-20180701T0000/ng617-20180701T0000.nc3.nc',...
+                'rutgers/ng618-20180701T0000/ng618-20180701T0000.nc3.nc',...
+                });
+%'rutgers/ng619-20180701T0000/ng619-20180701T0000.nc3.nc',...           
+%}
+
+%{
+% SAB
+lon_lim = [-81 -70];
+lat_lim = [25 35];
+id_list = char({'secoora/bass-20180808T0000/bass-20180808T0000.nc3.nc',...
+                'secoora/pelagia-20180910T0000/pelagia-20180910T0000.nc3.nc',...
+                'drudnick/sp022-20180912T1553/p022-20180912T1553.nc3.nc',...
+                });
+%}
+
+
+                %{
+% MAB
+lon_lim = [-81 -70];
+lat_lim = [30 42];
+id_list = char({'rutgers/blue-20180806T1400/blue-20180806T1400.nc3.nc',...
+                'rutgers/ru28-20180920T1334/ru28-20180920T1334.nc3.nc',...
+                'rutgers/ru30-20180705T1825/ru30-20180705T1825.nc3.nc',...
+                'rutgers/ru33-20180801T1323/ru33-20180801T1323.nc3.nc',...
+                'rutgers/sylvia-20180802T0930/sylvia-20180802T0930.nc3.nc',...
+                'rutgers/cp_336-20180724T1433/cp_336-20180724T1433.nc3.nc',...
+                'rutgers/cp_376-20180724T1552/cp_376-20180724T1552.nc3.nc',...
+                'rutgers/cp_389-20180724T1620/cp_389-20180724T1620.nc3.nc',...
+                'secoora/ramses-20180907T0000/ramses-20180907T0000.nc3.nc',...
+                'secoora/ramses-20180704T0000/ramses-20180704T0000.nc3.nc',...
+                'drudnick/sp010-20180620T1455/sp010-20180620T1455.nc3.nc',...
+                'drudnick/sp022-20180422T1229/sp022-20180422T1229.nc3.nc',...
+                'drudnick/sp066-20180629T1411/sp066-20180629T1411.nc3.nc',...
+                'drudnick/sp069-20180411T1516/sp069-20180411T1516.nc3.nc',...
+                });
+%}
        
 %%       
-for l=1:size(id_list,1)
+for l=1%:size(id_list,1)
+    disp(l)
     clear temp_gridded salt_gridded
-    lon_lim = [-98 -78];
-    lat_lim = [18 32];
     gdata = [url,strtrim(id_list(l,:))];     
 
 %% Glider Extract
+
+   time = double(ncread(gdata,'time'));
+   time = datenum(1970,01,01,0,0,time);
+   
+   % Finding subset of data for time period of interest
+   tti = datenum(date_ini);
+   tte = datenum(date_end);
+   ok_time_glider = find(time >= tti & time < tte);
+   
+   if ~isempty(ok_time_glider) 
 
 inst_id = ncreadatt(gdata,'/','id');
 plat_type = ncreadatt(gdata,'/','platform_type');
@@ -121,15 +135,9 @@ plat_type = ncreadatt(gdata,'/','platform_type');
 temperature = double(ncread(gdata,'temperature'));
 salinity = double(ncread(gdata,'salinity'));
 pressure = double(ncread(gdata,'pressure'));
-time = double(ncread(gdata,'time'));
-time = datenum(1970,01,01,0,0,time);
+
 latitude = double(ncread(gdata,'latitude'));
 longitude = double(ncread(gdata,'longitude'));
-
-% Finding subset of data for time period of interest
-tti = datenum(date_ini);
-tte = datenum(date_end);
-ok_time_glider = find(time >= tti & time < tte);
 
 % Final lat and lon of deployment for time period of interest 
 % This lat and lon is used to find the grid point in the model output
@@ -318,11 +326,11 @@ salt_gridded(length(pres_gridded),size(presok,2)) = nan;
 for i=1:size(pressure(:,ok_time_glider),2)
     [presu,oku] = unique(presok(:,i));
     tempu = tempok(oku,i);
-    saltu = saltok(oku,i);
-    %ok = isfinite(presu);
-    ok = isfinite(tempu);
+    %saltu = saltok(oku,i);
+    ok = isfinite(presu);
+    %ok = isfinite(tempu);
     temp_gridded(:,i) = interp1(presu(ok),tempu(ok),pres_gridded);
-    salt_gridded(:,i) = interp1(presu(ok),saltu(ok),pres_gridded);
+    %salt_gridded(:,i) = interp1(presu(ok),saltu(ok),pres_gridded);
 end
 
 tempgl_mean = nanmean(temp_gridded,2);
@@ -358,7 +366,7 @@ h2 = plot(temp31_mean,-depth,'.-b','markersize',mar_siz,'linewidth',4);
 h3 = plot(temp30_mean,-depth30,'.-m','markersize',mar_siz,'linewidth',4);
 %h4 = plot(tempcop_mean,-depthcop,'.-','color',[1 0.5 0],'markersize',mar_siz,'linewidth',4);
 %h5 = plot(tempRTOFS1_mean,-depthRTOFS1,'.-','color',[1 0 0.2],'markersize',mar_siz,'linewidth',4);
-
+if ~isempty(ok26)
 plot(26.0,-pres_gridded(ok26(1)),'^r','markersize',10,'markerfacecolor','r')
 dd1 = -max(pres_gridded):0;
 tt1 = repmat(26.0,1,length(dd1));
@@ -366,6 +374,7 @@ plot(tt1,dd1,'--k')
 tt2 = 15:26;
 dd2 = repmat(-pres_gridded(ok26(1)),1,length(tt2));
 plot(tt2,dd2,'--k')
+end
 
 set(gca,'fontsize',siz)
 %lgd = legend([h1 h2 h3 h4],['cp376',' ',plat_type,' ',datestr(time(ok_time_glider(1)))],...
@@ -391,7 +400,7 @@ if max(max(pressure(:,ok_time_glider))) > 200
 else
     ylim([-max(max(pressure(:,ok_time_glider)))-max(max(pressure(:,ok_time_glider)))*0.2 0])
 end
-xticks([15 20 25 26 30])
+%xticks([15 20 25 26 30])
 
 %%
 s2 = subplot(122);
@@ -509,6 +518,7 @@ Fig_name = [folder,'models_vs_',inst_name,'_',date_ini(1:11)];
 print([Fig_name,'_salt.png'],'-dpng','-r300') 
 %print([Fig_name,'.eps'],'-depsc','-r300') 
 
+   end
 end
 
 %% Figure temperature including RTOFOS

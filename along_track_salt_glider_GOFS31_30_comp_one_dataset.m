@@ -6,10 +6,15 @@ clear all;
 
 % Glider data location
 
+% RU22
+%lon_lim = [125 127];
+%lat_lim = [32 34];
+%gdata = 'https://data.ioos.us/thredds/dodsC/deployments/rutgers/ru22-20180815T0107/ru22-20180815T0107.nc3.nc';
+
 % Golf of Mexico
-lon_lim = [-98 -78];
-lat_lim = [18 32];
-gdata = 'https://data.ioos.us/thredds/dodsC/deployments/rutgers/ng288-20180801T0000/ng288-20180801T0000.nc3.nc';
+%lon_lim = [-98 -78];
+%lat_lim = [18 32];
+%gdata = 'https://data.ioos.us/thredds/dodsC/deployments/rutgers/ng288-20180801T0000/ng288-20180801T0000.nc3.nc';
 
 % RAMSES (MAB + SAB)
 %lon_lim = [-81 -70];
@@ -21,14 +26,21 @@ gdata = 'https://data.ioos.us/thredds/dodsC/deployments/rutgers/ng288-20180801T0
 %lat_lim = [30 42];
 %gdata = 'https://data.ioos.us/thredds/dodsC/deployments/rutgers/ru33-20180801T1323/ru33-20180801T1323.nc3.nc';
 
+% ng467
+gdata = 'https://gliders.ioos.us/thredds/dodsC/deployments/rutgers/ng467-20180701T0000/ng467-20180701T0000.nc3.nc';
+date_ini = '01-Aug-2018 00:00:00';
+date_end = '09-Aug-2018 00:00:00';
+
 % ng300 (Virgin Islands)
 %lon_lim = [-68 -64];
 %lat_lim = [15 20];
 %gdata = 'http://data.ioos.us/thredds/dodsC/deployments/rutgers/ng300-20180701T0000/ng300-20180701T0000.nc3.nc';
 
 % Initial and final date
-date_ini = '01-Oct-2018 00:00:00';
-date_end = '12-Oct-2018 00:00:00';
+%date_ini = '01-Sep-2018 00:00:00';
+%date_end = '09-Sep-2018 00:00:00';
+%date_ini = ''; %if empty, date_ini is the firts time stamp in data
+%date_end = ''; %if empty, date_end is the last time stamp in data
 
 % GOFS3.1 outout model location
 catalog31 = 'http://tds.hycom.org/thredds/dodsC/GLBv0.08/expt_93.0/ts3z';
@@ -41,8 +53,8 @@ catalog30 = 'http://tds.hycom.org/thredds/dodsC/GLBu0.08/expt_91.2/ts3z';
 bath_data = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/GEBCO_2014_2D_-100.0_0.0_-10.0_70.0.nc';
 
 % Folder where to save figure
-%folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/Temperature/';
-folder = '/Volumes/aristizabal/public_html/MARACOOS_proj/Figures/Model_glider_comp/Michael/';
+folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/';
+%folder = '/Volumes/aristizabal/public_html/MARACOOS_proj/Figures/Model_glider_comp/';
 
 %% Glider Extract
 
@@ -60,8 +72,18 @@ latitude = double(ncread(gdata,'latitude'));
 longitude = double(ncread(gdata,'longitude'));
 
 % Finding subset of data for time period of interest
-tti = datenum(date_ini);
-tte = datenum(date_end);
+if isempty(date_ini)
+   tti = time(1);
+else
+   tti = datenum(date_ini);
+end
+
+if isempty(date_end)
+   tte = time(end);
+else
+   tte = datenum(date_end);
+end
+
 ok_time_glider = find(time >= tti & time < tte);
 
 tempg = temperature(:,ok_time_glider);
@@ -111,11 +133,17 @@ oklat31=round(interp1(lat31,1:length(lat31),sublat31));
 
 target_salt31(length(depth31),length(oktime31))=nan;
 for i=1:length(oklon31)
-    target_salt31(:,i) = squeeze(double(ncread(catalog31,'salinity',[oklon31(i) oklat31(i) 1 oktime31(i)],[1 1 inf 1])));
+    disp(length(oklon31))
+    disp(['GOFS31',' i= ',num2str(i)])
+    if isfinite(oklon31(i)) && isfinite(oklat31(i)) && isfinite(oktime31(i))
+       target_salt31(:,i) = squeeze(double(ncread(catalog31,'salinity',[oklon31(i) oklat31(i) 1 oktime31(i)],[1 1 inf 1])));
+    else
+       target_salt31(:,i) = nan; 
+    end
 end
 
 %% GOFS 3.0
-
+%{
 lat30 = ncread(catalog30,'lat');
 lon30 = ncread(catalog30,'lon');
 depth30 = ncread(catalog30,'depth');
@@ -136,7 +164,7 @@ for i=1:length(oklon30)
     target_salt30(:,i) = squeeze(double(ncread(catalog30,'salinity',[oklon30(i) oklat30(i) 1 oktime30(i)],[1 1 inf 1])));
 end
 
-
+%}
 %% Bathymetry data
 
 %disp(bath_data);
@@ -237,7 +265,7 @@ print([Fig_name,'.png'],'-dpng','-r300')
 %}
 
 %% Figure with 2 models: GOFS3.1, GOFS3.0
-
+%{
 siz_title = 20;
 siz_text = 16;
 
@@ -373,5 +401,182 @@ xtickangle(45)
 %%
 % Figure name
 Fig_name = [folder,'salinity/','Along_track_salt_prof_glider_2models_',inst_name,'_',datestr(timeg(1),'mm-dd-yy'),'-',datestr(timeg(end),'mm-dd-yy')];
+wysiwyg
+print([Fig_name,'.png'],'-dpng','-r300') 
+
+%}
+
+%% Figure glider data and GOFS 3.1
+
+siz_title = 20;
+siz_text = 16;
+
+color = colormap(jet(length(latg)+1));
+norm = (timeg-timeg(1))./(timeg(end)-timeg(1));
+pos = round(norm.*length(latg))+1;
+
+time_mat = repmat(timeg,1,size(tempg,1))';
+time_vec = reshape(time_mat,1,size(time_mat,1)*size(time_mat,2));
+
+depth_vec = reshape(presg,1,size(presg,1)*size(presg,2));
+saltg_vec = reshape(saltg,1,size(saltg,1)*size(saltg,2));
+
+marker.MarkerSize = 16;
+
+figure
+set(gcf,'position',[ 366  273 1152 682])
+
+subplot(211)
+[h,c_h] = fast_scatter(time_vec',-depth_vec',saltg_vec','colorbar','vert','marker',marker);
+hold on
+set(gca,'fontsize',siz_text)
+ylabel('Depth (m)')
+xlabel('')
+title(['Along track salinity profile ',inst_name],'fontsize',siz_title)
+c = colorbar;
+c.Label.String = 'Salinity (psu)';
+c.Label.FontSize = siz_text;
+colormap('jet')
+caxis([floor(min(min(saltg))) ceil(max(max(saltg)))])
+c_vec = floor([floor(min(min(saltg))):(max(max(saltg))-min(min(saltg)))/5:ceil(max(max(saltg))),ceil(max(max(saltg)))]);
+cc_vec = unique(c_vec);
+set(c,'ytick',cc_vec)
+xlim([timeg(1) timeg(end)])
+tt_vec = unique([timeg(1),timeg(1)+(timeg(end)-timeg(1))/10:(timeg(end)-timeg(1))/10:timeg(end),timeg(end)]);
+xticks(tt_vec)
+%datetick('x','keepticks')
+set(gca,'xticklabel',{[]})
+set(gca,'TickDir','out') 
+%ylim([-max(depth_vec) 0])
+yticks(floor(-max(depth_vec):max(depth_vec)/5:0))
+%ytick(-200:50:0)
+%set(gca,'xgrid','on','ygrid','on','layer','top','color','k')
+set(gca,'xgrid','on','ygrid','on','layer','top')
+
+ax = gca;
+ax.GridAlpha = 0.3;
+
+subplot(212)
+pcolor(time31(oktime31),-depth31,target_salt31)
+shading interp
+set(gca,'fontsize',siz_text)
+ylabel('Depth (m)')
+title('GOFS 3.1','fontsize',siz_title)
+c = colorbar;
+c.Label.String = 'Salinity (psu)';
+c.Label.FontSize = siz_text;
+colormap('jet')
+caxis([floor(min(min(saltg))) ceil(max(max(saltg)))])
+c_vec = floor([floor(min(min(saltg))):(max(max(saltg))-min(min(saltg)))/5:ceil(max(max(saltg))),ceil(max(max(saltg)))]);
+cc_vec = unique(c_vec);
+set(c,'ytick',cc_vec)
+xlim([timeg(1) timeg(end)])
+tt_vec = unique([timeg(1),timeg(1)+(timeg(end)-timeg(1))/10:(timeg(end)-timeg(1))/10:timeg(end),timeg(end)]);
+xticks(tt_vec)
+%datetick('x','keepticks')
+set(gca,'xticklabel',{[]})
+set(gca,'TickDir','out','ytick',[]) 
+ylim([-max(depth_vec) 0])
+yticks(floor(-max(depth_vec):max(depth_vec)/5:0))
+%ytick(-200:50:0)
+set(gca,'xgrid','on','ygrid','on','layer','top')
+
+ax = gca;
+ax.GridAlpha = 0.3;
+
+tt_vec = unique(floor([time_vec(1),time_vec(1)+(time_vec(end)-time_vec(1))/10:(time_vec(end)-time_vec(1))/10:time_vec(end),time_vec(end)]));
+xticks(tt_vec)
+xticklabels(datestr(tt_vec,'mm/dd/yy'))
+xlim([tt_vec(1) time_vec(end)])
+xtickangle(45)
+
+% Figure name
+Fig_name = [folder,'Along_track_salt_prof_glider_GOFS31_',inst_name,'_',datestr(timeg(1),'mm-dd-yy'),'-',datestr(timeg(end),'mm-dd-yy')];
+wysiwyg
+print([Fig_name,'.png'],'-dpng','-r300') 
+
+%% Figure ng288 Only glider data and GOFS 3.1
+
+siz_title = 20;
+siz_text = 16;
+
+color = colormap(jet(length(latg)+1));
+norm = (timeg-timeg(1))./(timeg(end)-timeg(1));
+pos = round(norm.*length(latg))+1;
+
+time_mat = repmat(timeg,1,size(tempg,1))';
+time_vec = reshape(time_mat,1,size(time_mat,1)*size(time_mat,2));
+
+depth_vec = reshape(presg,1,size(presg,1)*size(presg,2));
+saltg_vec = reshape(saltg,1,size(saltg,1)*size(saltg,2));
+
+marker.MarkerSize = 16;
+
+figure
+set(gcf,'position',[ 366  273 1152 682])
+
+subplot(211)
+[h,c_h] = fast_scatter(time_vec',-depth_vec',saltg_vec','colorbar','vert','marker',marker);
+hold on
+set(gca,'fontsize',siz_text)
+ylabel('Depth (m)')
+xlabel('')
+title(['Along track salinity profile ',inst_name],'fontsize',siz_title)
+c = colorbar;
+c.Label.String = 'Salinity (psu)';
+c.Label.FontSize = siz_text;
+colormap('jet')
+caxis([floor(min(min(saltg))) ceil(max(max(saltg)))])
+c_vec = floor([floor(min(min(saltg))):(max(max(saltg))-min(min(saltg)))/5:ceil(max(max(saltg))),ceil(max(max(saltg)))]);
+cc_vec = unique(c_vec);
+set(c,'ytick',cc_vec)
+xlim([timeg(1) timeg(end)])
+tt_vec = unique([timeg(1),timeg(1)+(timeg(end)-timeg(1))/10:(timeg(end)-timeg(1))/10:timeg(end),timeg(end)]);
+xticks(tt_vec)
+%datetick('x','keepticks')
+set(gca,'xticklabel',{[]})
+set(gca,'TickDir','out') 
+%ylim([-max(depth_vec) 0])
+%yticks(floor(-max(depth_vec):max(depth_vec)/5:0))
+yticks(-200:50:0)
+%set(gca,'xgrid','on','ygrid','on','layer','top','color','k')
+set(gca,'xgrid','on','ygrid','on','layer','top')
+
+ax = gca;
+ax.GridAlpha = 0.3;
+
+subplot(212)
+pcolor(time31(oktime31),-depth31,target_salt31)
+shading interp
+set(gca,'fontsize',siz_text)
+ylabel('Depth (m)')
+title('GOFS 3.1','fontsize',siz_title)
+c = colorbar;
+c.Label.String = 'Salinity (psu)';
+c.Label.FontSize = siz_text;
+colormap('jet')
+caxis([floor(min(min(saltg))) ceil(max(max(saltg)))])
+c_vec = floor([floor(min(min(saltg))):(max(max(saltg))-min(min(saltg)))/5:ceil(max(max(saltg))),ceil(max(max(saltg)))]);
+cc_vec = unique(c_vec);
+set(c,'ytick',cc_vec)
+xlim([timeg(1) timeg(end)])
+tt_vec = unique([timeg(1),timeg(1)+(timeg(end)-timeg(1))/10:(timeg(end)-timeg(1))/10:timeg(end),timeg(end)]);
+xticks(tt_vec)
+%datetick('x','keepticks')
+set(gca,'xticklabel',{[]})
+set(gca,'TickDir','out','ytick',[]) 
+ylim([-max(depth_vec) 0])
+%yticks(floor(-max(depth_vec):max(depth_vec)/5:0))
+yticks(-200:50:0)
+set(gca,'xgrid','on','ygrid','on','layer','top')
+
+tt_vec = unique(floor([time_vec(1),time_vec(1)+(time_vec(end)-time_vec(1))/10:(time_vec(end)-time_vec(1))/10:time_vec(end),time_vec(end)]));
+xticks(tt_vec)
+xticklabels(datestr(tt_vec,'mm/dd/yy'))
+xlim([tt_vec(1) time_vec(end)])
+xtickangle(45)
+
+% Figure name
+Fig_name = [folder,'Along_track_salt_prof_glider_GOFS31_',inst_name,'_',datestr(timeg(1),'mm-dd-yy'),'-',datestr(timeg(end),'mm-dd-yy')];
 wysiwyg
 print([Fig_name,'.png'],'-dpng','-r300') 

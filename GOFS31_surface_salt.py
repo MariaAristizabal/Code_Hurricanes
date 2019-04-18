@@ -7,7 +7,9 @@ Created on Tue Oct  2 16:19:46 2018
 """
 
 #GOFS3.1 outout model location
-catalog31 = 'http://tds.hycom.org/thredds/dodsC/GLBv0.08/expt_93.0/ts3z'
+#catalog31 = 'http://tds.hycom.org/thredds/dodsC/GLBv0.08/expt_93.0/ts3z'
+
+catalog31 = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/hycom_glbv_930_2018010112_t000_ts3z.nc'
 
 #%%
   
@@ -29,7 +31,7 @@ time31 = netCDF4.num2date(time31[:],time31.units)
 #date_ini = datetime.datetime.strptime(dateini, '%Y/%m/%d/%H/%M') #Time already in UTC
 #date_end = datetime.datetime.strptime(dateend, '%Y/%m/%d/%H/%M') #Time already in UTC
 
-oklat31 = np.where(np.logical_and(lat31 > -5, lat31 < 40))
+oklat31 = np.where(np.logical_and(lat31 > -5, lat31 < 50))
 oklon31 = np.where(np.logical_and(lon31 > 260, lon31 < 360))
 
 temp31 = GOFS31.variables['water_temp'][0,0,oklat31[0],oklon31[0]]
@@ -43,7 +45,17 @@ m.drawcoastlines()
 x, y = m(*np.meshgrid(lon31[oklon31],lat31[oklat31]))
 m.pcolormesh(x,y,temp31,shading='flat',cmap=plt.cm.jet)
 m.colorbar(location='right')
-m.fillcontinents(color='lightgrey',lake_color='lightblue')
+#m.fillcontinents(color='lightgrey',lake_color='lightblue')
+
+
+#%% Figure Temperature
+
+#temp31[np.abs(temp31) > 100] = np.nan
+
+fig, ax = plt.subplots(figsize=(8, 6), dpi=80, facecolor='w', edgecolor='w') 
+x, y = np.meshgrid(lon31[oklon31],lat31[oklat31])
+cs = ax.pcolormesh(x,y,temp31,shading='flat',cmap=plt.cm.jet)
+fig.colorbar(cs) #(location='right')
 
 #%% Figure Salinity
 

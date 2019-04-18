@@ -19,6 +19,9 @@ dateend = '2018/10/17/00/00'
 
 url = 'https://data.ioos.us/thredds/dodsC/deployments/'
 
+#id_list = ['rutgers/ng288-20180801T0000/ng288-20180801T0000.nc3.nc']
+
+
 id_list = ['rutgers/ng288-20180801T0000/ng288-20180801T0000.nc3.nc',\
            'rutgers/ng261-20180801T0000/ng261-20180801T0000.nc3.nc',\
            'rutgers/ng257-20180801T0000/ng257-20180801T0000.nc3.nc',\
@@ -35,12 +38,12 @@ bath_file = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/
 
 import netCDF4
 from netCDF4 import Dataset
-import matplotlib
 import matplotlib.pyplot as plt
 import datetime
-import pytz
 import numpy as np
-#import xarray as xr 
+
+#import seaborn as sns # package for nice plotting defaults
+#sns.set()  
 
 #%% Reading bathymetry data
 
@@ -83,10 +86,11 @@ siz=12
 fig, ax = plt.subplots(figsize=(8, 6), dpi=80, facecolor='w', edgecolor='w') 
 ax.contour(bath_lon,bath_lat,bath_elev,colors='silver')
 ax.contour(bath_lon,bath_lat,bath_elev,[0],colors='k')
+ax.contourf(bath_lon,bath_lat,-bath_elev,cmap=plt.get_cmap('BrBG'))
 #ax.contour(bath_lon[oklonbath],bath_lat[oklatbath],bath_elev[np.c_[oklatbath],oklonbath],colors='k')   
 plt.axis('equal')
 plt.axis([lon_lim[0],lon_lim[-1],lat_lim[0],lat_lim[-1]])
-ax.plot(lonMc,latMc,'o-',markersize = 10,label = 'Michael Track',color = 'indianred')
+ax.plot(lonMc,latMc,'o-',markersize = 5,label = 'Michael Track',color = 'dimgray')
 
 for x in range(0, len(tMc), 2):
     ax.text(lonMc[x],latMc[x],timeMc[x].strftime('%d, %H:%M'),size = siz)
@@ -97,11 +101,12 @@ for l in id_list:
     lon_ng = ncng.variables['longitude'][:]
     time_n = ncng.variables['time']
     time_ng = netCDF4.num2date(time_n[:],time_n.units)
-    oktime = np.logical_and(time_ng >= datetime.datetime(2018, 10, 10,0,0,0),time_ng >= datetime.datetime(2018, 10, 11,0,0,0))
-    ax.plot(np.mean(lon_ng[oktime]),np.mean(lat_ng[oktime]),'*',markersize = 10, label = ncng.id.split('-')[0]) 
-    ax.legend(loc='upper left',fontsize = siz)
-    
-#ax.text(np.mean(lon_ng[oktime]),np.mean(lat_ng[oktime]),ncng.id.split('-')[0],size = 12)   
-    
-plt.savefig("/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/Micheal_track.png")
+    oktime = np.logical_and(time_ng >= datetime.datetime(2018, 10, 10,0,0,0),time_ng <= datetime.datetime(2018, 10, 11,0,0,0))
+    ax.plot(np.mean(lon_ng[oktime]),np.mean(lat_ng[oktime]),'o',markersize = 10,\
+        markeredgecolor='black',markeredgewidth=2,label = ncng.id.split('-')[0]) 
+    legend = ax.legend(loc='upper left',fontsize = siz)
+    legend.get_frame().set_facecolor('white') 
+
+plt.savefig("/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/Micheal_track.png"\
+             ,bbox_inches = 'tight',pad_inches = 0)
 plt.show()    
