@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Apr 18 11:17:03 2019
+Created on Mon Apr 29 16:18:24 2019
 
 @author: aristizabal
 """
+
 #%%
 #GOFS3.1 output model location
 catalog31_ts = 'http://tds.hycom.org/thredds/dodsC/GLBv0.08/expt_93.0/ts3z'
@@ -27,12 +28,11 @@ prefix = 'michael14l.2018100718.pom.'
 # Name of 3D variable
 var_name = 'temp'
 
-date_enterGoM = '2018/10/09/00/00'
-date_midGoM = '2018/10/10/00/00'
-date_landfallGoM = '2018/10/11/00/00'
+date_ini = '2018/10/08/00/00'
+date_end = '2018/10/13/00/00'
 
-target_lon = -86.28
-target_lat = 25.62
+target_lon = -86.27
+target_lat = 28.94
 
 # Folder where to save figure
 folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'
@@ -45,6 +45,7 @@ import xarray as xr
 import netCDF4 
 from datetime import datetime
 from matplotlib.dates import date2num, num2date
+import matplotlib.dates as mdates
 
 import sys
 sys.path.append('/Users/aristizabal/Desktop/MARACOOS_project/NCEP_scripts')
@@ -95,11 +96,10 @@ lat31= latt31[oklat31]
 lon31= lonn31[oklon31]
 
 #%% GOFS 3.1
-t = datetime.strptime(date_enterGoM,'%Y/%m/%d/%H/%M')
-#t = datetime.strptime(date_midGoM,'%Y/%m/%d/%H/%M')
-#t = datetime.strptime(date_landfallGoM,'%Y/%m/%d/%H/%M')
+ti = datetime.strptime(date_ini,'%Y/%m/%d/%H/%M')
+te = datetime.strptime(date_end,'%Y/%m/%d/%H/%M')
 
-oktime31 = np.where(t31 == t)[0][0]
+oktime31 = np.where(np.logical_and(t31 >= ti,t31 <= te))[0]
 time31 = t31[oktime31]
 
 # loading surface temperature and salinity
@@ -200,15 +200,123 @@ timestamp_pom = date2num(time_pom)
 
 z_matrix_pom = np.dot(target_topoz_pom.reshape(-1,1),zlevc.reshape(1,-1))
 
-#%%  Vertical profile
+#%% Figure
 
+time_matrix31 = np.tile(time31,(depth31.shape[0],1)).T
+depth_matrix31 = np.tile(depth31,(time31.shape[0],1))
+
+#kw = dict(levels = np.linspace(np.floor(np.nanmin(temp31)),\
+#                               np.ceil(np.nanmax(temp31)),18))
+
+kw = dict(levels = np.linspace(14,30,17))
+
+fig, ax = plt.subplots(figsize=(11, 1.7))
+plt.contour(time_matrix31,-1*depth_matrix31,temp31,colors = 'lightgrey',**kw)
+plt.contour(time_matrix31,-1*depth_matrix31,temp31,[26],colors = 'k')
+plt.contourf(time_matrix31,-1*depth_matrix31,temp31,cmap='RdYlBu_r',**kw)
+plt.plot(np.tile(datetime(2018, 10, 10, 12),len(depth31)),-1*depth31,'--k')
+#ax.set_ylim(36,22.5)
+ax.set_xlim(datetime(2018,10,8),datetime(2018,10,13))
+ax.set_ylim(-260,0)
+yl = ax.set_ylabel('Depth (m)',fontsize=16) #,labelpad=20)
+cbar = plt.colorbar()
+cbar.ax.set_ylabel('Temperature ($^\circ$C)',fontsize=16)
+ax.set_title('GOFS 3.1',fontsize=20)
+xfmt = mdates.DateFormatter('%H:%Mh\n%d-%b')
+ax.xaxis.set_major_formatter(xfmt)
+
+file = "/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/GOFS31_temp_Michael_at_Oct_10_12.png"
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
+
+#%% Figure
+
+time_matrixpom = np.tile(date2num(time_pom),(z_matrix_pom.shape[1],1)).T
+#depth_matrixpom = np.tile(z_matrix_pom,(time_pom.shape[0],1))
+
+#kw = dict(levels = np.linspace(11,30,20))
+kw = dict(levels = np.linspace(14,30,17))
+
+fig, ax = plt.subplots(figsize=(11, 1.7))
+plt.contour(time_matrixpom,z_matrix_pom,target_temp_pom,colors = 'lightgrey',**kw)
+plt.contour(time_matrixpom,z_matrix_pom,target_temp_pom,[26],colors = 'k')
+plt.contourf(time_matrixpom,z_matrix_pom,target_temp_pom,cmap='RdYlBu_r',**kw)
+plt.plot(np.tile(datetime(2018, 10, 10, 12),len(depth31)),-1*depth31,'--k')
+#ax.set_ylim(36,22.5)
+ax.set_xlim(datetime(2018,10,8),datetime(2018,10,13))
+ax.set_ylim(-260,0)
+yl = ax.set_ylabel('Depth (m)',fontsize=16) #,labelpad=20)
+cbar = plt.colorbar()
+cbar.ax.set_ylabel('Temperature ($^\circ$C)',fontsize=16)
+ax.set_title('HWRF-POM',fontsize=20)
+xfmt = mdates.DateFormatter('%H:%Mh\n%d-%b')
+ax.xaxis.set_major_formatter(xfmt)
+
+file = "/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/HWRF_pom_temp_Michael_at_Oct_10_12.png"
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
+
+
+#%% Figure
+
+time_matrixHH = np.tile(date2num(time_HMON_HYCOM),(z_HMON_HYCOM.shape[0],1)).T
+depth_matrixHH = np.tile(z_HMON_HYCOM,(time_HMON_HYCOM.shape[0],1))
+
+kw = dict(levels = np.linspace(14,30,17))
+
+fig, ax = plt.subplots(figsize=(11, 1.7))
+plt.contour(time_matrixHH,-1*depth_matrixHH,target_temp_HMON_HYCOM,colors = 'lightgrey',**kw)
+plt.contour(time_matrixHH,-1*depth_matrixHH,target_temp_HMON_HYCOM,[26],colors = 'k')
+plt.contourf(time_matrixHH,-1*depth_matrixHH,target_temp_HMON_HYCOM,cmap='RdYlBu_r',**kw)
+plt.plot(np.tile(datetime(2018, 10, 10, 12),len(depth31)),-1*depth31,'--k')
+#ax.set_ylim(36,22.5)
+ax.set_xlim(datetime(2018,10,8),datetime(2018,10,13))
+ax.set_ylim(-260,0)
+yl = ax.set_ylabel('Depth (m)',fontsize=16) #,labelpad=20)
+cbar = plt.colorbar()
+cbar.ax.set_ylabel('Temperature ($^\circ$C)',fontsize=16)
+ax.set_title('HMON-HYCOM',fontsize=20)
+xfmt = mdates.DateFormatter('%H:%Mh\n%d-%b')
+ax.xaxis.set_major_formatter(xfmt)
+
+file = "/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/HMON_HYCOM_temp_Michael_at_Oct_10_12.png"
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
+
+#%% Time series at 10 m depth
+
+zz = 10.0
+nz31 = np.where(depth31 >= zz)[0][0]
+nzH = np.where(z_HMON_HYCOM >= zz)[0][0]
+nzp = np.where(z_matrix_pom[0,:] <= -zz)[0][0]
+
+fig, ax = plt.subplots(figsize=(8.8, 1.7))
+plt.plot(time31,temp31[:,nz31],'o-',color='royalblue',\
+         linewidth=3,label='GOFS 3.1')
+plt.plot(date2num(time_HMON_HYCOM),target_temp_HMON_HYCOM[:,nzH],'o-',color='red',\
+         linewidth=3,label='HMON-HYCOM')
+plt.plot(date2num(time_pom),target_temp_pom[:,nzp],'o-',color='darkorchid',\
+         linewidth=3,label='HWRF-POM')
+plt.legend()
+plt.plot(np.tile(datetime(2018, 10, 10, 12),len(np.arange(27,30,0.1))),np.arange(27,30,0.1),'--k')
+ax.set_title('Temperature at 10 m depth',fontsize=20)
+plt.ylabel('($^oC$)',size=20)
+ax.set_xlim(datetime(2018,10,8),datetime(2018,10,13))
+ax.set_ylim(27,29.5)
+plt.grid(True)
+
+xfmt = mdates.DateFormatter('%H:%Mh\n%d-%b')
+ax.xaxis.set_major_formatter(xfmt)
+
+file = "/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/temp_Michael_at_Oct_10_12_10meters.png"
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
+
+#%%  Vertical profile
+'''
 ttmic = datetime(2018,10,9,0)
 nt31 = np.where(time31 == ttmic)[0][0]
 ntH = np.where(date2num(time_HMON_HYCOM) == date2num(ttmic))[0][0]
 ntp = np.where(date2num(time_pom) >= date2num(ttmic))[0][0]
 
 plt.figure(figsize=(3, 6.5))
-plt.plot(temp31,-1*depth31,'o-',color='royalblue',\
+plt.plot(temp31[nt31,:],-1*depth31,'o-',color='royalblue',\
          linewidth=3,label='GOFS 3.1')
 plt.plot(target_temp_HMON_HYCOM[ntH,:],-1*z_HMON_HYCOM,'o-',color='red',\
          linewidth=3,label='HMON-HYCOM')
@@ -226,9 +334,7 @@ plt.title(str(ttmic),size=18)
 file = folder + 'vert_prof_temp_' + '_GOFS31_HYCOM_POM_'+ str(ttmic) +'.png'
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
 plt.show()
-
-
-
+'''
 
 
 

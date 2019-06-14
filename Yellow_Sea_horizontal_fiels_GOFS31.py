@@ -177,7 +177,7 @@ for i,ind in enumerate(oktime31):
 
     max_v = np.nanmax(abs(var))
     kw = dict(levels=np.linspace(31,35,9), 
-              cmap=plt.cm.jet)
+              cmap='RdYlBu_r')
         
     plt.contour(lon31g,lat31g, var,'--',levels=33,colors='k')#**kw)
     plt.contourf(lon31g,lat31g, var, **kw)
@@ -213,7 +213,7 @@ ax.contourf(bath_lonsub,bath_latsub,bath_elevsub,levels=[-10000,0],colors='light
 
 max_v = np.nanmax(abs(var))
 kw = dict(levels=np.linspace(31,35,9), 
-           cmap=plt.cm.jet)
+           cmap='RdYlBu_r')
         
 plt.contour(lon31g,lat31g, var,'--',levels=33,colors='k')
 plt.contourf(lon31,lat31, var, **kw)
@@ -263,7 +263,7 @@ for i,ind in enumerate(oktime31):
 
     max_v = np.nanmax(abs(var))
     kw = dict(levels=np.linspace(10,17,8), 
-              cmap=plt.cm.jet)
+              cmap='RdYlBu_r')
     plt.contour(lon31,lat31, var,**kw)
     plt.contourf(lon31,lat31, var, **kw)
 
@@ -297,7 +297,7 @@ for i,ind in enumerate(oktime31):
 
     max_v = np.nanmax(abs(var))
     kw = dict(levels=np.linspace(20,30,11), 
-              cmap=plt.cm.jet)
+              cmap='RdYlBu_r')
     plt.contour(lon31g,lat31g, var,**kw)
     plt.contourf(lon31g,lat31g, var, **kw)
 
@@ -330,7 +330,7 @@ for i,ind in enumerate(oktime31):
 
     max_v = np.nanmax(abs(var))
     kw = dict(levels=np.linspace(4,30,25), 
-              cmap=plt.cm.jet)
+              cmap='RdYlBu_r')
     plt.contour(lon31g,lat31g, var,**kw)
     plt.contour(lon31g,lat31g, var,levels = 10,color ='black',cmap=plt.cm.jet)
     plt.contourf(lon31g,lat31g, var, **kw)

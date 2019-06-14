@@ -19,7 +19,7 @@ date_enterGoM = '2018/10/09/00/00'
 date_midGoM = '2018/10/10/00/00'
 date_landfallGoM = '2018/10/11/00/00'
 
-# Guld Mexico
+# Gulf Mexico
 lon_lim = [-100,-75]
 lat_lim = [14,33]
 
@@ -140,8 +140,8 @@ long = np.asarray(longlider[0,okg[0][0]])
 
 #%% GOFS  3.1
 #t = datetime.strptime(date_enterGoM,'%Y/%m/%d/%H/%M')
-t = datetime.strptime(date_midGoM,'%Y/%m/%d/%H/%M')
-#t = datetime.strptime(date_landfallGoM,'%Y/%m/%d/%H/%M')
+#t = datetime.strptime(date_midGoM,'%Y/%m/%d/%H/%M')
+t = datetime.strptime(date_landfallGoM,'%Y/%m/%d/%H/%M')
 
 oktime31 = np.where(t31 == t)[0][0]
 time31 = t31[oktime31]
@@ -262,8 +262,8 @@ plt.plot(-95.2,24.8,'*r',markersize=10)
 plt.plot(-94.0,26.2,'*r',markersize=10)
 '''
 
-plt.quiver(lon31g[::2],lat31g[::2],su31[::2,::2],sv31[::2,::2] ,scale=2,scale_units='inches',\
-           alpha=0.7)
+#plt.quiver(lon31g[::2],lat31g[::2],su31[::2,::2],sv31[::2,::2] ,scale=2,scale_units='inches',\
+#           alpha=0.7)
 
 # Michael track
 #plt.plot(lonMc,latMc,'o-',markersize = 10,color = 'dimgray',markeredgecolor='k')

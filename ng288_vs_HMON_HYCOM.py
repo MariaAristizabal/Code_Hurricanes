@@ -11,7 +11,7 @@ Created on Mon Nov  5 13:07:11 2018
 import sys
 sys.path.append('/Users/aristizabal/Desktop/MARACOOS_project/NCEP_scripts')
 
-from utils4HYCOM import readBinz, readgrids, readBin
+from utils4HYCOM import readBinz, readgrids
 
 import os
 import os.path

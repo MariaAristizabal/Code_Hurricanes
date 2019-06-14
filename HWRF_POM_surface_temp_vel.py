@@ -25,11 +25,11 @@ bath_file = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/
 lon_lim = [-100,-75]
 lat_lim = [14,33]
 
-date_enterGoM = '2018/10/09/00/00'
-date_midGoM = '2018/10/10/00/00'
-date_landfallGoM = '2018/10/11/00/00'
+date_enterGoM = '2018/10/08/00/00'
+date_midGoM = '2018/10/09/00/00'
+date_landfallGoM = '2018/10/10/00/00'
 
-# Glider data 
+# Glider data
 
 # ng288
 gdata = 'https://gliders.ioos.us/thredds/dodsC/deployments/rutgers/ng288-20180801T0000/ng288-20180801T0000.nc3.nc'
@@ -134,9 +134,9 @@ for x in range(len(tMc)):
 
 #%% Glider
 
-#tt = datetime.strptime(date_enterGoM,'%Y/%m/%d/%H/%M')
-tt = datetime.strptime(date_midGoM,'%Y/%m/%d/%H/%M')
-#tt = datetime.strptime(date_landfallGoM,'%Y/%m/%d/%H/%M')
+tt = datetime.strptime(date_enterGoM,'%Y/%m/%d/%H/%M')
+#tt = datetime.strptime(date_midGoM,'%Y/%m/%d/%H/%M')
+##tt = datetime.strptime(date_landfallGoM,'%Y/%m/%d/%H/%M')
 
 okg = np.where(time_glider.T >= tt)
 
@@ -174,15 +174,15 @@ plt.contour(bath_lon,bath_lat,bath_elev,[0],colors='k')
 plt.contourf(bath_lon,bath_lat,bath_elev,[0,10000],colors='seashell')
 
 # loop current and warm core rings
-'''
-plt.plot(-84.3,24.0,'*',color='darkorange',markersize=10)
-plt.plot(-86.6,23.5,'*',color='darkorange',markersize=10)
-plt.plot(-84.6,24.6,'*',color='darkorange',markersize=10)
-plt.plot(-89.8,25.3,'*r',markersize=10)
-plt.plot(-86.5,24.6,'*r',markersize=10)
-plt.plot(-95.2,24.8,'*r',markersize=10)
-plt.plot(-94.0,26.2,'*r',markersize=10)
-'''
+
+plt.plot(-84.3,24.0,'*',color='g',markersize=14)
+plt.plot(-86.6,23.5,'*',color='g',markersize=14)
+plt.plot(-84.6,24.6,'*',color='g',markersize=14)
+plt.plot(-89.8,25.3,'*g',markersize=14)
+plt.plot(-86.5,24.6,'*g',markersize=14)
+plt.plot(-95.2,24.8,'*g',markersize=14)
+plt.plot(-94.0,26.2,'*g',markersize=14)
+
 
 plt.quiver(lonu[::2,::4],latu[::2,::4],ssu_pomno0[::2,::4],ssv_pomno0[::2,::4] ,scale=3,scale_units='inches',\
            alpha=0.7)
@@ -190,6 +190,89 @@ plt.quiver(lonu[::2,::4],latu[::2,::4],ssu_pomno0[::2,::4],ssv_pomno0[::2,::4] ,
 # Michael track
 #plt.plot(lonMc,latMc,'o-',markersize = 10,color = 'dimgray',markeredgecolor='k')
 
+# Michael track and intensity
+'''
+plt.plot(lonMc,latMc,'.-',markersize = 10,color = 'k',linewidth=2)
+plt.plot(lonMc[0],latMc[0],'o',markersize = 10,\
+         color = 'white',markeredgecolor='green',
+         markeredgewidth=3,label='Tropical Storm')
+plt.plot(lonMc[5],latMc[5],'o',markersize = 10,\
+         color = 'yellow',markeredgecolor='yellow',label='Cat 1')
+plt.plot(lonMc[9],latMc[9],'o',markersize = 10,\
+         color = 'orange',markeredgecolor='orange',label='Cat 2')
+plt.plot(lonMc[10],latMc[10],'o',markersize = 10,\
+         color = 'red',markeredgecolor='red',label='Cat 3')
+plt.plot(lonMc[12],latMc[12],'o',markersize = 10,\
+         color = 'purple',markeredgecolor='purple',label='Cat 4')
+plt.legend(loc='upper left',fontsize=14)
+plt.plot(lonMc[0:5],latMc[0:5],'o',markersize = 10,\
+         color = 'white',markeredgecolor='green',markeredgewidth=3)
+plt.plot(lonMc[5:9],latMc[5:9],'o',markersize = 10,\
+         color = 'yellow',markeredgecolor='yellow')
+plt.plot(lonMc[9],latMc[9],'o',markersize = 10,\
+         color = 'orange',markeredgecolor='orange')
+plt.plot(lonMc[10:12],latMc[10:12],'o',markersize = 10,\
+         color = 'red',markeredgecolor='red')
+plt.plot(lonMc[12:15],latMc[12:15],'o',markersize = 10,\
+         color = 'purple',markeredgecolor='purple')
+plt.plot(lonMc[15],latMc[15],'o',markersize = 10,\
+         color = 'yellow',markeredgecolor='yellow')
+plt.plot(lonMc[16:],latMc[16:],'o',markersize = 10,\
+         color = 'white',markeredgecolor='green',markeredgewidth=3)
+
+props = dict(boxstyle='square', facecolor='white', alpha=0.5)
+for x in range(0, len(tMc)-1, 3):
+    plt.text(lonMc[x]+0.4,latMc[x],timeMc[x].strftime('%d, %H:%M'),\
+             size = 16,color='k',weight='bold',bbox=props)
+'''
+
+folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'  
+file = 'HWRF_POM_sst_ssv_Michael_'+str(tt)+'.png'
+plt.savefig(folder+file,bbox_inches = 'tight',pad_inches = 0.1)
+plt.show()
+
+#%% Figure sst
+
+ssu_pomno0 =  ssu_pom[nt,:,:]
+ssu_pomno0[ssu_pomno0 == 0] = np.nan
+
+ssv_pomno0 =  ssv_pom[nt,:,:]
+ssv_pomno0[ssv_pomno0 == 0] = np.nan
+
+kw = dict(levels = np.linspace(26,31,11))
+
+plt.figure(figsize=(10, 8))
+#plt.contourf(lonc,latc,sst_pom[nt,:,:],cmap='RdYlBu_r',**kw)
+#cbar = plt.colorbar()
+#cbar.ax.tick_params(labelsize=16)
+plt.axis('equal')
+plt.xlim(-98,-79.5)
+plt.ylim(15,32.5)
+plt.title('HWRF-POM SST and surface velocity on '+str(time_pom[nt])[0:16],size=22,y=1.03)
+plt.xticks(fontsize=16)
+plt.yticks(fontsize=16)
+
+plt.contour(bath_lon,bath_lat,bath_elev,[0],colors='k')
+plt.contourf(bath_lon,bath_lat,bath_elev,[0,10000],colors='seashell')
+plt.contourf(bath_lon,bath_lat,bath_elev,[-10000,0],colors='lightblue')
+
+# loop current and warm core rings
+
+plt.plot(-84.3,24.0,'*',color='darkorange',markersize=14)
+plt.plot(-86.6,23.5,'*',color='darkorange',markersize=14)
+plt.plot(-84.6,24.6,'*',color='darkorange',markersize=14)
+plt.plot(-89.8,25.3,'*r',markersize=10)
+plt.plot(-86.5,24.6,'*r',markersize=10)
+plt.plot(-95.2,24.8,'*r',markersize=10)
+plt.plot(-94.0,26.2,'*r',markersize=10)
+
+
+plt.quiver(lonu[::2,::4],latu[::2,::4],ssu_pomno0[::2,::4],ssv_pomno0[::2,::4] ,scale=3,scale_units='inches',\
+           alpha=0.7)
+
+# Michael track
+#plt.plot(lonMc,latMc,'o-',markersize = 10,color = 'dimgray',markeredgecolor='k')
+'''
 # Michael track and intensity
 plt.plot(lonMc,latMc,'.-',markersize = 10,color = 'k',linewidth=2)
 plt.plot(lonMc[0],latMc[0],'o',markersize = 10,\
@@ -223,9 +306,9 @@ props = dict(boxstyle='square', facecolor='white', alpha=0.5)
 for x in range(0, len(tMc)-1, 3):
     plt.text(lonMc[x]+0.4,latMc[x],timeMc[x].strftime('%d, %H:%M'),\
              size = 16,color='k',weight='bold',bbox=props)
-
+'''
 folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'  
-file = 'HWRF_POM_sst_ssv_Michael_'+str(tt)+'.png'
+file = 'HWRF_POM_sst_ssv_Michael_'+str(tt)+'2.png'
 plt.savefig(folder+file,bbox_inches = 'tight',pad_inches = 0.1)
 plt.show()
 
@@ -268,8 +351,8 @@ plt.plot(-95.2,24.8,'*r',markersize=10)
 plt.plot(-94.0,26.2,'*r',markersize=10)
 '''
 
-plt.quiver(lonu[::2,::4],latu[::2,::4],ssu_pomno0[::2,::4],ssv_pomno0[::2,::4] ,scale=2,scale_units='inches',\
-           alpha=0.7)
+#plt.quiver(lonu[::2,::4],latu[::2,::4],ssu_pomno0[::2,::4],ssv_pomno0[::2,::4] ,scale=2,scale_units='inches',\
+#           alpha=0.7)
 
 # Michael track
 #plt.plot(lonMc,latMc,'o-',markersize = 10,color = 'dimgray',markeredgecolor='k')

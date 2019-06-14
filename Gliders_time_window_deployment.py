@@ -32,6 +32,7 @@ import matplotlib.dates as mdates
 
 #import time
 from datetime import datetime
+#from matplotlib.dates import date2num
 
 import numpy as np
 
@@ -81,33 +82,34 @@ variables = ['latitude','longitude','time']
 
 #%%
 
+
 e = ERDDAP(
     server=server,
     protocol='tabledap',
     response='nc'
 )
-
+'''
 for id in gliders:
     e.dataset_id=id
     e.constraints=constraints
     e.variables=variables
     
     df = e.to_pandas(
-    index_col='time',
+    index_col='time (UTC)',
     parse_dates=True,
     skiprows=(1,)  # units information can be dropped.
                     ).dropna()
         
-
+'''
 #%%
 e.dataset_id=gliders[5]
 e.constraints=constraints
 e.variables=variables
     
 df = e.to_pandas(
-index_col='time',
-parse_dates=True,
-skiprows=(1,)  # units information can be dropped.
+        index_col='time (UTC)',
+        parse_dates=True,
+        skiprows=(1,)  # units information can be dropped.
                     ).dropna()    
 
 
@@ -191,7 +193,7 @@ ok = [i for i, l in enumerate(glider) if l == 'ru33']
 fund_agency[ok[0]] = 'NOAA'
 
 ok = [i for i, l in enumerate(glider) if l == 'sam']
-fund_agency[ok[0]] = 'Fl'
+fund_agency[ok[0]] = 'FL'
 
 ok = [i for i, l in enumerate(glider) if l == 'Sverdrup']
 fund_agency[ok[0]] = 'NOAA'
@@ -214,13 +216,28 @@ n_navy = len([i for i,list in enumerate(fund_agency) if list == 'Navy'])
 n_noaa = len([i for i,list in enumerate(fund_agency) if list == 'NOAA'])
 n_nsf = len([i for i,list in enumerate(fund_agency) if list == 'NSF'])
 n_nj = len([i for i,list in enumerate(fund_agency) if list == 'NJ'])
-n_fl = len([i for i,list in enumerate(fund_agency) if list == 'Fl'])
+n_fl = len([i for i,list in enumerate(fund_agency) if list == 'FL'])
 n_bios = len([i for i,list in enumerate(fund_agency) if list == 'BIOS'])
 n_twr = len([i for i,list in enumerate(fund_agency) if list == 'TWR'])
 
-#%% Plotting the deployment window of all glider in Hurricane season 2018 
+#%% Pie chart of number of gliders in each category
 
-#plt.style.use('bmh')         
+labels = 'Navy', 'NOAA', 'NSF', 'NJ', 'FL', 'BIOS', 'TWR'
+siz = [n_navy,n_noaa,n_nsf,n_nj,n_fl,n_bios,n_twr]
+sizes = np.ndarray.tolist(np.multiply(siz,1/np.sum(siz)))
+colors = ['goldenrod','royalblue','firebrick','forestgreen','darkorange','black','rebeccapurple'] 
+#explode = (0, 0.1, 0, 0)  # only "explode" the 2nd slice (i.e. 'Hogs')
+
+plt.figure()
+patches, texts = plt.pie(sizes,startangle=90,colors=colors) #,autopct='%2d')
+plt.legend(patches,labels,loc='best',bbox_to_anchor=(0.85, 1))
+plt.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+
+plt.savefig("/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/pie_chart_number_gliders_hurica_season_2018.png"\
+            ,bbox_inches = 'tight',pad_inches = 0.1)
+
+#%% Plotting the deployment window of all glider in Hurricane season 2018 
+      
 siz=12
 
 funding = list(set(fund_agency))
@@ -228,18 +245,18 @@ color_fund1 = ['goldenrod','royalblue','firebrick','forestgreen','darkorange','b
 color_fund2 = ['navy','deepskyblue','indianred','mediumseagreen','sandybrown','dimgrey','teal'] 
 
 fig, ax = plt.subplots(figsize=(14, 12), dpi=80, facecolor='w', edgecolor='w') 
-plt.title('Gliders During Hurricane Season 2018',fontsize=20)
+plt.title('Gliders During Hurricane Season 2018',fontsize=24)
 ax.set_facecolor('lightgrey')
 
 for i, id in enumerate(gliders):
     if id[0:3] != 'all':
-        #print(id)
+        print(id)
         e.dataset_id = id
         e.constraints = constraints
         e.variables = variables
     
         df = e.to_pandas(
-        index_col='time',
+        index_col='time (UTC)',
         parse_dates=True,
         skiprows=(1,)  # units information can be dropped.
             ).dropna()
@@ -264,21 +281,20 @@ for i, id in enumerate(gliders):
         if fund_agency[i] == 'TWR':
             h6 = ax.plot(df.index,np.tile(i,len(df.index)),'s',markersize = 10,\
                     color=color_fund1[6],markeredgewidth=0.1,markeredgecolor=color_fund1[6],zorder=0)
-
+           
 glider = [l.split('-')[0] for l in gliders]
 ax.set_yticks(np.arange(len(glider)))
-plt.tick_params(labelsize=13)
-ax.set_yticklabels(glider,fontsize=12)
+plt.tick_params(labelsize=20)
 ax.plot(np.tile(datetime(2018,9,11,18,0,0),len(gliders)+2),np.arange(-1,len(gliders)+1),'k')
 ax.plot(np.tile(datetime(2018,9,13,18,0,0),len(gliders)+2),np.arange(-1,len(gliders)+1),'k')
 ax.plot(np.tile(datetime(2018,10,8,15,0,0),len(gliders)+2),np.arange(-1,len(gliders)+1),'k')
 ax.plot(np.tile(datetime(2018,10,10,18,0,0),len(gliders)+2),np.arange(-1,len(gliders)+1),'k')
-ax.legend([h0[0],h1[0],h2[0],h3[0],h4[0],h5[0],h6[0]],['Navy','NOAA','NSF','NJ','FL','BIOS','TWR'],\
-          loc=0,fontsize=16)
+ax.legend([h0[0],h1[0],h2[0],h3[0],h4[0],h5[0],h6[0]],['Navy - 30','NOAA - 21','NSF - 6','NJ - 2','FL - 1','BIOS - 1','TWR - 1'],\
+          loc='center left',fontsize=20,bbox_to_anchor=(0, 0.4))
 
 xfmt = mdates.DateFormatter('%d-%b')
 ax.xaxis.set_major_formatter(xfmt)
-ax.set_xlabel('2018 Date (DD-Month UTC)',fontsize=16)
+ax.set_xlabel('2018 Date (DD-Month UTC)',fontsize=24)
 #plt.grid(color='k', linestyle='--', linewidth=1)
 ax.set_ylim(-1,len(glider))
 
@@ -293,9 +309,10 @@ wd = datetime(2018,10,10,18,0,0) - datetime(2018,10,8,15,0,0)
 rect = plt.Rectangle((datetime(2018,10,8,18,0,0),-1), wd, len(glider)+1, color='k', alpha=0.3, zorder=10)
 ax.add_patch(rect)
 
-    
+ax.set_yticklabels(glider,fontsize=14)
+   
 plt.savefig("/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/Time_window_gliders_hurric_season_2018.png"\
-            ,bbox_inches = 'tight',pad_inches = 0)
+            ,bbox_inches = 'tight',pad_inches = 0.1)
 #plt.show() 
 
 #%% Total number of profiles
@@ -312,7 +329,7 @@ for i, id in enumerate(gliders):
         e.variables = variables
     
         df = e.to_pandas(
-        index_col='time',
+        index_col='time (UTC)',
         parse_dates=True,
         skiprows=(1,)  # units information can be dropped.
             ).dropna()
@@ -324,16 +341,54 @@ profiles['# profiles'][profiles.index=='ramses-20180704T0000'] = 5748
 profiles['# profiles'][profiles.index=='ramses-20180907T0000'] = 8473        
 profiles['# profiles'][profiles.index=='pelagia-20180910T0000'] = 875
 profiles['# profiles'][profiles.index=='ng309-20180701T0000'] = 1331
-total_profiles = profiles['# profiles'].sum()
-                          
-#%% Total number of profiles for Navy gliders
-
-nprof_Navy = 0                      
+total_profiles = profiles['# profiles'].sum()                         
+                                                            
+#%% Total number of profiles for each funding agency
+nprof_navy = 0
+nprof_noaa = 0
+nprof_nsf = 0
+nprof_nj = 0
+nprof_fl = 0
+nprof_bios = 0
+nprof_twr = 0
 for i,glid in enumerate(profiles.index):
-    if glid[0:2] == 'ng':
+    if fund_agency[i] == 'Navy':
         print('YES',glid)
-        nprof_Navy += profiles['# profiles'][i]
-                                                                                  
+        nprof_navy += profiles['# profiles'][i]
+    if fund_agency[i] == 'NOAA':
+        print('YES',glid)
+        nprof_noaa += profiles['# profiles'][i]
+    if fund_agency[i] == 'NSF':
+        print('YES',glid)
+        nprof_nsf += profiles['# profiles'][i]                           
+    if fund_agency[i] == 'NJ':
+        print('YES',glid)
+        nprof_nj += profiles['# profiles'][i]                           
+    if fund_agency[i] == 'FL':
+        print('YES',glid)
+        nprof_fl += profiles['# profiles'][i]                           
+    if fund_agency[i] == 'BIOS':
+        print('YES',glid)
+        nprof_bios += profiles['# profiles'][i]                              
+    if fund_agency[i] == 'TWR':
+        print('YES',glid)
+        nprof_twr += profiles['# profiles'][i]
+                              
+#%% Pie chart of number of profiles in each category
+
+labels = 'Navy', 'NOAA', 'NSF', 'NJ', 'FL', 'BIOS', 'TWR'
+sizes = [nprof_navy,nprof_noaa,nprof_nsf,nprof_nj,nprof_fl,nprof_bios,nprof_twr]
+colors = ['goldenrod','royalblue','firebrick','forestgreen','darkorange','black','rebeccapurple'] 
+#explode = (0, 0.1, 0, 0)  # only "explode" the 2nd slice (i.e. 'Hogs')
+
+plt.figure()
+patches, texts = plt.pie(sizes,startangle=90,colors=colors) #,autopct='%2d')
+#plt.legend(patches,labels,loc='best',bbox_to_anchor=(0.85, 1))
+plt.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+
+plt.savefig("/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/pie_chart_number_profiles_hurrica_season_2018.png"\
+            ,bbox_inches = 'tight',pad_inches = 0.0)
+                                            
 #%% Total number of profiles with depths > 5 m
 
 '''                         
@@ -392,7 +447,7 @@ e.constraints = constraints
 e.variables = variables
     
 df = e.to_pandas(
-    index_col='time',
+    index_col='time (UTC)',
     parse_dates=True,
     skiprows=(1,)  # units information can be dropped.
     ).dropna()  
@@ -436,17 +491,16 @@ funding = list(set(fund_agency))
 color_fund1 = ['goldenrod','royalblue','firebrick','forestgreen','darkorange','black','rebeccapurple'] 
 
 fig, ax = plt.subplots(figsize=(14, 12), dpi=80, facecolor='w', edgecolor='w') 
-plt.title('Total Number of Profiles = ' + str(total_profiles),fontsize=20)
+plt.title('Total Number of Profiles = ' + str(total_profiles),fontsize=24)
 ax.set_facecolor('lightgrey')
-plt.xlabel('Number of Profiles',fontsize = 20)
+plt.xlabel('Number of Profiles',fontsize = 24)
 ax.grid(True)
 plt.grid(color='k', linestyle='--', linewidth=1)
 ax.set_ylim(-1,len(glider))
 
 glider = [l.split('-')[0] for l in gliders]
 ax.set_yticks(np.arange(len(glider)))
-ax.set_yticklabels(glider,fontsize=12)
-plt.tick_params(labelsize=13)
+plt.tick_params(labelsize=20)
 
 p1 = plt.barh(np.arange(len(glider)),profiles['# profiles'])
               
@@ -467,12 +521,13 @@ for i, id in enumerate(gliders):
             h5 = plt.barh(i,profiles['# profiles'][i],color=color_fund1[5])
         if fund_agency[i] == 'TWR':
             h6 = plt.barh(i,profiles['# profiles'][i],color=color_fund1[6])          
-              
+
+ax.set_yticklabels(glider,fontsize=14)              
 ax.legend([h0[0],h1[0],h2[0],h3[0],h4[0],h5[0],h6[0]],['Navy','NOAA','NSF','NJ','FL','BIOS','TWR'],\
-          loc=5,fontsize=16)
+          loc='center right',fontsize=20)
 
 plt.savefig("/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/Number_profiles_hurric_season_2018.png"\
-            ,bbox_inches = 'tight',pad_inches = 0)  
+            ,bbox_inches = 'tight',pad_inches = 0.1)  
 
 #%% Total number of days
 
@@ -486,7 +541,7 @@ for i, id in enumerate(gliders):
         e.variables = variables
     
         df = e.to_pandas(
-        index_col='time',
+        index_col='time (UTC)',
         parse_dates=True,
         skiprows=(1,)  # units information can be dropped.
             ).dropna()
@@ -495,30 +550,68 @@ for i, id in enumerate(gliders):
         n_days.append(len(df.index.map(lambda x: x.strftime('%Y-%m-%d')).unique()))
         days['# days'][i] = len(df.index.map(lambda x: x.strftime('%Y-%m-%d')).unique())  
 
-total_days = days['# days'].sum()
-                  
-#%% Total number of profiles for Navy gliders
-
-ndays_Navy = 0                      
-for i,glid in enumerate(days.index):
-    if glid[0:2] == 'ng':
+total_days = days['# days'].sum()                 
+                           
+#%% Total number of days for each funding agency
+        
+ndays_navy = 0
+ndays_noaa = 0
+ndays_nsf = 0
+ndays_nj = 0
+ndays_fl = 0
+ndays_bios = 0
+ndays_twr = 0
+for i,glid in enumerate(profiles.index):
+    if fund_agency[i] == 'Navy':
         print('YES',glid)
-        ndays_Navy += days['# days'][i]                  
+        ndays_navy += days['# days'][i]
+    if fund_agency[i] == 'NOAA':
+        print('YES',glid)
+        ndays_noaa += days['# days'][i]
+    if fund_agency[i] == 'NSF':
+        print('YES',glid)
+        ndays_nsf += days['# days'][i]                        
+    if fund_agency[i] == 'NJ':
+        print('YES',glid)
+        ndays_nj += days['# days'][i]                          
+    if fund_agency[i] == 'FL':
+        print('YES',glid)
+        ndays_fl += days['# days'][i]                              
+    if fund_agency[i] == 'BIOS':
+        print('YES',glid)
+        ndays_bios += days['# days'][i]                                 
+    if fund_agency[i] == 'TWR':
+        print('YES',glid)
+        ndays_twr += days['# days'][i]   
+                              
+#%% Pie chart of number of profiles in each category
+
+labels = 'Navy', 'NOAA', 'NSF', 'NJ', 'FL', 'BIOS', 'TWR'
+sizes = [ndays_navy,ndays_noaa,ndays_nsf,ndays_nj,ndays_fl,ndays_bios,ndays_twr]
+colors = ['goldenrod','royalblue','firebrick','forestgreen','darkorange','black','rebeccapurple'] 
+#explode = (0, 0.1, 0, 0)  # only "explode" the 2nd slice (i.e. 'Hogs')
+
+plt.figure()
+patches, texts = plt.pie(sizes,startangle=90,colors=colors) #,autopct='%2d')
+#plt.legend(patches,labels,loc='best',bbox_to_anchor=(0.85, 1))
+plt.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+
+plt.savefig("/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/pie_chart_number_days_hurrica_season_2018.png"\
+            ,bbox_inches = 'tight',pad_inches = 0.0)                           
 
 #%% Figure total number of days
 
 fig, ax = plt.subplots(figsize=(14, 12), dpi=80, facecolor='w', edgecolor='w') 
-plt.title('Total Number of Days = ' + str(total_days),fontsize=20)
+plt.title('Total Number of Days = ' + str(total_days),fontsize=24)
 ax.set_facecolor('lightgrey')
-plt.xlabel('Number of Days',fontsize = 20)
+plt.xlabel('Number of Days',fontsize = 24)
 ax.grid(True)
 plt.grid(color='k', linestyle='--', linewidth=1)
 ax.set_ylim(-1,len(glider))
 
 glider = [l.split('-')[0] for l in gliders]
 ax.set_yticks(np.arange(len(glider)))
-ax.set_yticklabels(glider,fontsize=12)
-plt.tick_params(labelsize=13)
+plt.tick_params(labelsize=20)
 
 p1 = plt.barh(np.arange(len(glider)),days['# days'])
               
@@ -539,12 +632,13 @@ for i, id in enumerate(gliders):
             h5 = plt.barh(i,days['# days'][i],color=color_fund1[5])
         if fund_agency[i] == 'TWR':
             h6 = plt.barh(i,days['# days'][i],color=color_fund1[6])          
-              
+
+ax.set_yticklabels(glider,fontsize=14)              
 ax.legend([h0[0],h1[0],h2[0],h3[0],h4[0],h5[0],h6[0]],['Navy','NOAA','NSF','NJ','FL','BIOS','TWR'],\
-          loc=5,fontsize=16)
+          loc=5,fontsize=20)
 
 plt.savefig("/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/Number_days_hurric_season_2018.png"\
-            ,bbox_inches = 'tight',pad_inches = 0)  
+            ,bbox_inches = 'tight',pad_inches = 0.1)  
 
 #%% Number of profiles per day per glider
 

@@ -237,15 +237,19 @@ Q1 = plt.quiver(Xg,Yg,UUg,VVg,scale=0.2,scale_units='inches',color='b',\
                 label=ng467['inst_id'][0].split('-')[0],alpha=0.5)
 Q2 = plt.quiver(Xg,Yg,UU31_interp,VV31_interp,scale=0.2,scale_units='inches',\
                 color='r',label='GOFS 3.1',alpha=0.5)
-qk = plt.quiverkey(Q1, 0.88, 0.9, 0.1, r'$0.1 \frac{m}{s}$', labelpos='E',
-                   coordinates='figure')
-plt.legend()
+qk = plt.quiverkey(Q1, 0.88, 0.92, 0.1, r'$0.1 \frac{m}{s}$', labelpos='E',
+                   coordinates='figure',fontproperties={'size': 16})
+
+plt.legend(fontsize=16,bbox_to_anchor=(0.45,0.47))
 plt.title('Depth Average Velocity ',size=20)
-xfmt = mdates.DateFormatter('%d-%b-%y')
+xfmt = mdates.DateFormatter('%d-%b \n %Y')
 ax.xaxis.set_major_formatter(xfmt)
-ax.xaxis.label.set_size(30)
 plt.yticks([])
-plt.xticks(fontsize=12)
+plt.xticks([datetime(2018,7,19),datetime(2018,7,26),datetime(2018,8,2),\
+            datetime(2018,8,9),\
+            datetime(2018,8,16),datetime(2018,8,23),datetime(2018,8,30),\
+            datetime(2018,9,6),datetime(2018,9,13),datetime(2018,9,20)])
+plt.xticks(fontsize=16)
 
 #file = folder + '{0}_{1}_{2}_{3}.png'.format('Depth_avg_velocity',inst_id.split('-')[0]\
 #                     timeglider[0],timeglider[-1])

@@ -40,7 +40,8 @@ import netCDF4
 te = datetime.today() 
 tend = datetime(te.year,te.month,te.day)
 
-ti = datetime.today() - timedelta(1)
+#ti = datetime.today() - timedelta(1)
+ti = datetime.today() - timedelta(2)
 tini = datetime(ti.year,ti.month,ti.day)
 
 #%% Look for datasets in IOOS glider dac
@@ -116,22 +117,22 @@ tmin = tini
 tmax = tend
 
 oktimeGOFS = np.where(np.logical_and(tGOFS >= tmin, tGOFS <= tmax))
-    
 timeGOFS = tGOFS[oktimeGOFS]
 
 #%% Read RTOFS output
 
 print('Retrieving coordinates from RTOFS')
-url_RTOFS1 = url_RTOFS + tend.strftime('%Y%m%d') + '/rtofs_glo_3dz_nowcast_6hrly_us_east'
-#url_RTOFS_temp = url_RTOFS + tend.strftime('%Y%m%d') + '/rtofs_glo_3dz_nowcast_daily_temp'
-#url_RTOFS_salt = url_RTOFS + tend.strftime('%Y%m%d') + '/rtofs_glo_3dz_nowcast_daily_salt'
-RTOFS = xr.open_dataset(url_RTOFS1 ,decode_times=False)
-#RTOFS_salt = xr.open_dataset(url_RTOFS_salt ,decode_times=False)
+#url_RTOFS1 = url_RTOFS + tend.strftime('%Y%m%d') + '/rtofs_glo_3dz_nowcast_6hrly_us_east'
+#url_RTOFS1 = url_RTOFS + tend.strftime('%Y%m%d') + '/rtofs_glo_3dz_nowcast_daily_temp'
+url_RTOFS_temp = url_RTOFS + tend.strftime('%Y%m%d') + '/rtofs_glo_3dz_nowcast_daily_temp'
+url_RTOFS_salt = url_RTOFS + tend.strftime('%Y%m%d') + '/rtofs_glo_3dz_nowcast_daily_salt'
+RTOFS_temp = xr.open_dataset(url_RTOFS_temp ,decode_times=False)
+RTOFS_salt = xr.open_dataset(url_RTOFS_salt ,decode_times=False)
     
-latRTOFS = RTOFS.lat[:]
-lonRTOFS = RTOFS.lon[:]
-depthRTOFS = RTOFS.lev[:]
-ttRTOFS = RTOFS.time[:]
+latRTOFS = RTOFS_temp.lat[:]
+lonRTOFS = RTOFS_temp.lon[:]
+depthRTOFS = RTOFS_temp.lev[:]
+ttRTOFS = RTOFS_temp.time[:]
 tRTOFS = netCDF4.num2date(ttRTOFS[:],ttRTOFS.units) 
 
 #tmin = datetime.datetime.strptime(date_ini,'%Y-%m-%dT%H:%M:%SZ')
@@ -139,9 +140,7 @@ tRTOFS = netCDF4.num2date(ttRTOFS[:],ttRTOFS.units)
 
 tmin = tini
 tmax = tend
-
-oktimeRTOFS = np.where(np.logical_and(tRTOFS >= tmin, tRTOFS <= tmax))
-    
+oktimeRTOFS = np.where(np.logical_and(tRTOFS >= tmin, tRTOFS <= tmax))   
 timeRTOFS = mdates.num2date(mdates.date2num(tRTOFS[oktimeRTOFS]))
 
 #%% Reading bathymetry data
@@ -211,7 +210,7 @@ for id in gliders:
         else:
             depthg[0:len(dg[ind[i]:len(dg)]),i] = dg[ind[i]:len(dg)] 
             tempg[0:len(tg[ind[i]:len(tg)]),i] = tg[ind[i]:len(tg)]
-            saltg[0:len(tg[ind[i]:len(tg)]),i] = sg[ind[i]:len(sg)]
+            saltg[0:len(sg[ind[i]:len(sg)]),i] = sg[ind[i]:len(sg)]
 
     for t,tt in enumerate(timeg):
         depthu,oku = np.unique(depthg[:,t],return_index=True)
@@ -234,7 +233,7 @@ for id in gliders:
             saltg_gridded[:,t] = np.nan
         else:
             okd = depthg_gridded < np.max(depthf[oks])
-            saltg_gridded[okd,t] = np.interp(depthg_gridded[okd],depthf[oks],tempf[oks])
+            saltg_gridded[okd,t] = np.interp(depthg_gridded[okd],depthf[oks],saltf[oks])
     
     # Conversion from glider longitude and latitude to GOFS convention
     target_lon = np.empty((len(long),))
@@ -245,6 +244,14 @@ for id in gliders:
         else:
             target_lon[i] = ii
     target_lat = latg
+    
+    #oktimeGOFS = np.where(np.logical_and(mdates.date2num(tGOFS) >= mdates.date2num(timeg[0]),\
+    #                                     mdates.date2num(tGOFS) <= mdates.date2num(timeg[-1])))
+    #timeGOFS = tGOFS[oktimeGOFS]
+    #
+    #oktimeRTOFS = np.where(np.logical_and(mdates.date2num(tRTOFS) >= mdates.date2num(timeg[0]),\
+    #                                      mdates.date2num(tRTOFS) <= mdates.date2num(timeg[-1])))
+    #timeRTOFS = mdates.num2date(mdates.date2num(tRTOFS[oktimeRTOFS]))
 
     # Changing times to timestamp
     tstamp_glider = [mdates.date2num(timeg[i]) for i in np.arange(len(timeg))]
@@ -276,8 +283,8 @@ for id in gliders:
     target_saltGOFS[target_saltGOFS < -100] = np.nan
     
     # interpolating glider lon and lat to lat and lon on RTOFS time
-    sublonRTOFS=np.interp(tstamp_RTOFS,tstamp_glider,long)
-    sublatRTOFS=np.interp(tstamp_RTOFS,tstamp_glider,latg)
+    sublonRTOFS=np.interp(tstamp_RTOFS,tstamp_glider,target_lon)
+    sublatRTOFS=np.interp(tstamp_RTOFS,tstamp_glider,target_lat)
 
     # getting the model grid positions for sublonm and sublatm
     oklonRTOFS=np.round(np.interp(sublonRTOFS,lonRTOFS,np.arange(len(lonRTOFS)))).astype(int)
@@ -289,16 +296,16 @@ for id in gliders:
     target_tempRTOFS[:] = np.nan
     for i in range(len(oktimeRTOFS[0])):
         print(len(oktimeRTOFS[0]),' ',i)
-        target_tempRTOFS[:,i] = RTOFS.variables['temperature'][oktimeRTOFS[0][i],:,oklatRTOFS[i],oklonRTOFS[i]]
+        target_tempRTOFS[:,i] = RTOFS_temp.variables['temperature'][oktimeRTOFS[0][i],:,oklatRTOFS[i],oklonRTOFS[i]]
     target_tempRTOFS[target_tempRTOFS < -100] = np.nan
-
+     
     target_saltRTOFS = np.empty((len(depthRTOFS),len(oktimeRTOFS[0])))
     target_saltRTOFS[:] = np.nan
     for i in range(len(oktimeRTOFS[0])):
         print(len(oktimeRTOFS[0]),' ',i)
-        target_saltRTOFS[:,i] = RTOFS.variables['salinity'][oktimeRTOFS[0][i],:,oklatRTOFS[i],oklonRTOFS[i]]
+        target_saltRTOFS[:,i] = RTOFS_salt.variables['salinity'][oktimeRTOFS[0][i],:,oklatRTOFS[i],oklonRTOFS[i]]
     target_saltRTOFS[target_saltRTOFS < -100] = np.nan    
-        
+    
     min_temp = np.floor(np.min([np.nanmin(df[df.columns[3]]),np.nanmin(target_tempGOFS),np.nanmin(target_tempRTOFS)]))
     max_temp = np.ceil(np.max([np.nanmax(df[df.columns[3]]),np.nanmax(target_tempGOFS),np.nanmax(target_tempRTOFS)]))
     
@@ -391,10 +398,10 @@ for id in gliders:
     plt.title('Track ' + id)
     #plt.axis('equal')
     
-    folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'
-    #folder = '/Volumes/hurricane/Hurricane_season_2019/' + ti.strftime('%b-%d') + '/'
+    #folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'
+    folder = '/Volumes/hurricane/Hurricane_season_2019/' + (ti+timedelta(1)).strftime('%b-%d') + '/'
     file = folder + 'along_track_temp_' + id + '_' + str(tini).split()[0] + '_' + str(tend).split()[0]
-    plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
+    #plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
         
      
     # plot salinity
@@ -405,7 +412,7 @@ for id in gliders:
 
     # Scatter plot
     ax = plt.subplot(grid[0, :4])
-    kw = dict(s=30, c=df[df.columns[3]], marker='*', edgecolor='none')
+    kw = dict(s=30, c=df[df.columns[4]], marker='*', edgecolor='none')
     cs = ax.scatter(df.index, -df['depth (m)'], **kw, cmap=cmocean.cm.haline)
     cs.set_clim(min_salt,max_salt)
     ax.set_xlim(tini,tend)
@@ -418,13 +425,13 @@ for id in gliders:
     plt.title('Along Track Salinity ' + id)
       
     
-    nlevels = max_salt - min_salt + 1
+    nlevels = np.int((max_salt - min_salt + 1)*3)
     kw = dict(levels = np.linspace(min_salt,max_salt,nlevels))
     ax = plt.subplot(grid[1, :4])
     #plt.contour(timeg,-depthg_gridded,varg_gridded,colors = 'lightgrey',**kw)
     cs = plt.contourf(timeg,-depthg_gridded,saltg_gridded,cmap=cmocean.cm.haline,**kw)
     cs = fig.colorbar(cs, orientation='vertical') 
-        
+    cs.set_clim(min_salt,max_salt)    
     ax.set_xlim(tini,tend)
     ax.set_ylabel('Depth (m)',fontsize=14)
     ax.set_xticklabels(' ')
@@ -473,7 +480,7 @@ for id in gliders:
     plt.title('Track ' + id)
     #plt.axis('equal')
     
-    folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'
-    #folder = '/Volumes/hurricane/Hurricane_season_2019/' + ti.strftime('%b-%d') + '/'
+    #folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'
+    folder = '/Volumes/hurricane/Hurricane_season_2019/' + (ti+timedelta(1)).strftime('%b-%d') + '/'
     file = folder + 'along_track_salt_' + id + '_' + str(tini).split()[0] + '_' + str(tend).split()[0]
-    plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
+    #plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 

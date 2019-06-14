@@ -122,7 +122,7 @@ for id in gliders:
     
     print(id,df.index[-1])
 '''   
- #%% Reading ncoda data
+#%% Reading ncoda data
 
 ncoda_files = sorted(glob.glob(os.path.join(Dir,'*seatmp*')))
 

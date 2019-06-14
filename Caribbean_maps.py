@@ -92,7 +92,7 @@ for id in gliders:
     e.variables=variables
     
     df = e.to_pandas(
-    index_col='time',
+    index_col='time (UTC)',
     parse_dates=True,
     skiprows=(1,)  # units information can be dropped.
                     ).dropna()
@@ -134,16 +134,16 @@ meshlat31 = np.meshgrid(lat31_g,lon31_g)
 
 #%% Reading glider data and plotting lat and lon in the map
     
-siz=12
-
 fig, ax = plt.subplots(figsize=(8, 6), dpi=80, facecolor='w', edgecolor='w') 
-ax.contour(bath_lon,bath_lat,bath_elev,colors='silver')
+#ax.contour(bath_lon,bath_lat,bath_elev,colors='silver')
 ax.contour(bath_lon,bath_lat,bath_elev,[0],colors='k')
-ax.contourf(bath_lon,bath_lat,-bath_elev,cmap=plt.get_cmap('BrBG'))
-#ax.contour(bath_lon[oklonbath],bath_lat[oklatbath],bath_elev[np.c_[oklatbath],oklonbath],colors='k')   
+ax.contourf(bath_lon,bath_lat,-bath_elev)#,cmap=plt.get_cmap('BrBG'))
+plt.contourf(bath_lon,bath_lat,bath_elev,[0,10000],colors='seashell')
 plt.axis('equal')
 plt.axis([lon_lim[0],lon_lim[-1],lat_lim[0],lat_lim[-1]])
 plt.title('Gliders in the Caribbean during hurricane season 2018 ',size = 20)
+plt.yticks([])
+plt.xticks([])
 
 for i, id in enumerate(gliders):
     if id[0:3] != 'all':
@@ -153,38 +153,39 @@ for i, id in enumerate(gliders):
         e.variables = variables
     
         df = e.to_pandas(
-        index_col='time',
+        index_col='time (UTC)',
         parse_dates=True,
         skiprows=(1,)  # units information can be dropped.
             ).dropna()
         if np.logical_and(id.split('-')[0][0:2] == 'ng',id != 'ng616-20180701T0000'):
-            ax.plot(df['longitude'].mean(),df['latitude'].mean(),'o',markersize = 10,\
+            ax.plot(df['longitude (degrees_east)'].mean(),df['latitude (degrees_north)'].mean(),'o',markersize = 10,\
                 markeredgecolor='black', markeredgewidth=2,label = id.split('-')[0]) 
         else:
             if id == 'ng616-20180701T0000':
-                ax.plot(df['longitude'].mean(),df['latitude'].mean(),'o',markersize = 15,\
+                ax.plot(df['longitude (degrees_east)'].mean(),df['latitude (degrees_north)'].mean(),'o',markersize = 15,\
                         markeredgecolor='black', markeredgewidth=2,label = id.split('-')[0]) 
             else:
-                ax.plot(df['longitude'].mean(),df['latitude'].mean(),'^',markersize = 10,\
+                ax.plot(df['longitude (degrees_east)'].mean(),df['latitude (degrees_north)'].mean(),'^',markersize = 10,\
                         markeredgecolor='black', markeredgewidth=2,label = id.split('-')[0]) 
         
-        ax.legend(loc='upper right',fontsize = siz)
+        ax.legend(loc='upper right',fontsize = 12)
         
 plt.savefig("/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/Caribbean_map_hurr_2018.png"\
-             ,bbox_inches = 'tight',pad_inches = 0) 
+             ,bbox_inches = 'tight',pad_inches = 0.1) 
 
 #%% Reading glider data and plotting glider track in the map
     
-siz=12
-
 fig, ax = plt.subplots(figsize=(8, 6), dpi=80, facecolor='w', edgecolor='w') 
-ax.contour(bath_lon,bath_lat,bath_elev,colors='silver')
+#ax.contour(bath_lon,bath_lat,bath_elev,colors='silver')
 ax.contour(bath_lon,bath_lat,bath_elev,[0],colors='k')
-ax.contourf(bath_lon,bath_lat,-bath_elev,cmap=plt.get_cmap('BrBG'))
-#ax.contour(bath_lon[oklonbath],bath_lat[oklatbath],bath_elev[np.c_[oklatbath],oklonbath],colors='k')   
+ax.contourf(bath_lon,bath_lat,-bath_elev)#,cmap=plt.get_cmap('BrBG'))
+plt.contourf(bath_lon,bath_lat,bath_elev,[0,10000],colors='seashell')
 plt.axis('equal')
 plt.axis([lon_lim[0],lon_lim[-1],lat_lim[0],lat_lim[-1]])
 plt.title('Gliders in the Caribbean during hurricane season 2018 ',size = 20)
+plt.yticks([])
+plt.xticks([])
+
 
 for i, id in enumerate(gliders):
     if id[0:3] != 'all':
@@ -194,11 +195,11 @@ for i, id in enumerate(gliders):
         e.variables = variables
     
         df = e.to_pandas(
-        index_col='time',
+        index_col='time (UTC)',
         parse_dates=True,
         skiprows=(1,)  # units information can be dropped.
             ).dropna()
-        ax.plot(df['longitude'],df['latitude'],'.',markersize=2, color='k')
+        ax.plot(df['longitude (degrees_east)'],df['latitude (degrees_north)'],'.',markersize=2, color='k')
 
 for i, id in enumerate(gliders):
     if id[0:3] != 'all':
@@ -208,25 +209,25 @@ for i, id in enumerate(gliders):
         e.variables = variables
     
         df = e.to_pandas(
-        index_col='time',
+        index_col='time (UTC)',
         parse_dates=True,
         skiprows=(1,)  # units information can be dropped.
             ).dropna()
         if np.logical_and(id.split('-')[0][0:2] == 'ng',id != 'ng616-20180701T0000'):
-            ax.plot(df['longitude'].mean(),df['latitude'].mean(),'o',markersize = 10,\
+            ax.plot(df['longitude (degrees_east)'].mean(),df['latitude (degrees_north)'].mean(),'o',markersize = 10,\
                 markeredgecolor='black', markeredgewidth=2,label = id.split('-')[0]) 
         else:
             if id == 'ng616-20180701T0000':
-                ax.plot(df['longitude'].mean(),df['latitude'].mean(),'o',markersize = 15,\
+                ax.plot(df['longitude (degrees_east)'].mean(),df['latitude (degrees_north)'].mean(),'o',markersize = 15,\
                         markeredgecolor='black', markeredgewidth=2,label = id.split('-')[0]) 
             else:
-                ax.plot(df['longitude'].mean(),df['latitude'].mean(),'^',markersize = 10,\
+                ax.plot(df['longitude (degrees_east)'].mean(),df['latitude (degrees_north)'].mean(),'^',markersize = 10,\
                         markeredgecolor='black', markeredgewidth=2,label = id.split('-')[0]) 
         
         #ax.legend(loc='upper right',fontsize = siz)
         
 plt.savefig("/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/Caribbean_map2_hurr_2018.png"\
-             ,bbox_inches = 'tight',pad_inches = 0) 
+             ,bbox_inches = 'tight',pad_inches = 0.1) 
 
 #%% Map of channel between Costa Rica and US Virgin Island
 
@@ -242,6 +243,8 @@ plt.axis([lon_lim[0],lon_lim[-1],lat_lim[0],lat_lim[-1]])
 plt.title('Gliders in the Virgin Island Channel \n during hurricane season 2018 ',size = 20)
 plt.xlim([-66,-64])
 plt.ylim([17,19])
+plt.yticks([])
+plt.xticks([])
 
 for i, id in enumerate(gliders[[4,3,0]]):
     if id[0:3] != 'all':
@@ -251,17 +254,17 @@ for i, id in enumerate(gliders[[4,3,0]]):
         e.variables = variables
     
         df = e.to_pandas(
-        index_col='time',
+        index_col='time (UTC)',
         parse_dates=True,
         skiprows=(1,)  # units information can be dropped.
             ).dropna()
         if id == 'ng616-20180701T0000':
-            ax.plot(df['longitude'].mean(),df['latitude'].mean(),'o',markersize = 15,\
+            ax.plot(df['longitude (degrees_east)'].mean(),df['latitude (degrees_north)'].mean(),'o',markersize = 15,\
                 markeredgecolor='black', markeredgewidth=2,label = id.split('-')[0]) 
         else:
-            ax.plot(df['longitude'].mean(),df['latitude'].mean(),'o',markersize = 10,\
+            ax.plot(df['longitude (degrees_east)'].mean(),df['latitude (degrees_north)'].mean(),'o',markersize = 10,\
                 markeredgecolor='black', markeredgewidth=2,label = id.split('-')[0]) 
-        ax.legend(loc='upper right',fontsize = 18)
+        ax.legend(loc='upper right',fontsize = 22)
         
 plt.savefig("/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/Caribbean_map_channel_hurr_2018.png"\
              ,bbox_inches = 'tight',pad_inches = 0) 
@@ -280,6 +283,8 @@ plt.axis([lon_lim[0],lon_lim[-1],lat_lim[0],lat_lim[-1]])
 plt.title('Gliders in the Virgin Island Channel \n during hurricane season 2018 ',size = 20)
 plt.xlim([-66,-64])
 plt.ylim([17,19])
+plt.yticks([])
+plt.xticks([])
 
 for i, id in enumerate(gliders[[4,3,0]]):
     if id[0:3] != 'all':
@@ -289,13 +294,13 @@ for i, id in enumerate(gliders[[4,3,0]]):
         e.variables = variables
     
         df = e.to_pandas(
-        index_col='time',
+        index_col='time (UTC)',
         parse_dates=True,
         skiprows=(1,)  # units information can be dropped.
             ).dropna()
-        ax.plot(df['longitude'],df['latitude'],'o',color='k',markersize = 5,\
+        ax.plot(df['longitude (degrees_east)'],df['latitude (degrees_north)'],'o',color='k',markersize = 5,\
                 markeredgecolor='black', markeredgewidth=2,label = ' ') 
-        ax.plot(df['longitude'].mean(),df['latitude'].mean(),'o',markersize = 15,\
+        ax.plot(df['longitude (degrees_east)'].mean(),df['latitude (degrees_north)'].mean(),'o',markersize = 15,\
                 markeredgecolor='black', markeredgewidth=2,label = id.split('-')[0]) 
         #ax.legend(loc='upper right',fontsize = 18)
         

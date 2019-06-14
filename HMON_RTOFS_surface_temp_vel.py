@@ -189,7 +189,7 @@ timestampg = timestamp_glider[okg[0][0]]
 latg = np.asarray(latglider[0,okg[0][0]])
 long = np.asarray(longlider[0,okg[0][0]])
 
-#%% HWRF-POM
+#%% 
 
 nt = np.where(date2num(time_HYCOM) == date2num(tt))[0][0]    
 
@@ -302,8 +302,8 @@ plt.text(long+0.3,latg,'ng288',\
              size = 16,color='k',weight='bold',bbox=props)
 
 
-plt.quiver(Hlong[::2,::2],Hlatg[::2,::2],su_HYCOM0[::2,::2]/100,sv_HYCOM0[::2,::2]/100 ,scale=2,scale_units='inches',\
-           alpha=0.7)
+#plt.quiver(Hlong[::2,::2],Hlatg[::2,::2],su_HYCOM0[::2,::2]/100,sv_HYCOM0[::2,::2]/100 ,scale=2,scale_units='inches',\
+#           alpha=0.7)
 
 # Michael track
 #plt.plot(lonMc,latMc,'o-',markersize = 10,color = 'dimgray',markeredgecolor='k')
@@ -348,5 +348,5 @@ plt.ylim(22.5,31.8)
 
 folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'  
 file = 'HMON_HYCOM_sst_ssv_Michael_zoomin_'+str(tt)+'.png'
-#plt.savefig(folder+file,bbox_inches = 'tight',pad_inches = 0.1) 
+plt.savefig(folder+file,bbox_inches = 'tight',pad_inches = 0.1) 
 plt.show()
