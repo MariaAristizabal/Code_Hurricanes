@@ -5,6 +5,19 @@ clear all;
 %% User input
 
 % Glider data location
+lon_lim = [-82 -63];
+lat_lim = [24 39];
+gdata = 'http://gliders.ioos.us/thredds/dodsC/deployments/bios/bios_minnie-20190308T1859/bios_minnie-20190308T1859.nc3.nc'
+
+% sp069 (East Coast)
+%lon_lim = [-82 -63];
+%lat_lim = [24 39];
+%gdata = 'http://gliders.ioos.us/thredds/dodsC/deployments/drudnick/sp066-20190301T1640/sp066-20190301T1640.nc3.nc';
+
+% sp069 (East Coast)
+%lon_lim = [-82 -63];
+%lat_lim = [24 39];
+%gdata = 'http://gliders.ioos.us/thredds/dodsC/deployments/drudnick/sp069-20181109T1607/sp069-20181109T1607.nc3.nc';
 
 % ng467 (Virgin Islands)
 %lon_lim = [-68 -64];
@@ -12,9 +25,9 @@ clear all;
 %gdata = 'http://data.ioos.us/thredds/dodsC/deployments/rutgers/ng467-20180701T0000/ng467-20180701T0000.nc3.nc';
 
 % ng467 (Virgin Islands)
-lon_lim = [-68 -64];
-lat_lim = [15 20];
-gdata = 'http://data.ioos.us/thredds/dodsC/deployments/rutgers/ng302-20180701T0000/ng302-20180701T0000.nc3.nc';
+%lon_lim = [-68 -64];
+%lat_lim = [15 20];
+%gdata = 'http://data.ioos.us/thredds/dodsC/deployments/rutgers/ng302-20180701T0000/ng302-20180701T0000.nc3.nc';
 
 % Golf of Mexico
 %lon_lim = [-98 -78];
@@ -79,20 +92,36 @@ gdata = 'http://data.ioos.us/thredds/dodsC/deployments/rutgers/ng302-20180701T00
 %lat_lim = [20 36];
 %gdata = 'http://data.ioos.us/thredds/dodsC/deployments/rutgers/ng429-20180701T0000/ng429-20180701T0000.nc3.nc';
 
+%{
+%sp069
+ok =find(longitude>-77.23 & latitude>30.94)
+date_ini = '09-Dec-2018 00:00:00';
+date_end = '10-Dec-2018 00:00:00';
+
+%sp066
+ok =find(longitude>-71.48 & latitude>36.17)
+date_ini = '21-May-2019 00:00:00';
+date_end = '22-May-2019 00:00:00';
+
+%bion_mini
+ok =find(longitude>-64.20 & latitude>31.82)
+
+%}
+
 % Initial and final date
-date_ini = '11-Sep-2018 00:00:00';
-date_end = '12-Sep-2018 00:00:00';
+date_ini = '12-Mar-2019 00:00:00';
+date_end = '13-Mar-2019 00:00:00';
 
 % GOFS3.1 outout model location
 catalog31 = 'http://tds.hycom.org/thredds/dodsC/GLBv0.08/expt_93.0/ts3z';
 
 % GOFS3.1 output model location
-catalog30 = 'http://tds.hycom.org/thredds/dodsC/GLBu0.08/expt_91.2/ts3z';
+%catalog30 = 'http://tds.hycom.org/thredds/dodsC/GLBu0.08/expt_91.2/ts3z';
 
 % Copernicus
 %copern = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/global-analysis-forecast-phy-001-024_1536695141135.nc';
 %copern = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/global-analysis-forecast-phy-001-024_1536948820036.nc';
-copern = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/global-analysis-forecast-phy-001-024_1537209157740.nc';
+%copern = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/global-analysis-forecast-phy-001-024_1537209157740.nc';
 
 % Bathymetry data
 %bath_data = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/GEBCO_2014_2D_-100.0_0.0_-60.0_45.0.nc';
@@ -430,14 +459,16 @@ lgd = legend([h1 h2],[inst_name,' ',plat_type,' ',datestr(time(ok_time_glider(1)
 
 %    ['Copernicus' datestr(timecop(okcop(1)))],...
 %    'Location','SouthEast');
-set(lgd,'fontsize',14)
+set(lgd,'fontsize',16)
 title({'HYCOM GOFS 3.1 and ';[inst_name,' ',plat_type]},'fontsize',siz)
+title({'HYCOM GOFS 3.1 and ';['bios\_minnie',' ',plat_type]},'fontsize',siz)
 %title({'HYCOM GOFS 3.1 and 3.0 and Copernicus vs ';['cp376',' ',plat_type]},'fontsize',siz)
 xlabel('Temperature (^oC)','fontsize',siz)
 ylabel('Depth (m)','fontsize',siz);
 grid on;
 if max(max(pressure(:,ok_time_glider))) > 200
-    ylim([-(200+200*0.2) 0])
+    %ylim([-(200+200*0.2) 0])
+    ylim([-(max(max(pressure(:,ok_time_glider)))+200*0.2) 0])
 else
     ylim([-max(max(pressure(:,ok_time_glider)))-max(max(pressure(:,ok_time_glider)))*0.2 0])
 end
@@ -457,12 +488,13 @@ axis equal
 xlim(lon_lim)
 ylim(lat_lim)
 hold on
-plot(longitude,latitude,'.k')
-plot(Glon,Glat,'*r','markersize',12);
+plot(longitude,latitude,'.k','markersize',10)
+plot(Glon,Glat,'^r','markersize',8,'markerfacecolor','r');
 xlabel('Lon (^o)')
 ylabel('Lat (^o)')
 set(gca,'fontsize',16)
 title([inst_name,' ',plat_type,' Track'],'fontsize',siz)
+title(['bios\_minnie',' ',plat_type,' Track'],'fontsize',siz)
 %title(['cp376',' ',plat_type,' Track'],'fontsize',siz)
 %text(-77.5,42,['Glider Position  {\color{red}{\ast}}',{num2str(Glon)},{num2str(Glat)}],'fontsize',16)
 %text(-67.5,20.5,['Glider Position  {\color{red}{\ast}}',{num2str(Glon)},{num2str(Glat)}],'fontsize',16)
@@ -519,14 +551,16 @@ set(gca,'fontsize',siz)
 lgd = legend([h1 h2],[inst_name,' ',plat_type,' ',datestr(time(ok_time_glider(1)))],...
     ['HYCOM GOFS 3.1 Expt 93.0 (hindcast) ' datestr(time31(oktime31(1)))],...
     'Location','SouthEast');
-set(lgd,'fontsize',14)
+set(lgd,'fontsize',16)
 title({'HYCOM GOFS 3.1 vs ';[inst_name,' ',plat_type]},'fontsize',siz)
+title({'HYCOM GOFS 3.1 and ';['bios\_minnie',' ',plat_type]},'fontsize',siz)
 %title({'HYCOM GOFS 3.1 and 3.0 and Copernicus vs ';['cp376',' ',plat_type]},'fontsize',siz)
 xlabel('Salinity (psu)','fontsize',siz)
 ylabel('Depth (m)','fontsize',siz);
 grid on;
 if max(max(pressure(:,ok_time_glider))) > 200
-    ylim([-(200+200*0.2) 0])
+    %ylim([-(200+200*0.2) 0])
+    ylim([-(max(max(pressure(:,ok_time_glider)))+200*0.2) 0])
 else
     ylim([-max(max(pressure(:,ok_time_glider)))-max(max(pressure(:,ok_time_glider)))*0.2 0])
 end
@@ -540,12 +574,13 @@ axis equal
 xlim(lon_lim)
 ylim(lat_lim)
 hold on
-plot(longitude,latitude,'.k')
-pos=plot(Glon,Glat,'*r','markersize',12);
+plot(longitude,latitude,'.k','markersize',10)
+pos=plot(Glon,Glat,'^r','markersize',8,'markerfacecolor','r');
 xlabel('Lon (^o)')
 ylabel('Lat (^o)')
 set(gca,'fontsize',16)
 title([inst_name,' ',plat_type,' Track'],'fontsize',siz)
+title(['bios\_minnie',' ',plat_type,' Track'],'fontsize',siz)
 %title(['cp376',' ',plat_type,' Track'],'fontsize',siz)
 %text(-77.5,42,['Glider Position  {\color{red}{\ast}}',{num2str(Glon)},{num2str(Glat)}],'fontsize',16)
 %text(-67.5,20.5,['Glider Position  {\color{red}{\ast}}',{num2str(Glon)},{num2str(Glat)}],'fontsize',16)
