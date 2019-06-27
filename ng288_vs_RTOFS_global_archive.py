@@ -10,7 +10,7 @@ Created on Thu Jun 13 14:46:02 2019
 Dir_rtofs= '/Volumes/aristizabal/ncep_model/RTOFS_global_Michael/rtofs.'
 
 # RTOFS grid file name
-gridfile = '/Volumes/aristizabal/ncep_model/RTOFS_global_Michael/rtofs_glo.navy_0.08.regional.depth'
+gridfile = '/Volumes/aristizabal/ncep_model/RTOFS_global_Michael/rtofs_glo.navy_0.08.regional.grid'
 
 # RTOFS a/b file name
 prefix_ab = 'rtofs_glo.t00z.n-48.archv'
@@ -34,12 +34,12 @@ import numpy as np
 import xarray as xr
 import netCDF4 
 from datetime import datetime, timedelta
-from matplotlib.dates import date2num, num2date
+from matplotlib.dates import date2num
 import matplotlib.dates as mdates
 
 import sys
 sys.path.append('/Users/aristizabal/Desktop/MARACOOS_project/NCEP_scripts')
-from utils4HYCOM import readBinz, readgrids, readVar, parse_z, parse_b, readBin
+from utils4HYCOM import readgrids, readVar
 
 import os
 import os.path
@@ -70,6 +70,18 @@ long = np.asarray(longlider[0,okg[0]])
 depthg = depthglider[okg[0],:]
 tempg = tempglider[okg[0],:]
 saltg = saltglider[okg[0],:]
+
+# Conversion from glider longitude and latitude to RTOFS convention
+target_lon = []
+for lon in long:
+    if lon < 0: 
+        target_lon.append(360 + lon)
+    else:
+        target_lon.append(lon)
+target_lon = np.array(target_lon)
+target_lat = np.array(latg)
+
+
 
 #%% Grid glider variables according to depth
 
@@ -109,7 +121,7 @@ timeg_full = np.asarray(timeg_full)
 
 # Reading lat and lon
 lines_grid=[line.rstrip() for line in open(gridfile+'.b')]
-hlon = np.array(readgrids(gridfile,'relax'))
+#hlon = np.array(readgrids(gridfile,'relax'))
 
 hlon = np.array(readgrids(gridfile,'plon:',[0]))
 hlat = np.array(readgrids(gridfile,'plat:',[0]))
@@ -122,12 +134,12 @@ jdm=int([line.split() for line in lines_grid if 'latitudinal' in line][0][0])
     
 nz = 41
 layers = np.arange(0,nz)
-target_temp_RTOFS = np.empty(((tmax-tmin).days,nz,))
+target_temp_RTOFS = np.empty(((tmax-tmin).days+1,nz,))
 target_temp_RTOFS[:] = np.nan
-target_zRTOFS = np.empty(((tmax-tmin).days,nz,))
+target_zRTOFS = np.empty(((tmax-tmin).days+1,nz,))
 target_zRTOFS[:] = np.nan
 timeRTOFS = []
-for tt in np.arange(0,(tmax-tmin).days):
+for tt in np.arange(0,(tmax-tmin).days+1):
     print(tt)
     t = tmin+timedelta(np.int(tt))
     if t.day < 9: 
@@ -143,14 +155,14 @@ for tt in np.arange(0,(tmax-tmin).days):
     timeRTOFS.append(timeRT)
     timestampRTOFS = date2num(timeRT) 
 
-    oklonRTOFS = 2508
-    oklatRTOFS = 1858
+    #oklonRTOFS = 2508
+    #oklatRTOFS = 1858
     
     # Interpolating latg and long into RTOFS grid
-    #sublonRTOFS = np.interp(timestampRTOFS,timestamp_glider,target_lon)
-    #sublatRTOFS = np.interp(timestampRTOFS,timestamp_glider,target_lat)
-    #oklonRTOFS = np.int(np.round(np.interp(sublonRTOFS,hlon[0,:],np.arange(len(hlon[0,:])))))
-    #oklatRTOFS = np.int(np.round(np.interp(sublatRTOFS,hlat[:,0],np.arange(len(hlat[:,0])))))
+    sublonRTOFS = np.interp(timestampRTOFS,timestampg,target_lon)
+    sublatRTOFS = np.interp(timestampRTOFS,timestampg,target_lat)
+    oklonRTOFS = np.int(np.round(np.interp(sublonRTOFS,hlon[0,:],np.arange(len(hlon[0,:])))))
+    oklatRTOFS = np.int(np.round(np.interp(sublatRTOFS,hlat[:,0],np.arange(len(hlat[:,0])))))
     
     ztmp=readVar(afile[0][:-2],'archive','srfhgt',[0])*0.01 # converts [cm] to [m]
     target_ztmp = ztmp[oklatRTOFS,oklonRTOFS]
@@ -205,29 +217,31 @@ ax.set_xlim(datetime(2018,10,7),datetime(2018,10,13))
 yl = ax.set_ylabel('Depth (m)',fontsize=16,labelpad=20)
 cbar = plt.colorbar()
 cbar.ax.set_ylabel('Temperature ($^\circ$C)',fontsize=16)
-ax.set_title('RTOFS Temperature',fontsize=20)
+ax.set_title('Global RTOFS Temperature',fontsize=20)
 xfmt = mdates.DateFormatter('%H:%Mh\n%d-%b')
 ax.xaxis.set_major_formatter(xfmt)
 
 file = "/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/global_RTOFS_temp_Michael.png"
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
 
-#%%
+#%% glider profile with less gaps
 
 kw = dict(levels = np.linspace(np.floor(np.nanmin(tempg_gridded)),\
                                np.ceil(np.nanmax(tempg_gridded)),17))
 
 fig, ax = plt.subplots(figsize=(10, 3))
-plt.contour(timeg,-depthg_gridded,tempg_gridded.T,colors = 'lightgrey',**kw)
-plt.contour(timeg,-depthg_gridded,tempg_gridded.T,[26],colors = 'k')
-plt.contourf(timeg,-depthg_gridded,tempg_gridded.T,cmap='RdYlBu_r',**kw)
+plt.contour(timeg_full,-depthg_gridded,tempg_full.T,colors = 'lightgrey',**kw)
+plt.contour(timeg_full,-depthg_gridded,tempg_full.T,[26],colors = 'k')
+plt.contourf(timeg_full,-depthg_gridded,tempg_full.T,cmap='RdYlBu_r',**kw)
+plt.plot(np.tile(datetime(2018, 10, 10, 6),len(depthg_gridded)),-depthg_gridded,'--k')
 ax.set_ylabel('Depth (m)',fontsize=16)
 cbar = plt.colorbar()
 cbar.ax.set_ylabel('Temperature ($^\circ$C)',fontsize=16)
 ax.set_title('ng288',fontsize=20)
 xfmt = mdates.DateFormatter('%H:%Mh\n%d-%b')
 ax.xaxis.set_major_formatter(xfmt)
+ax.set_xlim(datetime(2018,10,7),datetime(2018,10,13))
 
-file = "/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/ng288_Michael_vs_depth.png"
+file = "/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/ng288_Michael_vs_depth2.png"
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
 

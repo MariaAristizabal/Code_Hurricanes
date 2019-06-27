@@ -87,6 +87,7 @@ e = ERDDAP(
 )
 
 for id in gliders:
+    print(id)
     e.dataset_id=id
     e.constraints=constraints
     e.variables=variables

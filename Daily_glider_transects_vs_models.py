@@ -17,6 +17,15 @@ url_glider = 'https://data.ioos.us/gliders/erddap'
 url_GOFS = 'http://tds.hycom.org/thredds/dodsC/GLBv0.08/expt_93.0/ts3z'
 url_RTOFS = 'https://nomads.ncep.noaa.gov:9090/dods/rtofs/rtofs_global'
 
+# COPERNICUS MARINE ENVIRONMENT MONITORING SERVICE (CMEMS)
+url_cmems = 'http://nrt.cmems-du.eu/motu-web/Motu'
+service_id = 'GLOBAL_ANALYSIS_FORECAST_PHY_001_024-TDS'
+product_id = 'global-analysis-forecast-phy-001-024'
+depth_min = '0.493' 
+temp_name_COP = 'thetao' 
+salt_name_COP = 'so' 
+out_dir = '/Users/aristizabal/Desktop' 
+
 # Bathymetry file
 bath_file = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/GEBCO_2014_2D_-100.0_0.0_-10.0_70.0.nc'
 
@@ -35,13 +44,20 @@ import numpy as np
 import xarray as xr
 import netCDF4
 
+import os
+
+# Increase fontsize of labels globally 
+plt.rc('xtick',labelsize=14)
+plt.rc('ytick',labelsize=14)
+plt.rc('legend',fontsize=14)
+
 #%% Get time bounds for the previous day
 
 te = datetime.today() 
 tend = datetime(te.year,te.month,te.day)
 
 #ti = datetime.today() - timedelta(1)
-ti = datetime.today() - timedelta(2)
+ti = datetime.today() - timedelta(1)
 tini = datetime(ti.year,ti.month,ti.day)
 
 #%% Look for datasets in IOOS glider dac
@@ -177,8 +193,8 @@ for id in gliders:
     
     # Coverting glider vectors into arrays
     timeg, ind = np.unique(df.index.values,return_index=True)
-    latg = np.unique(df['latitude (degrees_north)'].values)
-    long = np.unique(df['longitude (degrees_east)'].values)
+    latg = df['latitude (degrees_north)'].values[ind]
+    long = df['longitude (degrees_east)'].values[ind]
 
     dg = df['depth (m)'].values
     #vg = df['temperature (degree_Celsius)'].values
@@ -245,14 +261,6 @@ for id in gliders:
             target_lon[i] = ii
     target_lat = latg
     
-    #oktimeGOFS = np.where(np.logical_and(mdates.date2num(tGOFS) >= mdates.date2num(timeg[0]),\
-    #                                     mdates.date2num(tGOFS) <= mdates.date2num(timeg[-1])))
-    #timeGOFS = tGOFS[oktimeGOFS]
-    #
-    #oktimeRTOFS = np.where(np.logical_and(mdates.date2num(tRTOFS) >= mdates.date2num(timeg[0]),\
-    #                                      mdates.date2num(tRTOFS) <= mdates.date2num(timeg[-1])))
-    #timeRTOFS = mdates.num2date(mdates.date2num(tRTOFS[oktimeRTOFS]))
-
     # Changing times to timestamp
     tstamp_glider = [mdates.date2num(timeg[i]) for i in np.arange(len(timeg))]
     tstamp_GOFS = [mdates.date2num(timeGOFS[i]) for i in np.arange(len(timeGOFS))]
@@ -304,19 +312,83 @@ for id in gliders:
     for i in range(len(oktimeRTOFS[0])):
         print(len(oktimeRTOFS[0]),' ',i)
         target_saltRTOFS[:,i] = RTOFS_salt.variables['salinity'][oktimeRTOFS[0][i],:,oklatRTOFS[i],oklonRTOFS[i]]
-    target_saltRTOFS[target_saltRTOFS < -100] = np.nan    
+    target_saltRTOFS[target_saltRTOFS < -100] = np.nan
     
-    min_temp = np.floor(np.min([np.nanmin(df[df.columns[3]]),np.nanmin(target_tempGOFS),np.nanmin(target_tempRTOFS)]))
-    max_temp = np.ceil(np.max([np.nanmax(df[df.columns[3]]),np.nanmax(target_tempGOFS),np.nanmax(target_tempRTOFS)]))
+    # Downloading and reading Copernicus output
+    motuc = 'python -m motuclient --motu ' + url_cmems + \
+        ' --service-id ' + service_id + \
+        ' --product-id ' + product_id + \
+        ' --longitude-min ' + str(np.min(long)-1/12) + \
+        ' --longitude-max ' + str(np.max(long)+1/12) + \
+        ' --latitude-min ' + str(np.min(latg)-1/12) + \
+        ' --latitude-max ' + str(np.max(latg)+1/12) + \
+        ' --date-min ' + str(tini-timedelta(0.5)) + \
+        ' --date-max ' + str(tend+timedelta(0.5)) + \
+        ' --depth-min ' + depth_min + \
+        ' --depth-max ' + str(np.nanmax(depthg)) + \
+        ' --variable ' + 'thetao' + ' ' + \
+        ' --variable ' + 'so'  + ' ' + \
+        ' --out-dir ' + out_dir + \
+        ' --out-name ' + id + '.nc' + ' ' + \
+        ' --user ' + 'maristizabalvar' + ' ' + \
+        ' --pwd ' +  'MariaCMEMS2018' 
+   
+    os.system(motuc)   
+       
+    COP_file = out_dir + '/' + id + '.nc'
+    COP = xr.open_dataset(COP_file)
     
-    min_salt = np.floor(np.min([np.nanmin(df[df.columns[4]]),np.nanmin(target_saltGOFS),np.nanmin(target_saltRTOFS)]))
-    max_salt = np.ceil(np.max([np.nanmax(df[df.columns[4]]),np.nanmax(target_saltGOFS),np.nanmax(target_saltRTOFS)]))
+    latCOP = COP.latitude[:]
+    lonCOP = COP.longitude[:]
+    depthCOP = COP.depth[:]
+    tCOP = np.asarray(mdates.num2date(mdates.date2num(COP.time[:])))
 
-    # plot temperature
-    fig, ax = plt.subplots(figsize=(14, 12))
-    folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'
+    tmin = tini - timedelta(0.5)
+    tmax = tend + timedelta(0.5)
+
+    oktimeCOP = np.where(np.logical_and(mdates.date2num(tCOP) >= mdates.date2num(tmin),\
+                                        mdates.date2num(tCOP) <= mdates.date2num(tmax)))
+    timeCOP = tCOP[oktimeCOP]
+    
+    # Changing times to timestamp
+    tstamp_glider = [mdates.date2num(timeg[i]) for i in np.arange(len(timeg))]
+    tstamp_COP = [mdates.date2num(timeCOP[i]) for i in np.arange(len(timeCOP))]
+    
+    # interpolating glider lon and lat to lat and lon on Copernicus time
+    sublonCOP=np.interp(tstamp_COP,tstamp_glider,long)
+    sublatCOP=np.interp(tstamp_COP,tstamp_glider,latg)
+
+    # getting the model grid positions for sublonm and sublatm
+    oklonCOP=np.round(np.interp(sublonCOP,lonCOP,np.arange(len(lonCOP)))).astype(int)
+    oklatCOP=np.round(np.interp(sublatCOP,latCOP,np.arange(len(latCOP)))).astype(int)
+
+    # Getting glider transect from Copernicus model
+    print('Getting glider transect from Copernicus model')
+    target_tempCOP = np.empty((len(depthCOP),len(oktimeCOP[0])))
+    target_tempCOP[:] = np.nan
+    for i in range(len(oktimeCOP[0])):
+        print(len(oktimeCOP[0]),' ',i)
+        target_tempCOP[:,i] = COP.variables['thetao'][oktimeCOP[0][i],:,oklatCOP[i],oklonCOP[i]]
+    target_tempCOP[target_tempCOP < -100] = np.nan
+    
+    target_saltCOP = np.empty((len(depthCOP),len(oktimeCOP[0])))
+    target_saltCOP[:] = np.nan
+    for i in range(len(oktimeCOP[0])):
+        print(len(oktimeCOP[0]),' ',i)
+        target_saltCOP[:,i] = COP.variables['so'][oktimeCOP[0][i],:,oklatCOP[i],oklonCOP[i]]
+    target_saltCOP[target_saltCOP < -100] = np.nan
+    
+    os.system('rm ' + out_dir + '/' + id + '.nc')
         
-    grid = plt.GridSpec(4, 5, wspace=0.4, hspace=0.3)
+    min_temp = np.floor(np.min([np.nanmin(df[df.columns[3]]),np.nanmin(target_tempGOFS),np.nanmin(target_tempRTOFS),np.nanmin(target_tempCOP)]))
+    max_temp = np.ceil(np.max([np.nanmax(df[df.columns[3]]),np.nanmax(target_tempGOFS),np.nanmax(target_tempRTOFS),np.nanmax(target_tempCOP)]))
+    
+    min_salt = np.floor(np.min([np.nanmin(df[df.columns[4]]),np.nanmin(target_saltGOFS),np.nanmin(target_saltRTOFS),np.nanmin(target_saltCOP)]))
+    max_salt = np.ceil(np.max([np.nanmax(df[df.columns[4]]),np.nanmax(target_saltGOFS),np.nanmax(target_saltRTOFS),np.nanmax(target_saltCOP)]))
+
+    # Along track transect temperature
+    fig, ax = plt.subplots(figsize=(14, 12))        
+    grid = plt.GridSpec(5, 5, wspace=0.4, hspace=0.3)
 
     # Scatter plot
     ax = plt.subplot(grid[0, :4])
@@ -332,12 +404,10 @@ for id in gliders:
     cbar.ax.set_ylabel('($^oC$)',fontsize=14,labelpad=15)
     ax.set_ylabel('Depth (m)',fontsize=14)
     plt.title('Along Track Temperature ' + id)
-      
-    
+          
     nlevels = max_temp - min_temp + 1
     kw = dict(levels = np.linspace(min_temp,max_temp,nlevels))
     ax = plt.subplot(grid[1, :4])
-    #plt.contour(timeg,-depthg_gridded,varg_gridded,colors = 'lightgrey',**kw)
     cs = plt.contourf(timeg,-depthg_gridded,tempg_gridded,cmap=cmocean.cm.thermal,**kw)
     if np.logical_and(min_temp<=26.0,max_temp>=26.0): 
         plt.contour(timeg,-depthg_gridded,tempg_gridded,levels=[26],colors='k')
@@ -347,10 +417,8 @@ for id in gliders:
     ax.set_ylabel('Depth (m)',fontsize=14)
     ax.set_xticklabels(' ')
     plt.title('Along Track Temperature ' + id)
-    
-    
+        
     ax = plt.subplot(grid[2, :4])    
-    #plt.contour(timeg,-depthg_gridded,varg_gridded,colors = 'lightgrey',**kw)
     cs = plt.contourf(timeGOFS,-depthGOFS,target_tempGOFS,cmap=cmocean.cm.thermal,**kw)
     if np.logical_and(min_temp<=26.0,max_temp>=26.0): 
         plt.contour(timeGOFS,-depthGOFS,target_tempGOFS,[26],colors='k')
@@ -365,7 +433,6 @@ for id in gliders:
     plt.title('Along Track Temperature GOFS 3.1')
     
     ax = plt.subplot(grid[3, :4])    
-    #plt.contour(timeg,-depthg_gridded,varg_gridded,colors = 'lightgrey',**kw)
     cs = plt.contourf(tstamp_RTOFS,-depthRTOFS,target_tempRTOFS,cmap=cmocean.cm.thermal,**kw)
     if np.logical_and(min_temp<=26.0,max_temp>=26.0): 
         plt.contour(tstamp_RTOFS,-depthRTOFS,target_tempRTOFS,[26],colors='k')
@@ -377,7 +444,22 @@ for id in gliders:
     ax.set_ylabel('Depth (m)',fontsize=14)
     xfmt = mdates.DateFormatter('%H:%Mh\n%d-%b')
     ax.xaxis.set_major_formatter(xfmt)
+    ax.set_xticklabels(' ')  
     plt.title('Along Track Temperature RTOFS')
+    
+    ax = plt.subplot(grid[4, :4])    
+    cs = plt.contourf(mdates.date2num(timeCOP),-depthCOP,target_tempCOP,cmap=cmocean.cm.thermal,**kw)
+    if np.logical_and(min_temp<=26.0,max_temp>=26.0): 
+        plt.contour(mdates.date2num(timeCOP),-depthCOP,target_tempCOP,[26],colors='k')
+
+    cs = fig.colorbar(cs, orientation='vertical') 
+    cs.ax.set_ylabel('($^oC$)',fontsize=14,labelpad=15)
+    ax.set_xlim(tini,tend)
+    ax.set_ylim(-np.max(df['depth (m)']), 0)
+    ax.set_ylabel('Depth (m)',fontsize=14)
+    xfmt = mdates.DateFormatter('%H:%Mh\n%d-%b')
+    ax.xaxis.set_major_formatter(xfmt)
+    plt.title('Along Track Temperature Copernicus')
     
     oklatbath = np.logical_and(bath_lat >= np.min(latg)-5,bath_lat <= np.max(latg)+5)
     oklonbath = np.logical_and(bath_lon >= np.min(long)-5,bath_lon <= np.max(long)+5)
@@ -398,17 +480,17 @@ for id in gliders:
     plt.title('Track ' + id)
     #plt.axis('equal')
     
-    #folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'
-    folder = '/Volumes/hurricane/Hurricane_season_2019/' + (ti+timedelta(1)).strftime('%b-%d') + '/'
-    file = folder + 'along_track_temp_' + id + '_' + str(tini).split()[0] + '_' + str(tend).split()[0]
-    #plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
-        
-     
-    # plot salinity
+    folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'
+    file = 'along_track_temp_' + id + '_' + str(tini).split()[0] + '_' + str(tend).split()[0]
+    #folder = '/Volumes/hurricane/Hurricane_season_2019/' + (ti+timedelta(1)).strftime('%b-%d') + '/'
+    #file = folder + 'along_track_temp_' + id + '_' + str(tini).split()[0] + '_' + str(tend).split()[0]
+    plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
+             
+    # Along track transect salinity
     fig, ax = plt.subplots(figsize=(14, 12))
     folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'
         
-    grid = plt.GridSpec(4, 5, wspace=0.4, hspace=0.3)
+    grid = plt.GridSpec(5, 5, wspace=0.4, hspace=0.3)
 
     # Scatter plot
     ax = plt.subplot(grid[0, :4])
@@ -423,10 +505,9 @@ for id in gliders:
     cbar = fig.colorbar(cs, orientation='vertical')
     ax.set_ylabel('Depth (m)',fontsize=14)
     plt.title('Along Track Salinity ' + id)
-      
-    
-    nlevels = np.int((max_salt - min_salt + 1)*3)
-    kw = dict(levels = np.linspace(min_salt,max_salt,nlevels))
+          
+    #nlevels = np.int((max_salt - min_salt + 1)*3)
+    kw = dict(levels = np.arange(min_salt,max_salt+0.25,0.25))
     ax = plt.subplot(grid[1, :4])
     #plt.contour(timeg,-depthg_gridded,varg_gridded,colors = 'lightgrey',**kw)
     cs = plt.contourf(timeg,-depthg_gridded,saltg_gridded,cmap=cmocean.cm.haline,**kw)
@@ -436,10 +517,8 @@ for id in gliders:
     ax.set_ylabel('Depth (m)',fontsize=14)
     ax.set_xticklabels(' ')
     plt.title('Along Track Salinity ' + id)
-    
-    
+        
     ax = plt.subplot(grid[2, :4])    
-    #plt.contour(timeg,-depthg_gridded,varg_gridded,colors = 'lightgrey',**kw)
     cs = plt.contourf(timeGOFS,-depthGOFS,target_saltGOFS,cmap=cmocean.cm.haline,**kw)
     cs = fig.colorbar(cs, orientation='vertical') 
     ax.set_xlim(tini,tend)
@@ -451,7 +530,6 @@ for id in gliders:
     plt.title('Along Track Salinity GOFS 3.1')
     
     ax = plt.subplot(grid[3, :4])    
-    #plt.contour(timeg,-depthg_gridded,varg_gridded,colors = 'lightgrey',**kw)
     cs = plt.contourf(tstamp_RTOFS,-depthRTOFS,target_saltRTOFS,cmap=cmocean.cm.haline,**kw)
     cs = fig.colorbar(cs, orientation='vertical') 
     ax.set_xlim(tini,tend)
@@ -459,7 +537,18 @@ for id in gliders:
     ax.set_ylabel('Depth (m)',fontsize=14)
     xfmt = mdates.DateFormatter('%H:%Mh\n%d-%b')
     ax.xaxis.set_major_formatter(xfmt)
+    ax.set_xticklabels(' ')  
     plt.title('Along Track Salinity RTOFS')
+    
+    ax = plt.subplot(grid[4, :4])    
+    cs = plt.contourf(mdates.date2num(timeCOP),-depthCOP,target_saltCOP,cmap=cmocean.cm.haline,**kw)
+    cs = fig.colorbar(cs, orientation='vertical') 
+    ax.set_xlim(tini,tend)
+    ax.set_ylim(-np.max(df['depth (m)']), 0)
+    ax.set_ylabel('Depth (m)',fontsize=14)
+    xfmt = mdates.DateFormatter('%H:%Mh\n%d-%b')
+    ax.xaxis.set_major_formatter(xfmt)
+    plt.title('Along Track Temperature Copernicus')
     
     oklatbath = np.logical_and(bath_lat >= np.min(latg)-5,bath_lat <= np.max(latg)+5)
     oklonbath = np.logical_and(bath_lon >= np.min(long)-5,bath_lon <= np.max(long)+5)
@@ -480,7 +569,98 @@ for id in gliders:
     plt.title('Track ' + id)
     #plt.axis('equal')
     
-    #folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'
-    folder = '/Volumes/hurricane/Hurricane_season_2019/' + (ti+timedelta(1)).strftime('%b-%d') + '/'
-    file = folder + 'along_track_salt_' + id + '_' + str(tini).split()[0] + '_' + str(tend).split()[0]
-    #plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
+    folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'
+    file = folder+ 'along_track_salt_' + id + '_' + str(tini).split()[0] + '_' + str(tend).split()[0]
+    #folder = '/Volumes/hurricane/Hurricane_season_2019/' + (ti+timedelta(1)).strftime('%b-%d') + '/'
+    #file = folder + 'along_track_salt_' + id + '_' + str(tini).split()[0] + '_' + str(tend).split()[0]
+    plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
+
+    # Temperature profile
+    plt.figure(figsize=(14, 12))
+    
+    plt.subplot(1,2,1)
+    plt.plot(tempg,-depthg,'.',color='cyan',label='_nolegend_')
+    plt.plot(np.nanmean(tempg_gridded,axis=1),-depthg_gridded,'.-b',\
+             label=id[:-14]+' '+str(timeg[0])[0:4]+' '+'['+str(timeg[0])[5:19]+','+str(timeg[-1])[5:19]+']')
+    
+    plt.plot(target_tempGOFS,-depthGOFS,'.-',color='lightcoral',label='_nolegend_')
+    plt.plot(np.nanmean(target_tempGOFS,axis=1),-depthGOFS,'.-r',markersize=12,linewidth=2,\
+             label='GOFS 3.1'+' '+str(timeGOFS[0].year)+' '+'['+str(timeGOFS[0])[5:13]+','+str(timeGOFS[-1])[5:13]+']')    
+    plt.plot(target_tempRTOFS,-depthRTOFS,'.-',color='mediumseagreen',label='_nolegend_')
+    plt.plot(np.nanmean(target_tempRTOFS,axis=1),-depthRTOFS,'.-g',markersize=12,linewidth=2,\
+             label='RTOFS'+' '+str(timeRTOFS[0].year)+' '+'['+str(timeRTOFS[0])[5:13]+','+str(timeRTOFS[-1])[5:13]+']')
+    plt.plot(target_tempCOP,-depthCOP,'.-',color='plum',label='_nolegend_')
+    plt.plot(np.nanmean(target_tempCOP,axis=1),-depthCOP,'.-',color='darkorchid',markersize=12,linewidth=2,\
+             label='Copernicus'+' '+str(timeCOP[0].year)+' '+'['+str(timeCOP[0])[5:13]+','+str(timeCOP[-1])[5:13]+']')
+    plt.ylabel('Depth (m)',fontsize=20)
+    plt.xlabel('Temperature ($^oC$)',fontsize=20)
+    plt.title('Temperature Profile ' + id,fontsize=20)
+    plt.ylim([-np.nanmax(depthg)+100,0])
+    plt.ylim([-np.nanmax(depthg)-100,0.1])
+    plt.legend(loc='lower left',fontsize=14)
+    plt.grid('on')
+    
+    plt.subplot(1,2,2)
+    plt.contour(bath_lonsub,bath_latsub,bath_elevsub,[0],colors='k')
+    plt.contourf(bath_lonsub,bath_latsub,bath_elevsub,cmap='Blues_r')
+    plt.contourf(bath_lonsub,bath_latsub,bath_elevsub,[0,10000],colors='seashell')
+    #plt.yticks([])
+    #plt.xticks([])
+    plt.axis([np.min(long)-5,np.max(long)+5,np.min(latg)-5,np.max(latg)+5])
+    plt.plot(long,latg,'.k')
+    plt.plot(np.nanmean(long),np.nanmean(latg),'^r',markerfacecolor='r',\
+             label='Glider position '+'['+str(np.nanmean(long))[0:6]+','+str(np.nanmean(latg))[0:5]+']' )
+    plt.legend()
+    plt.title('Track ' + id,fontsize=20)
+    plt.axis('scaled')
+    
+    folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'
+    file = folder+'temp_profile_' + id + '_' + str(tini).split()[0] + '_' + str(tend).split()[0]
+    #folder = '/Volumes/hurricane/Hurricane_season_2019/' + (ti+timedelta(1)).strftime('%b-%d') + '/'
+    #file = folder + 'along_track_salt_' + id + '_' + str(tini).split()[0] + '_' + str(tend).split()[0]
+    plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
+    
+    # Salinity profile
+    plt.figure(figsize=(14, 12))
+    
+    plt.subplot(1,2,1)
+    plt.plot(saltg,-depthg,'.',color='cyan')
+    plt.plot(np.nanmean(saltg_gridded,axis=1),-depthg_gridded,'.-b',\
+             label=id[:-14]+' '+str(timeg[0])[0:4]+' '+'['+str(timeg[0])[5:19]+','+str(timeg[-1])[5:19]+']')    
+    plt.plot(target_saltGOFS,-depthGOFS,'.-',color='lightcoral')
+    plt.plot(np.nanmean(target_saltGOFS,axis=1),-depthGOFS,'.-r',markersize=12,linewidth=2,\
+             label='GOFS 3.1'+' '+str(timeGOFS[0].year)+' '+'['+str(timeGOFS[0])[5:13]+','+str(timeGOFS[-1])[5:13]+']')     
+    plt.plot(target_saltRTOFS,-depthRTOFS,'.-',color='mediumseagreen')
+    plt.plot(np.nanmean(target_saltRTOFS,axis=1),-depthRTOFS,'.-g',markersize=12,linewidth=2,\
+             label='RTOFS'+' '+str(timeRTOFS[0].year)+' '+'['+str(timeRTOFS[0])[5:13]+','+str(timeRTOFS[-1])[5:13]+']')
+    plt.plot(target_saltCOP,-depthCOP,'.-',color='plum',label='_nolegend_')
+    plt.plot(np.nanmean(target_saltCOP,axis=1),-depthCOP,'.-',color='darkorchid',markersize=12,linewidth=2,\
+             label='Copernicus'+' '+str(timeCOP[0].year)+' '+'['+str(timeCOP[0])[5:13]+','+str(timeCOP[-1])[5:13]+']')
+    plt.ylabel('Depth (m)',fontsize=20)
+    plt.xlabel('Salinity',fontsize=20)
+    plt.title('Salinity Profile ' + id,fontsize=20)
+    plt.ylim([-np.nanmax(depthg)+100,0])
+    plt.ylim([-np.nanmax(depthg)-100,0.1])
+    plt.legend(loc='lower left',fontsize=14)
+    plt.grid('on')
+    
+    plt.subplot(1,2,2)
+    plt.contour(bath_lonsub,bath_latsub,bath_elevsub,[0],colors='k')
+    plt.contourf(bath_lonsub,bath_latsub,bath_elevsub,cmap='Blues_r')
+    plt.contourf(bath_lonsub,bath_latsub,bath_elevsub,[0,10000],colors='seashell')
+    #plt.yticks([])
+    #plt.xticks([])
+    plt.axis([np.min(long)-5,np.max(long)+5,np.min(latg)-5,np.max(latg)+5])
+    plt.plot(long,latg,'.k')
+    plt.plot(np.nanmean(long),np.nanmean(latg),'^r',markerfacecolor='r',\
+             label='Glider position '+'['+str(np.nanmean(long))[0:6]+','+str(np.nanmean(latg))[0:5]+']' )
+    plt.legend()
+    plt.title('Track ' + id,fontsize=20)
+    plt.axis('scaled')
+    
+    folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'
+    file = folder+'salt_profile_' + id + '_' + str(tini).split()[0] + '_' + str(tend).split()[0]
+    #folder = '/Volumes/hurricane/Hurricane_season_2019/' + (ti+timedelta(1)).strftime('%b-%d') + '/'
+    #file = folder + 'along_track_salt_' + id + '_' + str(tini).split()[0] + '_' + str(tend).split()[0]
+    plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
+    
