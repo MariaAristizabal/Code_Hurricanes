@@ -78,6 +78,18 @@ plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 
 #%%
 
+fig, ax = plt.subplots(figsize=(9, 3))
+cs = plt.contourf(lonRTOFS,latRTOFS,RTOFStemp,cmap=cmocean.cm.thermal)
+cs = fig.colorbar(cs, orientation='vertical') 
+cs.ax.set_ylabel('($^oC$)',fontsize=14,labelpad=15)
+plt.title('Surface Temperature RTOFS ' + date)
+
+folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'
+file = folder + 'surf_temp_' + date 
+#plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
+
+#%%
+
 nlevels =11
 kw = dict(levels = np.linspace(28,38,nlevels))
 
@@ -140,39 +152,3 @@ ax.set_ylim(lat_lim[0],lat_lim[-1])
 folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'
 file = folder + 'surf_vvel_' + date 
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
-
-#%%
-'''
-fig, ax = plt.axes(projection=ccrs.PlateCarree())
-cs = plt.contourf(lonRTOFS-360,latRTOFS,RTOFStemp,cmap=cmocean.cm.thermal)
-cs = fig.colorbar(cs, orientation='vertical') 
-cs.ax.set_ylabel('($^oC$)',fontsize=14,labelpad=15)
-plt.title('Surface Temperature RTOFS')
-
-
-#ax = plt.axes(projection=ccrs.PlateCarree())
-ax.coastlines()
-#plt.contour(bath_lon,bath_lat,bath_elev,[0],colors='k')
-#plt.contourf(bath_lon,bath_lat,bath_elev,[0,10000],colors='seashell')
-ax.set_xlim(lon_lim[0],lon_lim[-1])
-ax.set_ylim(lat_lim[0],lat_lim[-1])
-
-folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'
-file = folder + 'surf_temp_' + date 
-plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
-
-#%%
-ax = plt.axes(projection=ccrs.PlateCarree())
-cs = plt.contourf(lonRTOFS-360,latRTOFS,RTOFStemp,cmap=cmocean.cm.thermal)
-cs = fig.colorbar(cs, orientation='vertical') 
-cs.ax.set_ylabel('($^oC$)',fontsize=14,labelpad=15)
-ax.set_xlim(lon_lim[0],lon_lim[-1])
-ax.set_ylim(lat_lim[0],lat_lim[-1])
-
-ax.coastlines()
-
-folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'
-file = folder + 'surf_temp_' + date 
-plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
-'''
-

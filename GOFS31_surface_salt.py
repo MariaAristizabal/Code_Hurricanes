@@ -18,6 +18,7 @@ from netCDF4 import Dataset
 import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.basemap import Basemap
+import cmocean
 
 #%%
 GOFS31 = Dataset(catalog31)
@@ -36,6 +37,20 @@ oklon31 = np.where(np.logical_and(lon31 > 260, lon31 < 360))
 
 temp31 = GOFS31.variables['water_temp'][0,0,oklat31[0],oklon31[0]]
 salt31 = GOFS31.variables['salinity'][0,0,oklat31[0],oklon31[0]]
+
+#%% Figure temperature global
+
+temp31 = GOFS31.variables['water_temp'][0,0,:,:]
+
+fig, ax = plt.subplots(figsize=(9, 3))
+cs = plt.contourf(lon31,lat31,temp31,cmap=cmocean.cm.thermal)
+cs = fig.colorbar(cs, orientation='vertical') 
+cs.ax.set_ylabel('($^oC$)',fontsize=14,labelpad=15)
+plt.title('Surface Temperature GOFS ')
+
+folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'
+file = folder + 'surf_temp_GOFS_global_' 
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 
 #%% Figure Temperature
 

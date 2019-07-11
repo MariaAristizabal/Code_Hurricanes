@@ -63,8 +63,8 @@ import xarray as xr
 import matplotlib.dates as mdates
 import datetime
 
-plt.style.use('seaborn-poster')
-plt.style.use('ggplot')
+#plt.style.use('seaborn-poster')
+#plt.style.use('ggplot')
 
 import cartopy.crs as ccrs
 import cartopy
@@ -138,7 +138,7 @@ for i in range(len(long)):
         target_lon[i] = long[i]
 target_lat = latg
 
-#%% GOGF 3.1
+#%% GOFS 3.1
 
 df = xr.open_dataset(catalog31,decode_times=False)
 
@@ -161,12 +161,12 @@ lon31 = df.lon
 depth31 = df.depth
 
 ### Build the bbox for the xy data
-botm  = int(np.where(df.lat == GOM_lat[0])[0][0])
-top   = int(np.where(df.lat == GOM_lat[1])[0][0])
+botm  = int(np.where(df.lat > lat_lim[0])[0][0])
+top   = int(np.where(df.lat > lat_lim[1])[0][0])
 half  = int(len(df.lon)/2)
 
-left  = np.where(df.lon > GOM_lon[0]+360)[0][0]
-right = np.where(df.lon > GOM_lon[1]+360)[0][0]
+left  = np.where(df.lon > lon_lim[0]+360)[0][0]
+right = np.where(df.lon > lon_lim[1]+360)[0][0]
 lat100= df.lat[botm:top]
 lon100= df.lon[left:right]
 X, Y = np.meshgrid(lon100,lat100)

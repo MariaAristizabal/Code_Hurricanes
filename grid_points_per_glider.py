@@ -277,8 +277,6 @@ ax.plot(meshlon31[0][oklat31.min()-10:oklat31.max()+10,oklon31.min()-10:oklon31.
         meshlat31[0][oklon31.min()-10:oklon31.max()+10,oklat31.min()-10:oklat31.max()+10].T,'*k')
 ax.plot(lon31[oklon31],lat31[oklat31],'*g')
 
-#%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 #%% Calculating number of grid points covered by each glider
 
 n_days = []
