@@ -34,7 +34,6 @@ import numpy as np
 import xarray as xr
 import netCDF4 
 from datetime import datetime, timedelta
-from matplotlib.dates import date2num
 import matplotlib.dates as mdates
 
 import sys
@@ -56,7 +55,7 @@ tempglider = np.array(ncglider.temperature[0,:,:])
 saltglider = np.array(ncglider.salinity[0,:,:])
 depthglider = np.array(ncglider.depth[0,:,:])
 
-timestamp_glider = date2num(time_glider)[0]
+timestamp_glider = mdates.date2num(time_glider)[0]
 
 tmin = datetime.strptime(date_ini,'%Y-%m-%dT%H:%M:%SZ')
 tmax = datetime.strptime(date_end,'%Y-%m-%dT%H:%M:%SZ')
@@ -80,8 +79,6 @@ for lon in long:
         target_lon.append(lon)
 target_lon = np.array(target_lon)
 target_lat = np.array(latg)
-
-
 
 #%% Grid glider variables according to depth
 
@@ -153,7 +150,7 @@ for tt in np.arange(0,(tmax-tmin).days+1):
     tzero=datetime(1901,1,1,0,0)
     timeRT = tzero+timedelta(float(hycom_days))
     timeRTOFS.append(timeRT)
-    timestampRTOFS = date2num(timeRT) 
+    timestampRTOFS = mdates.date2num(timeRT) 
 
     #oklonRTOFS = 2508
     #oklatRTOFS = 1858
