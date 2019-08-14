@@ -1,44 +1,37 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Jul 11 10:31:43 2019
+Created on Mon Aug 12 10:52:48 2019
 
 @author: aristizabal
 """
-#%%
 
-# files for global RTOFS output
-Dir_rtofs= '/Volumes/aristizabal/ncep_model/RTOFS_global_Michael/rtofs.'
+#%% User input
+# lat and lon bounds
+lon_lim = [-110.0,-10.0]
+lat_lim = [15.0,45.0]
 
-# RTOFS grid file name
-gridfile = '/Volumes/aristizabal/ncep_model/RTOFS_global_Michael/rtofs_glo.navy_0.08.regional.grid'
-
-url_RTOFS = 'https://ftp.ncep.noaa.gov/data/nccf/com/rtofs/prod/rtofs.20190709/'
-
-prefix_ab = 'rtofs_glo.t00z.n00.archv.a' 
-
-# Name of 3D variable
-var_name = 'temp'
-
-# RTOFS a/b file name
-#prefix_ab = 'rtofs_glo.t00z.n-48.archv'
-
-
+# urls
+url_doppio = 'http://tds.marine.rutgers.edu/thredds/dodsC/roms/doppio/2017_da/his/runs/History_RUN_/
 
 #%%
-
-import sys
-sys.path.append('/Users/aristizabal/Desktop/MARACOOS_project/NCEP_scripts')
-from utils4HYCOM import readgrids, readVar
-
+from erddapy import ERDDAP
+import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+import matplotlib.patches as patches
+from datetime import datetime, timedelta
+import numpy as np
+import xarray as xr
+from ftplib import FTP
+import netCDF4
 import os
 import os.path
-import glob
 
+# Do not produce figures on screen
+#plt.switch_backend('agg')
 
-
-
-
-xr.open_dataset(url_RTOFS + file)
-
-#%%
+# Increase fontsize of labels globally
+plt.rc('xtick',labelsize=14)
+plt.rc('ytick',labelsize=14)
+plt.rc('legend',fontsize=14)

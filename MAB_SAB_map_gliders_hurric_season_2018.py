@@ -130,20 +130,25 @@ for x in range(len(tFl)):
           
 
 #%% Reading glider data and plotting lat and lon in the map
-    
-siz=12
 
-fig, ax = plt.subplots(figsize=(8, 6), dpi=80, facecolor='w', edgecolor='w') 
-ax.contour(bath_lon,bath_lat,bath_elev,colors='silver')
-ax.contour(bath_lon,bath_lat,bath_elev,[0],colors='k')
-ax.contourf(bath_lon,bath_lat,-bath_elev,cmap=plt.get_cmap('BrBG'))
-#ax.contour(bath_lon[oklonbath],bath_lat[oklatbath],bath_elev[np.c_[oklatbath],oklonbath],colors='k')   
+col = ['red','darkcyan','gold','m','darkorange','crimson','lime',\
+       'darkorchid','brown','sienna','yellow','orchid','gray',\
+       'gold','sienna','crimson','lime','m','darkcyan','darkorchid',\
+       'yellow','orchid','gray']
+mark = ['o','P','p','^','D','X','o','P','p','^','D','X',\
+        'o','P','p','^','D','X','o','P','p','^','D','X',\
+        'o','P','p','^','D','X','o','P','p','^','D','X']
+
+fig, ax = plt.subplots(figsize=(8, 6))
+plt.contour(bath_lon,bath_lat,bath_elev,[0],colors='k')
+plt.contourf(bath_lon,bath_lat,bath_elev,cmap='Blues_r')
+plt.contourf(bath_lon,bath_lat,bath_elev,[0,10000],colors='seashell')
 plt.axis('equal')
 plt.axis([lon_lim[0],lon_lim[-1],lat_lim[0],lat_lim[-1]])
-plt.title('Gliders in the MAB and SAB during hurricane season 2018 ',size = 18)
+plt.title('Gliders Deplyomenst in the MAB and SAB \n during hurricane season 2018 ',size = 18)
 
 gliders_no_silbo = np.concatenate((gliders[0:13],gliders[14:]),axis=0)
-for id in gliders_no_silbo:
+for i,id in enumerate(gliders_no_silbo):
         #print(id)
         e.dataset_id = id
         e.constraints = constraints
@@ -154,60 +159,19 @@ for id in gliders_no_silbo:
         parse_dates=True,
         skiprows=(1,)  # units information can be dropped.
             ).dropna()
-        if id == 'ng616-20180701T0000':
-            ax.plot(df['longitude (degrees_east)'].mean(),df['latitude (degrees_north)'].mean(),'o',markersize = 15,\
-                markeredgecolor='black', markeredgewidth=2,label = id.split('-')[0]) 
-        else:
-            ax.plot(df['longitude (degrees_east)'].mean(),df['latitude (degrees_north)'].mean(),'o',markersize = 10,\
-                markeredgecolor='black', markeredgewidth=2,label = id.split('-')[0]) 
-        #ax.legend(loc='upper right',fontsize = siz)
+        #plt.plot(df['longitude (degrees_east)'],df['latitude (degrees_north)'],'.',markersize = 2,\
+        #       color='black')
+        ax.plot(df['longitude (degrees_east)'].mean(),df['latitude (degrees_north)'].mean(),\
+                        marker=mark[i],color=col[i],markersize = 10,\
+                markeredgecolor='black', markeredgewidth=2,label = id[0:13]) 
         ax.legend(loc='upper right', bbox_to_anchor=(1.3, 1.0))
-        
+
+'''        
 ax.plot(lonFl,latFl,'o-',markersize = 5,color = 'dimgray') #label = 'Florence Track',
 for x in range(2,len(tFl)-2):
-    ax.text(lonFl[x],latFl[x],timeFl[x].strftime('%d, %H:%M'),size = siz)        
-        
-plt.savefig("/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/MAB_SAB_map_hurr_2018.png"\
-             ,bbox_inches = 'tight',pad_inches = 0) 
-
-#%% Reading glider data and plotting the tracks on the map
-    
-siz=12
-
-fig, ax = plt.subplots(figsize=(8, 6), dpi=80, facecolor='w', edgecolor='w') 
-ax.contour(bath_lon,bath_lat,bath_elev,colors='silver')
-ax.contour(bath_lon,bath_lat,bath_elev,[0],colors='k')
-ax.contourf(bath_lon,bath_lat,-bath_elev,cmap=plt.get_cmap('BrBG'))
-#ax.contour(bath_lon[oklonbath],bath_lat[oklatbath],bath_elev[np.c_[oklatbath],oklonbath],colors='k')   
-plt.axis('equal')
-plt.axis([lon_lim[0],lon_lim[-1],lat_lim[0],lat_lim[-1]])
-tt = plt.title('Gliders in the MAB and SAB during hurricane season 2018 ',\
-          size = 18)
-tt.set_position([0.5,1.04])
-
-
-gliders_no_silbo = np.concatenate((gliders[0:13],gliders[14:]),axis=0)
-for id in gliders_no_silbo:
-    if id[0:3] != 'all':
-        print(id)
-        e.dataset_id = id
-        e.constraints = constraints
-        e.variables = variables
-    
-        df = e.to_pandas(
-        index_col='time (UTC)',
-        parse_dates=True,
-        skiprows=(1,)  # units information can be dropped.
-            ).dropna()
-        plt.plot(df['longitude (degrees_east)'],df['latitude (degrees_north)'],'.',markersize = 2,\
-               color='black')
-        ax.plot(df['longitude (degrees_east)'].mean(),df['latitude (degrees_north)'].mean(),'o',markersize = 10,\
-                markeredgecolor='black', markeredgewidth=2,label=id.split('-')[0])
-        #ax.legend(loc='best',fontsize = siz)
-        
-#ax.plot(lonFl,latFl,'o-',markersize = 5,color = 'dimgray') #label = 'Florence Track',
-#for x in range(2,len(tFl)-2):
-#    ax.text(lonFl[x],latFl[x],timeFl[x].strftime('%d, %H:%M'),size = siz)        
-        
-plt.savefig("/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/MAB_SAB_map2_hurr_2018.png"\
-             ,bbox_inches = 'tight',pad_inches = 0)  
+    ax.text(lonFl[x],latFl[x],timeFl[x].strftime('%d, %H:%M'),size = 12)        
+'''
+   
+folder = '/Users/aristizabal/Desktop/my_papers/IEEE_Oceans_2019/Code_and_figures/'
+file = 'MAB_SAB_map_gliders_hurric_season_2018'
+plt.savefig(folder+file,bbox_inches = 'tight',pad_inches = 0) 
