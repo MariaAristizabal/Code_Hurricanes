@@ -30,7 +30,7 @@ service_id = 'GLOBAL_ANALYSIS_FORECAST_PHY_001_024-TDS'
 product_id = 'global-analysis-forecast-phy-001-024'
 depth_min = '0.493'
 out_dir = '/Users/aristizabal/Desktop'
-ncCOP_global = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/global-analysis-forecast-phy-001-024_1562705211410.nc'
+ncCOP_global = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/global-analysis-forecast-phy-001-024_1565877333169.nc'
 
 # Bathymetry file
 bath_file = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/GEBCO_2014_2D_-100.0_0.0_-10.0_70.0.nc'
@@ -165,9 +165,9 @@ for t in np.arange(len(nc_files_RTOFS)):
 #%% Read RTOFS grid and time
 print('Retrieving coordinates from RTOFS')
 ncRTOFS = xr.open_dataset(nc_files_RTOFS[0])
-latRTOFS = ncRTOFS.Latitude[:]
-lonRTOFS = ncRTOFS.Longitude[:]
-depthRTOFS = ncRTOFS.Depth[:]
+latRTOFS = np.asarray(ncRTOFS.Latitude[:])
+lonRTOFS = np.asarray(ncRTOFS.Longitude[:])
+depthRTOFS = np.asarray(ncRTOFS.Depth[:])
 
 tRTOFS = []
 for t in np.arange(len(nc_files_RTOFS)):
@@ -474,7 +474,6 @@ for id in gliders:
     plt.ylabel('Depth (m)',fontsize=20)
     plt.xlabel('Temperature ($^oC$)',fontsize=20)
     plt.title('Temperature Profile ' + id,fontsize=20)
-    plt.ylim([-np.nanmax(depthg)+100,0])
     plt.ylim([-np.nanmax(depthg)-100,0.1])
     plt.legend(loc='lower left',bbox_to_anchor=(-0.2,0.0),fontsize=14)
     plt.grid('on')
