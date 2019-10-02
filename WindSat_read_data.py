@@ -72,15 +72,19 @@ for t,tt in enumerate(np.arange((tend-tini).days+1)):
 
 #%% Read WindSat data
 
+#Wind stress
+rho_a = 1.2
+
 tini = datetime.strptime(date_ini,'%Y-%m-%dT%H:%M:%SZ')
 tend = datetime.strptime(date_end,'%Y-%m-%dT%H:%M:%SZ')
 
-kw = dict(levels = np.linspace(20,35,16))
+kw = dict(levels = np.linspace(4,32,29))
 
 #windsat_remss_ovw_l3_20190520_v7.0.1.nc.gz
 
 #for t,tt in enumerate(np.arange((tend-tini).days+1)):
-for t,tt in enumerate(np.arange(3)):
+for t,tt in enumerate(np.arange(5)):
+    #t=0
     print(t)
     tdate = tini + timedelta(t)
     file_name = 'windsat_remss_ovw_l3_' + tdate.strftime('%Y%m%d') + '_v7.0.1.nc.gz'
@@ -101,29 +105,64 @@ for t,tt in enumerate(np.arange(3)):
     ok_lat = np.where(np.logical_and(WS_lat >= lat_lim[0],WS_lat <= lat_lim[1]))
 
     WS_sst = np.asarray(WindSat.variables['sea_surface_temperature'][:]) #[:,ok_lat[0],ok_lon[0]])
-    WS_wind_speed = np.asarray(WindSat.variables['wind_speed_aw'][:])
+    WS_wind_speed_aw = np.asarray(WindSat.variables['wind_speed_aw'][:])
+    WS_wind_speed_lf = np.asarray(WindSat.variables['wind_speed_lf'][:])
+    WS_wind_speed_mf = np.asarray(WindSat.variables['wind_speed_mf'][:])
     WS_wind_dir = np.asarray(WindSat.variables['wind_direction'][:])
     
     ws_lon = WS_lon[ok_lon[0]]
     ws_lat = WS_lat[ok_lat[0]]
     ws_sst = WS_sst[:,ok_lat[0],:][:,:,ok_lon[0]]
-    ws_wind_speed = WS_wind_speed[:,ok_lat[0],:][:,:,ok_lon[0]]
+    
+    ws_wind_speed_aw = WS_wind_speed_aw[:,ok_lat[0],:][:,:,ok_lon[0]]
+    ws_wind_speed_lf = WS_wind_speed_lf[:,ok_lat[0],:][:,:,ok_lon[0]]
+    ws_wind_speed_mf = WS_wind_speed_mf[:,ok_lat[0],:][:,:,ok_lon[0]]
+    
     ws_wind_dir = WS_wind_dir[:,ok_lat[0],:][:,:,ok_lon[0]]
     
-    ws_u_wind = ws_wind_speed * np.cos(ws_wind_dir)
-    ws_v_wind = ws_wind_speed * np.sin(ws_wind_dir)
+    ws_u_wind_aw = ws_wind_speed_aw * np.cos(ws_wind_dir)
+    ws_v_wind_aw = ws_wind_speed_aw * np.sin(ws_wind_dir)
+    
+    # Wind stress
+    okcd1 = np.logical_and(ws_wind_speed_aw >= 4,ws_wind_speed_aw < 11)
+    okcd2 = np.logical_and(ws_wind_speed_aw >= 11,ws_wind_speed_aw < 25)
+    CD = np.empty((ws_sst.shape[0],ws_sst.shape[1],ws_sst.shape[2]))
+    CD[:] = np.nan
+    CD[okcd1] = 1.2
+    CD[okcd2] = 0.49 + 0.06 * ws_wind_speed_aw[okcd2]
+    ws_stress_x = rho_a * CD * ws_wind_speed_aw * ws_u_wind_aw
+    ws_stress_y = rho_a * CD * ws_wind_speed_aw * ws_v_wind_aw
+    
     
     plt.figure()
     plt.contour(bath_lonsub,bath_latsub,bath_elevsub,[0],colors='k')
     #plt.contourf(bath_lonsub,bath_latsub,bath_elevsub,cmap='Blues_r')
     #plt.contourf(bath_lonsub,bath_latsub,bath_elevsub,[0,10000],colors='seashell')
     plt.contourf(ws_lon,ws_lat,ws_sst[0,:,:],cmap=cmocean.cm.thermal,**kw)
-    plt.quiver(ws_lon, ws_lat,ws_u_wind , ws_v_wind,units='xy' ,scale=1)
     cl = plt.colorbar()
+    q = plt.quiver(ws_lon[::3], ws_lat[::3],ws_u_wind_aw[0,::3,::3],ws_v_wind_aw[0,::3,::3],units='xy' ,scale=5)
+    plt.quiverkey(q,-90,40,10,"10 m/s",coordinates='data',color='k')
     plt.ylim([lat_lim[0],lat_lim[1]])
     plt.xlim([lon_lim[0],lon_lim[1]])
     plt.title(WS_time[0])
-    #plt.axis('scaled')
+    plt.axis('scaled')
+    file = folder + ' ' + 'WinSat' + str(WS_time[0])[0:13]
+    plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
+    
+    plt.figure()
+    plt.contour(bath_lonsub,bath_latsub,bath_elevsub,[0],colors='k')
+    #plt.contourf(bath_lonsub,bath_latsub,bath_elevsub,cmap='Blues_r')
+    #plt.contourf(bath_lonsub,bath_latsub,bath_elevsub,[0,10000],colors='seashell')
+    plt.contourf(ws_lon,ws_lat,ws_sst[1,:,:],cmap=cmocean.cm.thermal,**kw)
+    cl = plt.colorbar()
+    q = plt.quiver(ws_lon[::3], ws_lat[::3],ws_u_wind_aw[1,::3,::3],ws_v_wind_aw[1,::3,::3],units='xy' ,scale=5)
+    plt.quiverkey(q,-90,40,10,"10 m/s",coordinates='data',color='k')
+    plt.ylim([lat_lim[0],lat_lim[1]])
+    plt.xlim([lon_lim[0],lon_lim[1]])
+    plt.title(WS_time[1])
+    plt.axis('scaled')
+    file = folder + ' ' + 'WinSat' + str(WS_time[1])[0:13]
+    plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
 
 #%%
 '''
@@ -145,44 +184,24 @@ ws_wind_speed = WS_wind_speed[:,ok_lat[0],:][:,:,ok_lon[0]]
 
 #%%
 
+    ws_u_wind_aw = ws_wind_speed_aw * np.cos(ws_wind_dir)
+    ws_v_wind_aw = ws_wind_speed_aw * np.sin(ws_wind_dir)
+    ws_u_wind_lf = ws_wind_speed_lf * np.cos(ws_wind_dir)
+    ws_v_wind_lf = ws_wind_speed_lf * np.sin(ws_wind_dir)
+    ws_u_wind_mf = ws_wind_speed_mf * np.cos(ws_wind_dir)
+    ws_v_wind_mf = ws_wind_speed_mf * np.sin(ws_wind_dir)
+
     plt.figure()
     plt.contour(bath_lonsub,bath_latsub,bath_elevsub,[0],colors='k')
     #plt.contourf(bath_lonsub,bath_latsub,bath_elevsub,cmap='Blues_r')
     #plt.contourf(bath_lonsub,bath_latsub,bath_elevsub,[0,10000],colors='seashell')
     plt.contourf(ws_lon,ws_lat,ws_sst[0,:,:],cmap=cmocean.cm.thermal,**kw)
     cl = plt.colorbar()
-    q = plt.quiver(ws_lon[::3], ws_lat[::3],ws_u_wind[0,::3,::3] , ws_v_wind[0,::3,::3],units='xy' ,scale=10)
-    plt.quiverkey(q,-90,40,20,"20 m/s",coordinates='data',color='k')
+    #q = plt.quiver(ws_lon[::3], ws_lat[::3],ws_u_wind_aw[0,::3,::3] , ws_v_wind_aw[0,::3,::3],units='xy' ,scale=5)
+    #q = plt.quiver(ws_lon[::3], ws_lat[::3],ws_u_wind_lf[0,::3,::3] , ws_v_wind_lf[0,::3,::3],color='r',units='xy' ,scale=5)
+    q = plt.quiver(ws_lon[::3], ws_lat[::3],ws_u_wind_mf[0,::3,::3] , ws_v_wind_mf[0,::3,::3],color='g',units='xy',scale=5)
+    plt.quiverkey(q,-90,40,10,"10 m/s",coordinates='data',color='k')
     plt.ylim([lat_lim[0],lat_lim[1]])
     plt.xlim([lon_lim[0],lon_lim[1]])
     plt.title(WS_time[0])
     #plt.axis('scaled')
-
-#%%
-
-kw = dict(levels = np.linspace(20,35,16))
-
-plt.figure()
-plt.contour(bath_lonsub,bath_latsub,bath_elevsub,[0],colors='k')
-plt.contourf(bath_lonsub,bath_latsub,bath_elevsub,cmap='Blues_r')
-plt.contourf(bath_lonsub,bath_latsub,bath_elevsub,[0,10000],colors='seashell')
-plt.contourf(ws_lon,ws_lat,ws_sst[1,:,:]-273.15,cmap=cmocean.cm.thermal,**kw)
-cl = plt.colorbar()
-plt.ylim([lat_lim[0],lat_lim[1]])
-plt.xlim([lon_lim[0],lon_lim[1]])
-plt.axis('scaled')
-plt.title(WS_time[0])
-
-#%%
-
-#kw = dict(levels = np.linspace(20,35,16))
-
-plt.figure()
-plt.contour(bath_lonsub,bath_latsub,bath_elevsub,[0],colors='k')
-plt.contourf(bath_lonsub,bath_latsub,bath_elevsub,cmap='Blues_r')
-plt.contourf(bath_lonsub,bath_latsub,bath_elevsub,[0,10000],colors='seashell')
-plt.contourf(ws_lon,ws_lat,ws_sst[1,:,:]-273.15,cmap=plt.get_cmap('Oranges')) #,**kw)
-cl = plt.colorbar()
-plt.ylim([lat_lim[0],lat_lim[1]])
-plt.xlim([lon_lim[0],lon_lim[1]])
-plt.axis('scaled')

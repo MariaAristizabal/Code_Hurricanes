@@ -11,7 +11,7 @@ date_ini = '2018-06-01T00:00:00Z'
 date_end = '2018-11-30T00:00:00Z'
 
 lon_lim = [-80.0,-60.0]
-lat_lim = [15.0,25.0]
+lat_lim = [10.0,30.0]
 
 # Bathymetry file
 bath_file = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/GEBCO_2014_2D_-100.0_0.0_-10.0_70.0.nc'
@@ -39,6 +39,7 @@ from datetime import datetime
 import numpy as np
 import xarray as xr
 import cmocean 
+import scipy.signal as signal
 
 # Do not produce figures on screen
 #plt.switch_backend('agg')
@@ -97,11 +98,13 @@ ok_lon = np.where(np.logical_and(Net_lwr_lon >= lon_lim[0],Net_lwr_lon <= lon_li
 ok_time = np.where(np.logical_and(mdates.date2num(Net_lwr_time) >= mdates.date2num(tini),\
                                   mdates.date2num(Net_lwr_time) <= mdates.date2num(tend)))
 
-net_lwr_lon = Net_lwr_lon[ok_lon[0]]
-net_lwr_lat = Net_lwr_lat[ok_lat[0]]
 net_lwr_time= Net_lwr_time[ok_time[0]]
-net_lwr = np.asarray(Net_lwr[ok_time[0],:,:][:,ok_lat[0],:][:,:,ok_lon[0]]) 
-
+net_lwr_lon = Net_lwr_lon[ok_lon[0]]
+net_lwr_latt = Net_lwr_lat[ok_lat[0]]
+okn = np.argsort(net_lwr_latt)
+net_lwr_lat = net_lwr_latt[okn]
+net_lwrr = np.asarray(Net_lwr[ok_time[0],:,:][:,ok_lat[0],:][:,:,ok_lon[0]]) 
+net_lwr = net_lwrr[:,okn,:]
 
 #%% Read net shortwave radiation data
 
@@ -132,10 +135,13 @@ ok_lon = np.where(np.logical_and(Net_swr_lon >= lon_lim[0],Net_swr_lon <= lon_li
 ok_time = np.where(np.logical_and(mdates.date2num(Net_swr_time) >= mdates.date2num(tini),\
                                   mdates.date2num(Net_swr_time) <= mdates.date2num(tend)))
 
-net_swr_lon = Net_swr_lon[ok_lon[0]]
-net_swr_lat = Net_swr_lat[ok_lat[0]]
 net_swr_time= Net_swr_time[ok_time[0]]
-net_swr = np.asarray(Net_swr[ok_time[0],:,:][:,ok_lat[0],:][:,:,ok_lon[0]]) 
+net_swr_lon = Net_swr_lon[ok_lon[0]]
+net_swr_latt = Net_swr_lat[ok_lat[0]]
+okn = np.argsort(net_swr_latt)
+net_swr_lat = net_swr_latt[okn]
+net_swrr = np.asarray(Net_swr[ok_time[0],:,:][:,ok_lat[0],:][:,:,ok_lon[0]]) 
+net_swr = net_swrr[:,okn,:]
 
 #%% Read net latent heat flux data
 
@@ -166,10 +172,13 @@ ok_lon = np.where(np.logical_and(Net_lht_lon >= lon_lim[0],Net_lht_lon <= lon_li
 ok_time = np.where(np.logical_and(mdates.date2num(Net_lht_time) >= mdates.date2num(tini),\
                                   mdates.date2num(Net_lht_time) <= mdates.date2num(tend)))
 
-net_lht_lon = Net_lht_lon[ok_lon[0]]
-net_lht_lat = Net_lht_lat[ok_lat[0]]
 net_lht_time= Net_lht_time[ok_time[0]]
-net_lht = np.asarray(Net_lht[ok_time[0],:,:][:,ok_lat[0],:][:,:,ok_lon[0]]) 
+net_lht_lon = Net_lht_lon[ok_lon[0]]
+net_lht_latt = Net_lht_lat[ok_lat[0]]
+okn = np.argsort(net_lht_latt)
+net_lht_lat = net_lht_latt[okn]
+net_lhtt = np.asarray(Net_lht[ok_time[0],:,:][:,ok_lat[0],:][:,:,ok_lon[0]]) 
+net_lht = net_lhtt[:,okn,:]
 
 #%% Read net sensible heat flux data
 
@@ -200,10 +209,13 @@ ok_lon = np.where(np.logical_and(Net_sht_lon >= lon_lim[0],Net_sht_lon <= lon_li
 ok_time = np.where(np.logical_and(mdates.date2num(Net_sht_time) >= mdates.date2num(tini),\
                                   mdates.date2num(Net_sht_time) <= mdates.date2num(tend)))
 
-net_sht_lon = Net_sht_lon[ok_lon[0]]
-net_sht_lat = Net_sht_lat[ok_lat[0]]
 net_sht_time= Net_sht_time[ok_time[0]]
-net_sht = np.asarray(Net_sht[ok_time[0],:,:][:,ok_lat[0],:][:,:,ok_lon[0]]) 
+net_sht_lon = Net_sht_lon[ok_lon[0]]
+net_sht_latt = Net_sht_lat[ok_lat[0]]
+okn = np.argsort(net_sht_latt)
+net_sht_lat = net_sht_latt[okn]
+net_shtt = np.asarray(Net_sht[ok_time[0],:,:][:,ok_lat[0],:][:,:,ok_lon[0]]) 
+net_sht = net_shtt[:,okn,:]
 
 #%% Look for datasets in IOOS glider dac
 print('Looking for glider data sets')
@@ -347,9 +359,11 @@ folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Mode
 file = folder + 'map_North_Atlantic_gliders_deployed_Caribbean_hurric_2018_2.png'
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 '''
-#%% Let's look first at ng630
+#%% Let's look first at SG630
 
-id = gliders[11]
+for gl in gliders:
+    if gl.split('-')[0] == 'SG630':
+        id = gl
 
 print('Reading ' + id )
 e.dataset_id = id
@@ -511,15 +525,36 @@ for t,tt in enumerate(timeg):
         Tmean[t] = np.nanmean(tempg_gridded[ok_mld,t])
         Td[t] = tempg_gridded[ok_mld_plus1m,t]
         
+#%% Lowpass Tmean and dT
+      
+# 0 < Wn < 1      
+#N = number samples      
+#W nysquist = 1 = pi/N = pi/2hours ... 1 sample every two hours
+#Wn = pi/ 12 hours = 1/ 6 = 0.17   
+        
+# First, design the Butterworth filter
+N  = 2    # Filter order
+Wn = 0.17 # Cutoff frequency
+B, A = signal.butter(N, Wn, output='ba')
+ 
+# Second, apply the filter
+Tmean_low = signal.filtfilt(B,A, Tmean[np.isfinite(Tmean)])
+Td_low = signal.filtfilt(B,A, Td[np.isfinite(Td)])
+timeg_low = timeg[np.isfinite(Tmean)]
+        
 #%% Tmean and Td
         
 fig,ax = plt.subplots(figsize=(12, 4))
 plt.plot(timeg,Tmean,'.-k',label='Tmean')
+plt.plot(timeg_low,Tmean_low,'-',color='grey',label='12 hours lowpass')
 plt.plot(timeg,Td,'.-g',label='Td')
+plt.plot(timeg[np.isfinite(Td)],Td_low,'-',color='lightseagreen',label='12 hours lowpass')
 plt.legend()
 xfmt = mdates.DateFormatter('%d-%b')
 ax.xaxis.set_major_formatter(xfmt)
 plt.xlim([timeg[0],timeg[-1]])
+#plt.xlim([datetime(2018,9,10),datetime(2018,9,15)])
+plt.ylabel('$^oC$',fontsize = 14)
 
 file = folder + ' ' + id + '_Tmean_Td'
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
@@ -540,15 +575,36 @@ for t,tt in enumerate(timeg):
     else:
         MLD_drho[t] = depthg_gridded[ok_mld[0][-1]] 
         
+#%% Lowpass MLD_dt and MLD_drho
+      
+# 0 < Wn < 1      
+#N = number samples      
+#W nysquist = 1 = pi/N = pi/2hours ... 1 sample every two hours
+#Wn = pi/ 12 hours = 1/ 6 = 0.17   
+        
+# First, design the Butterworth filter
+N  = 2    # Filter order
+Wn = 0.17 # Cutoff frequency
+B, A = signal.butter(N, Wn, output='ba')
+ 
+# Second, apply the filter
+MLD_dt_low = signal.filtfilt(B,A, MLD_dt[np.isfinite(Tmean)])
+MLD_drho_low = signal.filtfilt(B,A, MLD_drho[np.isfinite(Tmean)])
+timeg_low = timeg[np.isfinite(Tmean)]
+        
 #%% 
 
 fig,ax = plt.subplots(figsize=(12, 4))
 plt.plot(timeg,MLD_dt,'.-k',label='MLD_dt')
+plt.plot(timeg_low,MLD_dt_low,'.-',color='grey',label='MLD_dt lowpss')
 plt.plot(timeg,MLD_drho,'.-g',label='MLD_drho')
+plt.plot(timeg_low,MLD_drho_low,'.-',color='lightseagreen',label='MLD_drho lowpass')
 plt.legend() 
 xfmt = mdates.DateFormatter('%d-%b')
 ax.xaxis.set_major_formatter(xfmt)
 plt.xlim([timeg[0],timeg[-1]])
+plt.ylabel('Depth (m)',fontsize=14)
+#plt.xlim([datetime(2018,9,10),datetime(2018,9,15)])
 
 file = folder + ' ' + id + '_MLD_dt_drho'
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
@@ -561,9 +617,9 @@ nlevels = np.round(np.nanmax(tempg_gridded)) - np.round(np.nanmin(tempg_gridded)
 kw = dict(levels = np.linspace(15,31,17))
 #plt.contour(timeg,-depthg_gridded,varg_gridded,colors = 'lightgrey',**kw)
 cs = plt.contourf(timeg,-depthg_gridded,tempg_gridded,cmap=cmocean.cm.thermal,**kw)
-plt.contour(timeg,-depthg_gridded,tempg_gridded,[26],colors='grey')
-plt.plot(timeg,-MLD_dt,'.k',label='MLD_dt')
-plt.plot(timeg,-MLD_drho,'.g',label='MLD_drho')
+plt.contour(timeg,-depthg_gridded,tempg_gridded,[26],colors='silver')
+plt.plot(timeg_low,-MLD_dt_low,'.',color='grey',label='MLD_dt lowpass')
+plt.plot(timeg_low,-MLD_drho_low,'.',color='lightseagreen',label='MLD_drho lowpass')
 plt.xlim(df.index[0], df.index[-1])
 xfmt = mdates.DateFormatter('%d-%b')
 ax.xaxis.set_major_formatter(xfmt)
@@ -580,30 +636,44 @@ plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 #%% Calculate dTmean/dt
 
 dTmean_dt = (Tmean[1:]-Tmean[0:-1])/(mdates.date2num(timeg[1:]) - mdates.date2num(timeg[0:-1]))
+dTmean_dt_low = (Tmean_low[1:]-Tmean_low[0:-1])/(mdates.date2num(timeg_low[1:]) - mdates.date2num(timeg_low[0:-1]))
         
 # convert dTmean/dt in m/6 hours
 dTmean_dt = dTmean_dt / 4 
+dTmean_dt_low = dTmean_dt_low / 4 
 
 timeg_mid = (mdates.date2num(timeg[1:]) + mdates.date2num(timeg[0:-1]))/2
+timeg_mid_low = (mdates.date2num(timeg_low[1:]) + mdates.date2num(timeg_low[0:-1]))/2
 
 #%% dTmean/dt
 
 fig,ax = plt.subplots(figsize=(12, 4))
-plt.plot(timeg_mid,dTmean_dt,'.-k',label='dTmean_dt')
+plt.plot(timeg_mid,dTmean_dt,'.-k',label='dTmean/dt')
+plt.plot(timeg_mid_low,dTmean_dt_low,'.-g',label='dTmean/dt lowpass')
 plt.legend()
 xfmt = mdates.DateFormatter('%d-%b')
 ax.xaxis.set_major_formatter(xfmt)
 plt.xlim([timeg[0],timeg[-1]])
+plt.ylabel('$^oC$',fontsize = 14)
 
-file = folder + ' ' + id + '_Tmean/Td'
-plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)   
+file = folder + ' ' + id + '_Tmean_Td'
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)  
+
+#%%
+'''
+fig,ax = plt.subplots(figsize=(12, 4))
+plt.plot(timeg_mid,mdates.date2num(timeg[1:]) - mdates.date2num(timeg[0:-1]),'.-') 
+xfmt = mdates.DateFormatter('%d-%b')
+ax.xaxis.set_major_formatter(xfmt)
+plt.xlim([timeg[0],timeg[-1]])
+'''
 
 #%%  Interpolate MLD to NCEP reanalysis time
 
-MLD_dt_interp = np.interp(mdates.date2num(net_lwr_time),mdates.date2num(timeg),MLD_dt)        
+MLD_dt_interp = np.interp(mdates.date2num(net_lwr_time),mdates.date2num(timeg_low),MLD_dt_low)        
       
 plt.figure()
-plt.plot(timeg,MLD_dt,'.-k')
+plt.plot(timeg_low,MLD_dt_low,'.-k')
 plt.plot(net_lwr_time,MLD_dt_interp,'.-g')
 
 #%%  Calculate dT/dt due to Net long wave radiation
@@ -611,14 +681,21 @@ plt.plot(net_lwr_time,MLD_dt_interp,'.-g')
 rho0 = 1027 #kg/m^3
 c_rho = 4300 # specific heat capacity at constant pressure J/kg ^oC
 
-# Interpolate long and latg onto reanalysis grid
-oklon_lwr = np.round(np.interp(long,net_lwr_lon,np.arange(len(net_lwr_lon)))).astype(int)
-oklat_lwr = np.round(np.interp(latg,net_lwr_lat,np.arange(len(net_lwr_lat)))).astype(int)
+tstamp_ncep = mdates.date2num(net_lwr_time)
+tstamp_glider = mdates.date2num(timeg)
+
+# interpolating glider lon and lat to lat and lon on NCEP reanalysis time
+sublon_lwr = np.interp(tstamp_ncep,tstamp_glider,long)
+sublat_lwr = np.interp(tstamp_ncep,tstamp_glider,latg)
+
+# getting the grid positions for sublonm and sublatm
+oklon_lwr = np.round(np.interp(sublon_lwr,net_lwr_lon,np.arange(len(net_lwr_lon)))).astype(int)
+oklat_lwr = np.round(np.interp(sublat_lwr,net_lwr_lat,np.arange(len(net_lwr_lat)))).astype(int)
 
 dT_dt_lwr = np.empty(len(net_lwr_time))
 dT_dt_lwr[:] = np.nan
 for tind,t in enumerate(net_lwr_time):
-    dT_dt_lwr[tind] = net_lwr[tind,oklat_lwr[tind],oklon_lwr[tind]]/(rho0 * c_rho * MLD_dt_interp[tind])
+    dT_dt_lwr[tind] = -net_lwr[tind,oklat_lwr[tind],oklon_lwr[tind]]/(rho0 * c_rho * MLD_dt_interp[tind])
   
 # conversion to ^oC/6h 
 dT_dt_lwr = dT_dt_lwr * 3600 * 6
@@ -628,14 +705,18 @@ dT_dt_lwr = dT_dt_lwr * 3600 * 6
 rho0 = 1027 #kg/m^3
 c_rho = 4300 # specific heat capacity at constant pressure J/kg ^oC
 
-# Interpolate long and latg onto reanalysis grid
-oklon_swr = np.round(np.interp(long,net_swr_lon,np.arange(len(net_swr_lon)))).astype(int)
-oklat_swr = np.round(np.interp(latg,net_swr_lat,np.arange(len(net_swr_lat)))).astype(int)
+# interpolating glider lon and lat to lat and lon on NCEP reanalysis time
+sublon_swr = np.interp(tstamp_ncep,tstamp_glider,long)
+sublat_swr = np.interp(tstamp_ncep,tstamp_glider,latg)
+
+# getting the grid positions for sublonm and sublatm
+oklon_swr = np.round(np.interp(sublon_swr,net_swr_lon,np.arange(len(net_swr_lon)))).astype(int)
+oklat_swr = np.round(np.interp(sublat_swr,net_swr_lat,np.arange(len(net_swr_lat)))).astype(int)
 
 dT_dt_swr = np.empty(len(net_swr_time))
 dT_dt_swr[:] = np.nan
 for tind,t in enumerate(net_swr_time):
-    dT_dt_swr[tind] = net_swr[tind,oklat_swr[tind],oklon_swr[tind]]/(rho0 * c_rho * MLD_dt_interp[tind])
+    dT_dt_swr[tind] = -net_swr[tind,oklat_swr[tind],oklon_swr[tind]]/(rho0 * c_rho * MLD_dt_interp[tind])
   
 # conversion to ^oC/6h 
 dT_dt_swr = dT_dt_swr * 3600 * 6
@@ -645,14 +726,18 @@ dT_dt_swr = dT_dt_swr * 3600 * 6
 rho0 = 1027 #kg/m^3
 c_rho = 4300 # specific heat capacity at constant pressure J/kg ^oC
 
-# Interpolate long and latg onto reanalysis grid
-oklon_lht = np.round(np.interp(long,net_lht_lon,np.arange(len(net_lht_lon)))).astype(int)
-oklat_lht = np.round(np.interp(latg,net_lht_lat,np.arange(len(net_lht_lat)))).astype(int)
+# interpolating glider lon and lat to lat and lon on NCEP reanalysis time
+sublon_lht = np.interp(tstamp_ncep,tstamp_glider,long)
+sublat_lht = np.interp(tstamp_ncep,tstamp_glider,latg)
+
+# getting the grid positions for sublonm and sublatm
+oklon_lht = np.round(np.interp(sublon_lht,net_lht_lon,np.arange(len(net_lht_lon)))).astype(int)
+oklat_lht = np.round(np.interp(sublat_lht,net_lht_lat,np.arange(len(net_lht_lat)))).astype(int)
 
 dT_dt_lht = np.empty(len(net_lht_time))
 dT_dt_lht[:] = np.nan
 for tind,t in enumerate(net_lht_time):
-    dT_dt_lht[tind] = net_lht[tind,oklat_lht[tind],oklon_lht[tind]]/(rho0 * c_rho * MLD_dt_interp[tind])
+    dT_dt_lht[tind] = -net_lht[tind,oklat_lht[tind],oklon_lht[tind]]/(rho0 * c_rho * MLD_dt_interp[tind])
   
 # conversion to ^oC/6h 
 dT_dt_lht = dT_dt_lht * 3600 * 6
@@ -662,14 +747,18 @@ dT_dt_lht = dT_dt_lht * 3600 * 6
 rho0 = 1027 #kg/m^3
 c_rho = 4300 # specific heat capacity at constant pressure J/kg ^oC
 
-# Interpolate long and latg onto reanalysis grid
-oklon_sht = np.round(np.interp(long,net_sht_lon,np.arange(len(net_sht_lon)))).astype(int)
-oklat_sht = np.round(np.interp(latg,net_sht_lat,np.arange(len(net_sht_lat)))).astype(int)
+# interpolating glider lon and lat to lat and lon on NCEP reanalysis time
+sublon_sht = np.interp(tstamp_ncep,tstamp_glider,long)
+sublat_sht = np.interp(tstamp_ncep,tstamp_glider,latg)
+
+# getting the grid positions for sublonm and sublatm
+oklon_sht = np.round(np.interp(sublon_sht,net_sht_lon,np.arange(len(net_sht_lon)))).astype(int)
+oklat_sht = np.round(np.interp(sublat_sht,net_sht_lat,np.arange(len(net_sht_lat)))).astype(int)
 
 dT_dt_sht = np.empty(len(net_sht_time))
 dT_dt_sht[:] = np.nan
 for tind,t in enumerate(net_sht_time):
-    dT_dt_sht[tind] = net_sht[tind,oklat_sht[tind],oklon_sht[tind]]/(rho0 * c_rho * MLD_dt_interp[tind])
+    dT_dt_sht[tind] = -net_sht[tind,oklat_sht[tind],oklon_sht[tind]]/(rho0 * c_rho * MLD_dt_interp[tind])
   
 # conversion to ^oC/6h 
 dT_dt_sht = dT_dt_sht * 3600 * 6
@@ -677,12 +766,13 @@ dT_dt_sht = dT_dt_sht * 3600 * 6
 #%% dT/dt due to lwr, swr, lht, sht
 
 fig,ax = plt.subplots(figsize=(12, 4))
-plt.plot(net_lht_time,dT_dt_lht,'.-b',label='dT/dt lht')
-plt.plot(net_sht_time,dT_dt_sht,'.-r',label='dT/dt sht')
-plt.plot(net_swr_time,dT_dt_swr,'.-g',label='dT/dt lwr')
-plt.plot(net_lwr_time,dT_dt_lwr,'.-k',label='dT/dt lwr')
+plt.plot(net_lht_time,dT_dt_lht,'.-b',label='dT/dt latent heat flux')
+plt.plot(net_sht_time,dT_dt_sht,'.-r',label='dT/dt sensible heat flux')
+plt.plot(net_swr_time,dT_dt_swr,'.-g',label='dT/dt short wave radiation')
+plt.plot(net_lwr_time,dT_dt_lwr,'.-',color='orange',label='dT/dt long wave radiation')
 plt.legend()
-plt.ylim([-0.14,0.14])
+plt.ylim([-0.2,0.2])
+plt.ylabel('$^oC/(6 h)$',fontsize=16)
 xfmt = mdates.DateFormatter('%d-%b')
 ax.xaxis.set_major_formatter(xfmt)
 plt.xlim([timeg[0],timeg[-1]])
@@ -705,18 +795,168 @@ MLD_dt_mid = np.interp(timeg_mid,mdates.date2num(timeg),MLD_dt)
 
 dT_dt_MLD_deep = dh_dt * (Tmean_mid - Td_mid)/MLD_dt_mid 
 
+#%% dT_dt_MLD_deep lowpass
+
+# First, design the Butterworth filter
+N  = 2    # Filter order
+Wn = 0.17 # Cutoff frequency
+B, A = signal.butter(N, Wn, output='ba')
+ 
+# Second, apply the filter
+dT_dt_MLD_deep_low = signal.filtfilt(B,A, dT_dt_MLD_deep[np.isfinite(dT_dt_MLD_deep)])
+timeg2_mid_low = timeg_mid[np.isfinite(dT_dt_MLD_deep)]
+
 #%% 
 
 fig,ax = plt.subplots(figsize=(12,4))
 plt.plot(timeg_mid,dT_dt_MLD_deep,'.-k',label='dT/dt MLD deepening')
+plt.plot(timeg2_mid_low,dT_dt_MLD_deep_low,'.-',color='grey',label='dT/dt MLD deepening lowpass')
 plt.legend()
 xfmt = mdates.DateFormatter('%d-%b')
 ax.xaxis.set_major_formatter(xfmt)
 plt.xlim([timeg[0],timeg[-1]])
+plt.ylabel('$^oC/(6 h)$',fontsize=16)
 
 file = folder + ' ' + id + '_dT_dt_entrainment'
-plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)   
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)  
 
+#%% All the fluxes
+
+fig,ax = plt.subplots(figsize=(12,4))
+plt.plot(net_lht_time,dT_dt_lht,'.-b',label='dT/dt latent heat flux')
+plt.plot(net_sht_time,dT_dt_sht,'.-r',label='dT/dt sensible heat flux')
+plt.plot(net_swr_time,dT_dt_swr,'.-g',label='dT/dt short wave radiation')
+plt.plot(net_lwr_time,dT_dt_lwr,'.-',color='orange',label='dT/dt long wave radiation')
+plt.plot(timeg2_mid_low,-dT_dt_MLD_deep_low,'.-',color='purple',label='dT/dt MLD deepening lowpass')
+plt.plot(timeg_mid_low,dTmean_dt_low,'.-k',label='dTmean/dt lowpass')
+plt.legend(loc='center',bbox_to_anchor=[1,1])
+xfmt = mdates.DateFormatter('%d-%b')
+ax.xaxis.set_major_formatter(xfmt)
+plt.xlim([timeg[0],timeg[-1]])
+plt.ylabel('$^oC/(6 h)$',fontsize=16)
+
+file = folder + ' ' + id + '_all_terms'
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)  
+ 
+#%% All the fluxes detail
+
+fig,ax = plt.subplots(figsize=(12,4))
+plt.plot(net_lht_time,dT_dt_lht,'.-b',label='dT/dt latent heat flux')
+plt.plot(net_sht_time,dT_dt_sht,'.-r',label='dT/dt sensible heat flux')
+plt.plot(net_swr_time,dT_dt_swr,'.-g',label='dT/dt short wave radiation')
+plt.plot(net_lwr_time,dT_dt_lwr,'.-',color='orange',label='dT/dt long wave radiation')
+plt.plot(timeg2_mid_low,-dT_dt_MLD_deep_low,'.-',color='purple',label='dT/dt MLD deepening lowpass')
+plt.plot(timeg_mid_low,dTmean_dt_low,'.-k',label='dTmean/dt lowpass')
+plt.legend(loc='center',bbox_to_anchor=[1,1])
+xfmt = mdates.DateFormatter('%H \n %d-%b')
+ax.xaxis.set_major_formatter(xfmt)
+plt.xlim([datetime(2018,8,1),datetime(2018,8,7)])
+plt.ylim([-0.1,0.1])
+plt.ylabel('$^oC/(6 h)$',fontsize=16)
+
+plt.xticks([datetime(2018,8,1,4),datetime(2018,8,1,16),\
+            datetime(2018,8,2,4),datetime(2018,8,2,16),\
+            datetime(2018,8,3,4),datetime(2018,8,3,16),\
+            datetime(2018,8,4,4),datetime(2018,8,4,16),\
+            datetime(2018,8,5,4),datetime(2018,8,5,16),\
+            datetime(2018,8,6,4),datetime(2018,8,6,16)])
+
+yy = np.arange(-0.1,0.11,0.01)
+
+xx = np.tile(datetime(2018,8,1,4),len(yy))
+plt.plot(xx,yy,'--k')
+xx = np.tile(datetime(2018,8,1,16),len(yy))
+plt.plot(xx,yy,'--k')
+xx = np.tile(datetime(2018,8,2,4),len(yy))
+plt.plot(xx,yy,'--k')
+xx = np.tile(datetime(2018,8,2,16),len(yy))
+plt.plot(xx,yy,'--k')
+xx = np.tile(datetime(2018,8,3,4),len(yy))
+plt.plot(xx,yy,'--k')
+xx = np.tile(datetime(2018,8,3,16),len(yy))
+plt.plot(xx,yy,'--k')
+xx = np.tile(datetime(2018,8,4,4),len(yy))
+plt.plot(xx,yy,'--k')
+xx = np.tile(datetime(2018,8,4,16),len(yy))
+plt.plot(xx,yy,'--k')
+xx = np.tile(datetime(2018,8,5,4),len(yy))
+plt.plot(xx,yy,'--k')
+xx = np.tile(datetime(2018,8,5,16),len(yy))
+plt.plot(xx,yy,'--k')
+xx = np.tile(datetime(2018,8,6,4),len(yy))
+plt.plot(xx,yy,'--k')
+xx = np.tile(datetime(2018,8,6,16),len(yy))
+plt.plot(xx,yy,'--k')
+
+file = folder + ' ' + id + '_all_terms_detail1'
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
+
+#%% All the fluxes detail
+
+fig,ax = plt.subplots(figsize=(12,4))
+plt.plot(net_lht_time,dT_dt_lht,'.-b',label='dT/dt latent heat flux')
+plt.plot(net_sht_time,dT_dt_sht,'.-r',label='dT/dt sensible heat flux')
+plt.plot(net_swr_time,dT_dt_swr,'.-g',label='dT/dt short wave radiation')
+plt.plot(net_lwr_time,dT_dt_lwr,'.-',color='orange',label='dT/dt long wave radiation')
+plt.plot(timeg2_mid_low,-dT_dt_MLD_deep_low,'.-',color='purple',label='dT/dt MLD deepening lowpass')
+plt.plot(timeg_mid_low,dTmean_dt_low,'.-k',label='dTmean/dt lowpass')
+plt.legend(loc='center',bbox_to_anchor=[1,1])
+xfmt = mdates.DateFormatter('%H \n %d-%b')
+ax.xaxis.set_major_formatter(xfmt)
+plt.xlim([datetime(2018,9,7),datetime(2018,9,15)])
+plt.ylim([-0.25,0.25])
+plt.ylabel('$^oC/(6 h)$',fontsize=16)
+
+plt.xticks([datetime(2018,9,7,4),datetime(2018,9,7,16),\
+            datetime(2018,9,8,4),datetime(2018,9,8,16),\
+            datetime(2018,9,9,4),datetime(2018,9,9,16),\
+            datetime(2018,9,10,4),datetime(2018,9,10,16),\
+            datetime(2018,9,11,4),datetime(2018,9,11,16),\
+            datetime(2018,9,12,4),datetime(2018,9,12,16),\
+            datetime(2018,9,13,4),datetime(2018,9,13,16),\
+            datetime(2018,9,14,4),datetime(2018,9,14,16)])
+
+yy = np.arange(-0.25,0.26,0.01)
+
+xx = np.tile(datetime(2018,9,7,4),len(yy))
+plt.plot(xx,yy,'--k')
+xx = np.tile(datetime(2018,9,7,16),len(yy))
+plt.plot(xx,yy,'--k')
+xx = np.tile(datetime(2018,9,8,4),len(yy))
+plt.plot(xx,yy,'--k')
+xx = np.tile(datetime(2018,9,8,16),len(yy))
+plt.plot(xx,yy,'--k')
+xx = np.tile(datetime(2018,9,9,4),len(yy))
+plt.plot(xx,yy,'--k')
+xx = np.tile(datetime(2018,9,9,16),len(yy))
+plt.plot(xx,yy,'--k')
+xx = np.tile(datetime(2018,9,10,4),len(yy))
+plt.plot(xx,yy,'--k')
+xx = np.tile(datetime(2018,9,10,16),len(yy))
+plt.plot(xx,yy,'--k')
+xx = np.tile(datetime(2018,9,11,4),len(yy))
+plt.plot(xx,yy,'--k')
+xx = np.tile(datetime(2018,9,11,16),len(yy))
+plt.plot(xx,yy,'--k')
+xx = np.tile(datetime(2018,9,12,4),len(yy))
+plt.plot(xx,yy,'--k')
+xx = np.tile(datetime(2018,9,12,16),len(yy))
+plt.plot(xx,yy,'--k')
+xx = np.tile(datetime(2018,9,13,4),len(yy))
+plt.plot(xx,yy,'--k')
+xx = np.tile(datetime(2018,9,13,16),len(yy))
+plt.plot(xx,yy,'--k')
+xx = np.tile(datetime(2018,9,14,4),len(yy))
+plt.plot(xx,yy,'--k')
+xx = np.tile(datetime(2018,9,14,16),len(yy))
+plt.plot(xx,yy,'--k')
+xx = np.tile(datetime(2018,9,15,4),len(yy))
+plt.plot(xx,yy,'--k')
+xx = np.tile(datetime(2018,9,15,16),len(yy))
+plt.plot(xx,yy,'--k')
+
+file = folder + ' ' + id + '_all_terms_detail2'
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)   
         
 #%%
 '''

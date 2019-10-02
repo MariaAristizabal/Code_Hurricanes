@@ -13,8 +13,12 @@ lon_lim = [-69,-63];
 lat_lim = [16,22];
 
 # Time bounds
-min_time = '2018-06-01T00:00:00Z'
-max_time = '2018-11-30T00:00:00Z'
+#min_time = '2018-06-01T00:00:00Z'
+#max_time = '2018-11-30T00:00:00Z'
+
+# Time bounds
+min_time = '2019-08-29T00:00:00Z'
+max_time = '2019-08-30T00:00:00Z'
 
 # Bathymetry file
 bath_file = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/GEBCO_2014_2D_-100.0_0.0_-60.0_45.0.nc'

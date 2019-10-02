@@ -28,11 +28,11 @@ bath_file = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/
 ti = datetime.today() - timedelta(1)
 tini = datetime(ti.year,ti.month,ti.day)
 
-#%%
+#%% Download kmz files
 
-url = 'https://www.nhc.noaa.gov/gis/'
+url_nhc = 'https://www.nhc.noaa.gov/gis/'
 
-r = requests.get(url)
+r = requests.get(url_nhc)
 data = r.text
 
 soup = BeautifulSoup(data,"lxml")
@@ -48,15 +48,15 @@ for i,s in enumerate(soup.find_all("a")):
             if 'CONE_latest' in ff:
                 file_name = ff.split('/')[3] 
                 print(ff, file_name) 
-                urllib.request.urlretrieve(url[:-4] + ff , file_name)
+                urllib.request.urlretrieve(url_nhc[:-4] + ff , file_name)
             if 'TRACK_latest' in ff:
                 file_name = ff.split('/')[3]
                 print(ff, file_name) 
-                urllib.request.urlretrieve(url[:-4] + ff ,file_name)
+                urllib.request.urlretrieve(url_nhc[:-4] + ff ,file_name)
             if 'best_track' in ff:
                 file_name = ff.split('/')[1]
                 print(ff,file_name)
-                urllib.request.urlretrieve(url + ff ,file_name)
+                urllib.request.urlretrieve(url_nhc + ff ,file_name)
 
 #%%
        
@@ -91,11 +91,11 @@ for i,f in enumerate(zip_files):
         kml_best_track = kmz.open(kml_f[0], 'r').read()
 
 #%% Get TRACK coordinates
-        
+'''        
 filename = '/Users/aristizabal/Desktop/AL052019_TRACK_latest.zip'    
 kmz = ZipFile(filename, 'r')       
 kml = kmz.open('al052019_025Aadv_TRACK.kml', 'r').read() 
-
+'''
 '''
 filename = '/Users/aristizabal/Desktop/AL052019_CONE_latest.zip'
 kmz = ZipFile(filename, 'r')
@@ -144,14 +144,23 @@ lat_forec_cone = np.asarray(lat_forec_cone).astype(float)
 
 #%% best track coordinates
 
+soup = BeautifulSoup(kml_best_track,'lxml')  
 
+lon_best_track = np.empty(len(soup.find_all("point")))
+lon_best_track[:] = np.nan
+lat_best_track = np.empty(len(soup.find_all("point")))
+lat_best_track[:] = np.nan
+for i,s in enumerate(soup.find_all("point")):
+    print(s.get_text("coordinates"))
+    lon_best_track[i] = float(s.get_text("coordinates").split('coordinates')[1].split(',')[0])
+    lat_best_track[i] = float(s.get_text("coordinates").split('coordinates')[1].split(',')[1])
 
-#%%
-import matplotlib.pyplot as plt
-
-plt.figure()
-plt.plot(lon_forec_cone,lat_forec_cone,'.b')
-
+# get time stamp
+    
+time_best_track = []
+for i,s in enumerate(soup.find_all("td")):
+    if 'UTC' in s.get_text(' '):
+        time_best_track.append(s.get_text(' '))
         
 #%%
 
@@ -179,9 +188,15 @@ plt.contour(bath_lonsub,bath_latsub,bath_elevsub,[0],colors='k')
 plt.contourf(bath_lonsub,bath_latsub,bath_elevsub,cmap='Blues_r')
 plt.contourf(bath_lonsub,bath_latsub,bath_elevsub,[0,10000],colors='seashell')
 plt.plot(lon_forec_track, lat_forec_track,'.-k')
-plt.plot(lon_forec_cone,lat_forec_cone,'.b')
+plt.plot(lon_forec_cone,lat_forec_cone,'.b',markersize=1)
+plt.plot(lon_best_track,lat_best_track,'or',markersize=3)
 #plt.plot(lon_forec_cone,lat_forec_cone,'.b')
 #for tind,t in enumerate(time):
 #    print(tind)
     #plt.text(lon_forec_track[tind], lat_forec_track[tind],'a')
+    
+#%%    
+    
+for n in soup.find_all("name"): 
+    ...:     print(len(n.get_text('')))     
     

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Jul 18 14:10:58 2019
+Created on Thu Sep 26 15:47:42 2019
 
 @author: aristizabal
 """
@@ -17,7 +17,11 @@ url_GOFS = 'http://tds.hycom.org/thredds/dodsC/GLBv0.08/expt_93.0/ts3z'
 #url_RTOFS = 'https://nomads.ncep.noaa.gov:9090/dods/rtofs/rtofs_global'
 
 # FTP server RTOFS
-ftp_RTOFS = 'ftp.ncep.noaa.gov'
+#ftp_RTOFS = 'ftp.ncep.noaa.gov'
+
+#folder_RTOFS = '/Volumes/coolgroup/RTOFS/forecasts/domains/hurricanes/RTOFS_6hourly_North_Atlantic/'
+folder_RTOFS = '/Users/aristizabal/Desktop/rtofs/'
+
 
 nc_files_RTOFS = ['rtofs_glo_3dz_f006_6hrly_hvr_US_east.nc',\
                   'rtofs_glo_3dz_f012_6hrly_hvr_US_east.nc',\
@@ -44,7 +48,7 @@ import matplotlib.patches as patches
 from datetime import datetime, timedelta
 import numpy as np
 import xarray as xr
-from ftplib import FTP
+#from ftplib import FTP
 import netCDF4
 import os
 import os.path
@@ -66,19 +70,23 @@ ti = datetime.today() - timedelta(1)
 tini = datetime(ti.year,ti.month,ti.day)
 '''
 #%% Get time bounds for current day
-
+'''
 te = datetime.today() + timedelta(1)
 tend = datetime(te.year,te.month,te.day)
 
 #ti = datetime.today() - timedelta(1)
 ti = datetime.today() 
 tini = datetime(ti.year,ti.month,ti.day)
+'''
 
 #%%
-'''
-tend = datetime.datetime(2019, 7, 20, 0, 0)
-tini = datetime.datetime(2019, 7, 19, 0, 0)
-'''
+
+#tend = datetime(2019, 7, 27, 0, 0)
+#tini = datetime(2019, 7, 28, 0, 0)
+
+tini = datetime(2019, 9, 24, 0, 0)
+tend = datetime(2019, 9, 25, 0, 0)
+
 #%% Look for datasets in IOOS glider dac
 print('Looking for glider data sets')
 e = ERDDAP(server = url_glider)
@@ -144,6 +152,7 @@ ttGOFS = GOFS31.time
 tGOFS = netCDF4.num2date(ttGOFS[:],ttGOFS.units)
 
 #%% load RTOFS nc files
+'''
 print('Loading 6 hourly RTOFS nc files from FTP server')
 for t in np.arange(len(nc_files_RTOFS)):
     #file = out_dir + '/' + nc_files_RTOFS[t]
@@ -167,17 +176,30 @@ for t in np.arange(len(nc_files_RTOFS)):
     # Download nc files
     print('loading ' + file)
     ftp.retrbinary('RETR '+file, open(file,'wb').write)
+'''
 
 #%% Read RTOFS grid and time
 print('Retrieving coordinates from RTOFS')
-ncRTOFS = xr.open_dataset(nc_files_RTOFS[0])
+
+if tend.month < 10:
+    if tend.day < 10:
+        fol = 'rtofs.' + str(tini.year) + '0' + str(tini.month) + '0' + str(tini.day)
+    else:
+        fol = 'rtofs.' + str(tini.year) + '0' + str(tini.month) + str(tini.day)
+else:
+    if tend.day < 10:
+        fol = 'rtofs.' + str(tini.year) + str(tini.month) + '0' + str(tini.day)
+    else:
+        fol = 'rtofs.' + str(tini.year) + str(tini.month) + str(tini.day)
+
+ncRTOFS = xr.open_dataset(folder_RTOFS + fol + '/' + nc_files_RTOFS[0])
 latRTOFS = np.asarray(ncRTOFS.Latitude[:])
 lonRTOFS = np.asarray(ncRTOFS.Longitude[:])
 depthRTOFS = np.asarray(ncRTOFS.Depth[:])
 
 tRTOFS = []
 for t in np.arange(len(nc_files_RTOFS)):
-    ncRTOFS = xr.open_dataset(nc_files_RTOFS[t])
+    ncRTOFS = xr.open_dataset(folder_RTOFS + fol + '/' + nc_files_RTOFS[t])
     tRTOFS.append(np.asarray(ncRTOFS.MT[:])[0])
 
 tRTOFS = np.asarray([mdates.num2date(mdates.date2num(tRTOFS[t])) \
@@ -197,6 +219,9 @@ bath_elev = ncbath.variables['elevation'][:]
 
 #%% Looping through all gliders found
 for id in gliders:
+    
+#%%    
+    id=gliders[5]
     print('Reading ' + id )
     e.dataset_id = id
     e.constraints = constraints
@@ -343,7 +368,7 @@ for id in gliders:
     target_tempRTOFS[:] = np.nan
     for i in range(len(oktimeRTOFS[0])):
         print(len(oktimeRTOFS[0]),' ',i)
-        nc_file = nc_files_RTOFS[i]
+        nc_file = folder_RTOFS + fol + '/' + nc_files_RTOFS[i]
         ncRTOFS = xr.open_dataset(nc_file)
         target_tempRTOFS[:,i] = ncRTOFS.variables['temperature'][0,:,oklatRTOFS[i],oklonRTOFS[i]]
     target_tempRTOFS[target_tempRTOFS < -100] = np.nan
@@ -352,7 +377,7 @@ for id in gliders:
     target_saltRTOFS[:] = np.nan
     for i in range(len(oktimeRTOFS[0])):
         print(len(oktimeRTOFS[0]),' ',i)
-        nc_file = nc_files_RTOFS[i]
+        nc_file = folder_RTOFS + fol + '/' + nc_files_RTOFS[i]
         ncRTOFS = xr.open_dataset(nc_file)
         target_saltRTOFS[:,i] = ncRTOFS.variables['salinity'][0,:,oklatRTOFS[i],oklonRTOFS[i]]
     target_saltRTOFS[target_saltRTOFS < -100] = np.nan
@@ -571,8 +596,8 @@ for id in gliders:
     plt.ylabel('Depth (m)',fontsize=20)
     plt.xlabel('Salinity',fontsize=20)
     plt.title('Salinity Profile ' + id,fontsize=20)
-    plt.ylim([-np.nanmax(depthg)+100,0])
-    plt.ylim([-np.nanmax(depthg)-100,0.1])
+    #plt.ylim([-np.nanmax(depthg)-100,0.1])
+    plt.ylim([-200,0.1])
     plt.legend(loc='lower left',bbox_to_anchor=(-0.2,0.0),fontsize=14)
     plt.grid('on')
 

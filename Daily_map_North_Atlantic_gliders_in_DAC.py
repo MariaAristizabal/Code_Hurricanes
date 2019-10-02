@@ -16,7 +16,7 @@ lat_lim = [15.0,45.0]
 url_glider = 'https://data.ioos.us/gliders/erddap'
 
 # Bathymetry file
-bath_file = '/home/aristizabal/bathymetry_files/GEBCO_2014_2D_-100.0_0.0_-10.0_70.0.nc'
+bath_file = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/GEBCO_2014_2D_-100.0_0.0_-10.0_70.0.nc'
 
 #%%
 
@@ -26,10 +26,9 @@ import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 import numpy as np
 import xarray as xr
-import os
 
 # Do not produce figures on screen
-plt.switch_backend('agg')
+#plt.switch_backend('agg')
 
 # Increase fontsize of labels globally
 plt.rc('xtick',labelsize=14)
@@ -116,9 +115,12 @@ bath_elevsub = bath_elevs[:,oklonbath]
 #%% Map of North Atlantic with glider tracks
 
 col = ['red','darkcyan','gold','m','darkorange','crimson','lime',\
+       'darkorchid','brown','sienna','yellow','orchid','gray',\
+       'darkcyan','gold','m','darkorange','crimson','lime','red',\
        'darkorchid','brown','sienna','yellow','orchid','gray']
-mark = ['o','*','p','^','D','X','o','*','p','^','D','X','o']
-edgc = ['k','w','k','w','k','w','k','w','k','w','k','w','k','w','k']
+mark = ['o','*','p','^','D','X','o','*','p','^','D','X','o',\
+        'o','*','p','^','D','X','o','*','p','^','D','X','o']
+#edgc = ['k','w','k','w','k','w','k','w','k','w','k','w','k','w','k']
 
 fig, ax = plt.subplots(figsize=(10, 5))
 plt.contour(bath_lon,bath_lat,bath_elev,[0],colors='k')
@@ -147,6 +149,6 @@ for i,id in enumerate(gliders):
         ax.legend(fontsize=14)
         #ax.text(np.mean(df['longitude']),np.mean(df['latitude']),id.split('-')[0])
 
-folder = '/www/web/rucool/hurricane/Hurricane_season_2019/' + ti.strftime('%b-%d') + '/'
+folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'
 file = folder + 'Daily_map_North_Atlantic_gliders_in_DAC_' + str(tini).split()[0] + '_' + str(tend).split()[0] + '.png'
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)

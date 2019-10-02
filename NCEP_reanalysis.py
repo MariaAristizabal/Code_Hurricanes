@@ -26,6 +26,8 @@ lat_lim = [5.0,45.0]
 bath_file = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/GEBCO_2014_2D_-100.0_0.0_-10.0_70.0.nc'
 #bath_file = '/Volumes/aristizabal/bathymetry_files/GEBCO_2019.nc'
 
+# Folder where to save figure
+folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'
 
 #%%
 
@@ -195,38 +197,85 @@ net_sht = np.asarray(Net_sht[ok_time[0],:,:][:,ok_lat[0],:][:,:,ok_lon[0]])
 #%% Longwave radiation 
 
 X,Y = np.meshgrid(net_lwr_lon,net_lwr_lat)
+tind = np.where(mdates.date2num(net_lwr_time) == mdates.date2num(datetime(2018,8,1,12)))[0][0]
 
-t=3
+kw = dict(levels = np.linspace(-100,100,21))
+
 plt.figure()
 plt.contour(bath_lonsub,bath_latsub,bath_elevsub,[0],colors='k')
-plt.contourf(net_lwr_lon,net_lwr_lat,net_lwr[t,:,:],cmap=cmocean.cm.thermal)
-plt.colorbar()
+plt.contourf(net_lwr_lon,net_lwr_lat,-net_lwr[tind,:,:],cmap=cmocean.cm.balance,**kw)
+cbar = plt.colorbar()
 plt.plot(X,Y,'*k')
-plt.title('Net Longwave Radiation, NCEP Reanalysis \n' + str(net_lwr_time[t]))
+plt.title('Net Longwave Radiation, NCEP Reanalysis \n' + str(net_lwr_time[tind]))
+cbar.ax.set_ylabel(Netlwr.variables['nlwrs'].attrs['units'],fontsize=16)
+
+file = folder + ' ' + 'net_lwr' + str(net_lwr_time[tind])[0:10]
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
+
+#%%
+'''
+plt.figure()
+plt.plot(net_lwr_time,net_lwr[:,10,10])
+'''
 
 #%% Shortwave radiation
 
-t=3 
+X,Y = np.meshgrid(net_swr_lon,net_swr_lat)
+tind = np.where(mdates.date2num(net_swr_time) == mdates.date2num(datetime(2018,8,1,12)))[0][0]
+
+kw = dict(levels = np.linspace(-1000,1000,21))
+
 plt.figure()
 plt.contour(bath_lonsub,bath_latsub,bath_elevsub,[0],colors='k')
-plt.contourf(net_swr_lon,net_swr_lat,net_swr[t,:,:],cmap=cmocean.cm.thermal)
-plt.colorbar()
-plt.title('Net Shortwave Radiation, NCEP Reanalysis \n' + str(net_swr_time[t]))
+plt.contourf(net_swr_lon,net_swr_lat,-net_swr[tind,:,:],cmap=cmocean.cm.balance,**kw)
+cbar = plt.colorbar()
+plt.plot(X,Y,'*k')
+plt.title('Net Shortwave Radiation, NCEP Reanalysis \n' + str(net_swr_time[tind]))
+cbar.ax.set_ylabel(Netswr.variables['nswrs'].attrs['units'],fontsize=16)
+
+file = folder + ' ' + 'net_swr' + str(net_swr_time[tind])[0:10]
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
+
+#%%
+'''
+plt.figure()
+plt.plot(net_swr_time,net_swr[:,10,10])
+'''
 
 #%% Latent heat flux radiation
 
-t=3 
+X,Y = np.meshgrid(net_lht_lon,net_lht_lat)
+tind = np.where(mdates.date2num(net_lht_time) == mdates.date2num(datetime(2018,8,1,12)))[0][0]
+
+kw = dict(levels = np.linspace(-1000,1000,21))
+
 plt.figure()
 plt.contour(bath_lonsub,bath_latsub,bath_elevsub,[0],colors='k')
-plt.contourf(net_lht_lon,net_lht_lat,net_lht[t,:,:],cmap=cmocean.cm.thermal)
-plt.colorbar()
-plt.title('Net Latent Heat Flux, NCEP Reanalysis \n' + str(net_lht_time[t]))
+plt.contourf(net_lht_lon,net_lht_lat,-net_lht[tind,:,:],cmap=cmocean.cm.balance,**kw)
+cbar = plt.colorbar()
+plt.title('Net Latent Heat Flux, NCEP Reanalysis \n' + str(net_lht_time[tind]))
+cbar.ax.set_ylabel(Netlht.variables['lhtfl'].attrs['units'],fontsize=16)
+plt.plot(X,Y,'*k')
+
+file = folder + ' ' + 'net_lht' + str(net_lht_time[tind])[0:10]
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
 
 #%% Sensible heat flux radiation
 
-t=3 
+X,Y = np.meshgrid(net_lht_lon,net_lht_lat)
+tind = np.where(mdates.date2num(net_lht_time) == mdates.date2num(datetime(2018,8,1,12)))[0][0]
+
+kw = dict(levels = np.linspace(-1000,1000,21))
+
 plt.figure()
 plt.contour(bath_lonsub,bath_latsub,bath_elevsub,[0],colors='k')
-plt.contourf(net_lht_lon,net_lht_lat,net_sht[t,:,:],cmap=cmocean.cm.thermal)
-plt.colorbar()
-plt.title('Net Sensible Heat Flux, NCEP Reanalysis \n' + str(net_sht_time[t]))
+plt.contourf(net_lht_lon,net_lht_lat,-net_sht[tind,:,:],cmap=cmocean.cm.balance,**kw)
+cbar = plt.colorbar()
+plt.title('Net Sensible Heat Flux, NCEP Reanalysis \n' + str(net_sht_time[tind]))
+plt.plot(X,Y,'*k')
+cbar.ax.set_ylabel(Netsht.variables['shtfl'].attrs['units'],fontsize=16)
+
+cbar.ax.set_ylabel(Netsht.variables['shtfl'].attrs['units'],fontsize=16)
+
+file = folder + ' ' + 'net_sht' + str(net_sht_time[tind])[0:10]
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
