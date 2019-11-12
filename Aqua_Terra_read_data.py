@@ -11,17 +11,26 @@ Created on Thu Aug 15 12:14:17 2019
 Aqua_url = 'https://podaac-opendap.jpl.nasa.gov:443/opendap/allData/modis/L3/aqua/11um/v2014.0/4km/daily/'
 Terra_url = 'https://podaac-opendap.jpl.nasa.gov:443/opendap/allData/modis/L3/terra/11um/v2014.0/4km/daily/'
 
-date_ini = '2018-07-17T00:00:00Z'
-date_end = '2018-09-18T00:00:00Z'
+#date_ini = '2018-07-17T00:00:00Z'
+#date_end = '2018-09-18T00:00:00Z'
 
-lon_lim = [-100.0,-60.0]
-lat_lim = [5.0,45.0]
+date_ini = '2019-08-28T00:00:00Z'
+date_end = '2019-09-04T00:00:00Z'
+
+#lon_lim = [-100.0,-60.0]
+#lat_lim = [5.0,45.0]
+
+lon_lim = [-80.0,-60.0]
+lat_lim = [15.0,30.0]
 
 # Bathymetry file
 bath_file = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/GEBCO_2014_2D_-100.0_0.0_-10.0_70.0.nc'
 
 # Folder to save WindSat files
 folder_nc = '/Volumes/aristizabal/WindSat_data/' 
+
+# Folder where to save figure
+folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'
 
 #%%
 
@@ -33,6 +42,11 @@ from datetime import datetime, timedelta
 #import urllib.request
 
 import cmocean
+
+# Increase fontsize of labels globally
+plt.rc('xtick',labelsize=14)
+plt.rc('ytick',labelsize=14)
+plt.rc('legend',fontsize=14)
 
 #%% Reading bathymetry data
 
@@ -74,10 +88,10 @@ for t,tt in enumerate(np.arange((tend-tini).days+1)):
 tini = datetime.strptime(date_ini,'%Y-%m-%dT%H:%M:%SZ')
 tend = datetime.strptime(date_end,'%Y-%m-%dT%H:%M:%SZ')
 
-kw = dict(levels = np.linspace(20,35,7))
+kw = dict(levels=np.linspace(21,33,25))
 
-#for t,tt in enumerate(np.arange((tend-tini).days+1)):
-for t,tt in enumerate(np.arange(2)):
+for t,tt in enumerate(np.arange((tend-tini).days+1)):
+#for t,tt in enumerate(np.arange(6,7)):
     tdate = tini + timedelta(t)
     
     # Aqua
@@ -101,17 +115,16 @@ for t,tt in enumerate(np.arange(2)):
     aqua_lat = Aqua_lat[ok_lat[0]]
     aqua_sst = Aqua_sst[ok_lat[0],:][:,ok_lon[0]]
     
-    plt.figure()
+    fig, ax = plt.subplots(figsize=(7,5)) 
     plt.contour(bath_lonsub,bath_latsub,bath_elevsub,[0],colors='k')
-    #plt.contourf(bath_lonsub,bath_latsub,bath_elevsub,cmap='Blues_r')
-    #plt.contourf(bath_lonsub,bath_latsub,bath_elevsub,[0,10000],colors='seashell')
-    #plt.contour(aqua_lon,aqua_lat,aqua_sst[:,:],colors='k',**kw)
     plt.contourf(aqua_lon,aqua_lat,aqua_sst[:,:],cmap=cmocean.cm.thermal,**kw)
     cl = plt.colorbar()
     plt.ylim([lat_lim[0],lat_lim[1]])
     plt.xlim([lon_lim[0],lon_lim[1]])
     plt.title('Aqua L3 SST Thermal-IR Daily 4 km Daytime \n' + str(tdate))
-    #plt.axis('scaled')
+    plt.axis('scaled')
+    file = folder + 'Aqua_L3_SST_' + str(tdate)
+    plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
     
     # Terra
     file_name = 'T' + str(tdate.year) + tdate.strftime('%j') + \
@@ -136,15 +149,15 @@ for t,tt in enumerate(np.arange(2)):
     
     plt.figure()
     plt.contour(bath_lonsub,bath_latsub,bath_elevsub,[0],colors='k')
-    #plt.contourf(bath_lonsub,bath_latsub,bath_elevsub,cmap='Blues_r')
-    #plt.contourf(bath_lonsub,bath_latsub,bath_elevsub,[0,10000],colors='seashell')
-    #plt.contour(aqua_lon,aqua_lat,aqua_sst[:,:],colors='k',**kw)
     plt.contourf(terra_lon,terra_lat,terra_sst[:,:],cmap=cmocean.cm.thermal,**kw)
     cl = plt.colorbar()
     plt.ylim([lat_lim[0],lat_lim[1]])
     plt.xlim([lon_lim[0],lon_lim[1]])
     plt.title('Terra L3 SST Thermal-IR Daily 4 km Daytime \n' + str(tdate))
-    #plt.axis('scaled')
+    plt.axis('scaled')
+    
+    file = folder + 'Terra_L3_SST_' + str(tdate)
+    plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
 
 #%%
 '''

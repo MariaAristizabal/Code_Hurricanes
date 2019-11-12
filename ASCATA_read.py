@@ -50,13 +50,14 @@ bath_elevs = bath_elev[oklatbath,:]
 bath_elevsub = bath_elevs[:,oklonbath]
 
 #%%
-             
+'''             
 ASCATA = xr.open_dataset(ASCATA_url)
    
 AS_time = np.asarray(ASCATA.variables['time'][:])
 AS_lat = np.asarray(ASCATA.variables['lat'][:])
 AS_lon = np.asarray(ASCATA.variables['lon'][:])
 AS_wind_speed = np.asarray(ASCATA.variables['wind_speed'][:])
+
 
 #%% Changing lon convention to glider convention
 
@@ -92,12 +93,12 @@ plt.contourf(bath_lon,bath_lat,bath_elev,[0,10000],colors='seashell')
 #plt.axis([-100,-10,0,50])
 plt.scatter(AS_long,AS_latg,**kw,cmap='RdYlBu_r')
 plt.colorbar()
-
+'''
 #%%
 
 days = np.arange(int(day_ini),int(day_end)+1)
 
-for day in days[0:5]:
+for day in days[0:2]:
 
     fig, ax = plt.subplots(figsize=(10, 5))
     plt.contour(bath_lon,bath_lat,bath_elev,[0],colors='k')

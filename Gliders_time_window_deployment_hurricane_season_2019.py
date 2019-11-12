@@ -106,6 +106,7 @@ for id in gliders:
         
 '''
 #%%
+'''
 e.dataset_id=gliders[28]
 e.constraints=constraints
 e.variables=variables
@@ -115,7 +116,7 @@ df = e.to_pandas(
         parse_dates=True,
         skiprows=(1,)  # units information can be dropped.
                     ).dropna()    
-
+'''
 
 #%% Reading glider data and plotting lat and lon on the map
 '''
@@ -182,7 +183,7 @@ for i,l in enumerate(glider):
     if glider[i] == 'ru28':
         fund_agency[i] = 'NJDEP'
     if glider[i] == 'ru29':
-        fund_agency[i] = 'NOAA'
+        fund_agency[i] = 'Vetlesen'
     if glider[i] == 'ru30':
         fund_agency[i] = 'NOAA'
     if glider[i] == 'sam':
@@ -191,11 +192,13 @@ for i,l in enumerate(glider):
         fund_agency[i] = 'NYDEC'
     if glider[i] == 'SG636':
         fund_agency[i] = 'Shell'
-    if glider[i] == 'ru29':
-        fund_agency[i] = 'NOAA'
     if glider[i] == 'silbo':
         fund_agency[i] = 'TWR'
     if glider[i] == 'Sverdrup':
+        fund_agency[i] = 'NOAA'
+    if glider[i] == 'glos_236':
+        fund_agency[i] = 'NOAA'
+    if glider[i] == 'ru33':
         fund_agency[i] = 'NOAA'
 
 #%% Glider in each category
@@ -208,16 +211,18 @@ n_simmons = len([i for i,list in enumerate(fund_agency) if list == 'Simmons'])
 n_nydec = len([i for i,list in enumerate(fund_agency) if list == 'NYDEC'])
 n_shell = len([i for i,list in enumerate(fund_agency) if list == 'Shell'])
 n_njdep = len([i for i,list in enumerate(fund_agency) if list == 'NJDEP'])
+n_vetlesen = len([i for i,list in enumerate(fund_agency) if list == 'Vetlesen'])
 
 #%% Pie chart of number of gliders in each category
 
 labels = 'NOAA - '+str(n_noaa),'Navy - '+str(n_navy),'NSF - '+str(n_nsf),\
          'NYDEC - '+str(n_nydec),'NJDEP - '+str(n_njdep),\
          'Simmons - '+str(n_simmons),'Shell - '+str(n_shell),\
-         'TWR - '+str(n_twr)
-siz = [n_noaa,n_navy,n_nsf,n_nydec,n_njdep,n_simmons,n_shell,n_twr]
+         'TWR - '+str(n_twr),'Vetlesen - '+str(n_vetlesen) 
+siz = [n_noaa,n_navy,n_nsf,n_nydec,n_njdep,n_simmons,n_shell,n_twr,n_vetlesen]
 sizes = np.ndarray.tolist(np.multiply(siz,1/np.sum(siz)))
-colors = ['royalblue','goldenrod','firebrick','forestgreen','darkorange','black','rebeccapurple','aqua'] 
+colors = ['royalblue','goldenrod','firebrick','forestgreen','darkorange','black',\
+          'rebeccapurple','aqua','yellowgreen'] 
 #explode = (0, 0.1, 0, 0)  # only "explode" the 2nd slice (i.e. 'Hogs')
 
 
@@ -234,7 +239,8 @@ plt.savefig("/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/M
 siz=12
 
 funding = list(set(fund_agency))
-color_fund1 = ['royalblue','goldenrod','firebrick','forestgreen','darkorange','black','rebeccapurple','aqua'] 
+color_fund1 = ['royalblue','goldenrod','firebrick','forestgreen','darkorange','black',\
+          'rebeccapurple','aqua','yellowgreen'] 
 
 fig, ax = plt.subplots(figsize=(14, 12), dpi=80, facecolor='w', edgecolor='w') 
 plt.title('Gliders During Hurricane Season 2019',fontsize=24)
@@ -270,25 +276,29 @@ for i, id in enumerate(gliders):
         if fund_agency[i] == 'Simmons':
             h5 = ax.plot(df.index,np.tile(i,len(df.index)),'s',markersize = 10,\
                     color=color_fund1[5],markeredgewidth=0.1,markeredgecolor=color_fund1[5],zorder=0)
-        if fund_agency[i] == 'Simmons':
+        if fund_agency[i] == 'Shell':
             h6 = ax.plot(df.index,np.tile(i,len(df.index)),'s',markersize = 10,\
                     color=color_fund1[6],markeredgewidth=0.1,markeredgecolor=color_fund1[6],zorder=0)
         if fund_agency[i] == 'TWR':
             h7 = ax.plot(df.index,np.tile(i,len(df.index)),'s',markersize = 10,\
                     color=color_fund1[7],markeredgewidth=0.1,markeredgecolor=color_fund1[7],zorder=0)
+        if fund_agency[i] == 'Vetlesen':
+            h8 = ax.plot(df.index,np.tile(i,len(df.index)),'s',markersize = 10,\
+                    color=color_fund1[8],markeredgewidth=0.1,markeredgecolor=color_fund1[8],zorder=0)
            
 glider = [l.split('-')[0] for l in gliders]
+#glider = [l for l in gliders]
 ax.set_yticks(np.arange(len(glider)))
 plt.tick_params(labelsize=20)
 ax.plot(np.tile(datetime(2019,8,24,0,0,0),len(gliders)+2),np.arange(-1,len(gliders)+1),'k')
 ax.plot(np.tile(datetime(2019,9,7,0,0,0),len(gliders)+2),np.arange(-1,len(gliders)+1),'k')
 ax.plot(np.tile(datetime(2019,9,20,0,0,0),len(gliders)+2),np.arange(-1,len(gliders)+1),'k')
 ax.plot(np.tile(datetime(2019,9,27,0,0,0),len(gliders)+2),np.arange(-1,len(gliders)+1),'k')
-ax.legend([h0[0],h1[0],h2[0],h3[0],h4[0],h5[0],h6[0],h7[0]],\
+ax.legend([h0[0],h1[0],h2[0],h3[0],h4[0],h5[0],h6[0],h7[0],h8[0]],\
           ['NOAA - '+str(n_noaa),'Navy - '+str(n_navy),'NSF - '+str(n_nsf),\
          'NYDEC - '+str(n_nydec),'NJDEP - '+str(n_njdep),\
          'Simmons - '+str(n_simmons),'Shell - '+str(n_shell),\
-         'TWR - '+str(n_twr)],\
+         'TWR - '+str(n_twr),'Vetlesen - '+str(n_vetlesen)],\
           loc='center left',fontsize=20,bbox_to_anchor=(0, 0.5))
 
 xfmt = mdates.DateFormatter('%d-%b')
@@ -351,6 +361,7 @@ nprof_njdep = 0
 nprof_simmons = 0
 nprof_shell = 0
 nprof_twr = 0
+nprof_vetlesen = 0
 for i,glid in enumerate(profiles.index):
     if fund_agency[i] == 'Navy':
         print('YES',glid)
@@ -376,21 +387,27 @@ for i,glid in enumerate(profiles.index):
     if fund_agency[i] == 'TWR':
         print('YES',glid)
         nprof_twr += profiles['# profiles'][i]
+    if fund_agency[i] == 'Vetlesen':
+        print('YES',glid)
+        nprof_vetlesen += profiles['# profiles'][i]
                               
 #%% Pie chart of number of profiles in each category
 
 labels = 'NOAA - '+str(nprof_noaa),'Navy - '+str(nprof_navy),'NSF - '+str(nprof_nsf),\
          'NYDEC - '+str(nprof_nydec),'NJDEP - '+str(nprof_njdep),\
          'Simmons - '+str(nprof_simmons),'Shell - '+str(nprof_shell),\
-         'TWR - '+str(nprof_twr)
-sizes = [nprof_noaa,nprof_navy,nprof_nsf,nprof_nydec,nprof_njdep,nprof_simmons,nprof_shell,nprof_twr]
-colors = ['royalblue','goldenrod','firebrick','forestgreen','darkorange','black','rebeccapurple','aqua']  
+         'TWR - '+str(nprof_twr),'Vetlesen - '+str(nprof_vetlesen)
+sizes = [nprof_noaa,nprof_navy,nprof_nsf,nprof_nydec,nprof_njdep,\
+         nprof_simmons,nprof_shell,nprof_twr,nprof_vetlesen]
+colors = ['royalblue','goldenrod','firebrick','forestgreen',\
+          'darkorange','black','rebeccapurple','aqua','yellowgreen']  
 #explode = (0, 0.1, 0, 0)  # only "explode" the 2nd slice (i.e. 'Hogs')
 
 plt.figure()
 patches, texts = plt.pie(sizes,startangle=90,colors=colors) #,autopct='%2d')
 plt.legend(patches,labels,loc='best',bbox_to_anchor=(0.85, 1))
 plt.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+plt.title('Total Number of Profiles = '+str(total_profiles),fontsize=16)
 
 plt.savefig("/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/pie_chart_number_profiles_hurrica_season_2019.png"\
             ,bbox_inches = 'tight',pad_inches = 0.0)

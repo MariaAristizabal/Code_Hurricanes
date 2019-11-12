@@ -16,7 +16,7 @@ Created on Thu Jan 10 16:45:54 2019
 
 import matplotlib.pyplot as plt
 import xarray as xr
-#import cmocean
+import cmocean
 #from bs4 import BeautifulSoup
 #import requests
 import netCDF4
@@ -26,9 +26,12 @@ import numpy as np
 #import cartopy
 #from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 
-#%% User input
+# Increase fontsize of labels globally
+plt.rc('xtick',labelsize=14)
+plt.rc('ytick',labelsize=14)
+plt.rc('legend',fontsize=14)
 
-# yes!! AVHRR_url = 'https://podaac-opendap.jpl.nasa.gov/opendap/allData/ghrsst/data/GDS2/L4/GLOB/NCEI/AVHRR_OI/v2/'
+#%% User input
 
 # GHRSST Level 3C sub-skin Sea Surface Temperature from the Geostationary Operational 
 #Environmental Satellites (GOES 16) Advanced Baseline Imager (ABI) 
@@ -39,9 +42,13 @@ import numpy as np
 #http://tds.maracoos.org/thredds/dodsC/AVHRR/2018/Unmasked/Files/20181231.365.2318.n18.EC1.nc
 #AVHRR_url = 'http://tds.maracoos.org/thredds/dodsC/AVHRR/2018/Unmasked/Files/'
 
-year = '2018'
-day_of_year = '254' # set 11 2018
-date = '20180911'
+#year = '2018'
+#day_of_year = '254' # set 11 2018
+#date = '20180911'
+
+year = '2019'
+day_of_year = '246' # 20190827
+date = '20190903'
 
 # Bathymetry file
 #bath_file = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/GEBCO_2014_2D_-100.0_0.0_-60.0_45.0.nc'
@@ -50,9 +57,14 @@ bath_file = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/
 lon_lim = [-100,-10]
 lat_lim = [0,50]
 
+#lon_lim = [-80.0,-60.0]
+#lat_lim = [15.0,30.0]
+
 #%% Find url list
 '''
-r = requests.get(AVHRR_url)
+#AVHRR_url + year + day_of_year
+
+r = requests.get(url + year + '/' + day_of_year + '/')
 data = r.text
 soup = BeautifulSoup(data,"lxml")
 
@@ -93,30 +105,35 @@ bath_elevsub = bath_elev[oklatbath,oklonbath]
 
 # Florence
 #AVHRR_file = 'https://podaac-opendap.jpl.nasa.gov:443/opendap/allData/ghrsst/data/GDS2/L3C/GLOB/AVHRR_SST_METOP_B_GLB/OSISAF/v1/2018/254/20180911120000-OSISAF-L3C_GHRSST-SSTsubskin-AVHRR_SST_METOP_B_GLB-sstglb_metop01_20180911_120000-v02.0-fv01.0.nc'
-#AVHRR_file = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/nc_20180911120000-OSISAF-L3C_GHRSST-SSTsubskin-AVHRR_SST_METOP_B_GLB-sstglb_metop01_20180911_120000-v02.0-fv01.0.nc.nc4'
+AVHRR_file = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/nc_20180911120000-OSISAF-L3C_GHRSST-SSTsubskin-AVHRR_SST_METOP_B_GLB-sstglb_metop01_20180911_120000-v02.0-fv01.0.nc.nc4'
 
 # Michael 2018/10/10 00
 #AVHRR_file = 'https://podaac-opendap.jpl.nasa.gov:443/opendap/allData/ghrsst/data/GDS2/L3C/GLOB/AVHRR_SST_METOP_B_GLB/OSISAF/v1/2018/282/20181010000000-OSISAF-L3C_GHRSST-SSTsubskin-AVHRR_SST_METOP_B_GLB-sstglb_metop01_20181010_000000-v02.0-fv01.0.nc'
-AVHRR_file = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/nc_20181010000000-OSISAF-L3C_GHRSST-SSTsubskin-AVHRR_SST_METOP_B_GLB-sstglb_metop01_20181010_000000-v02.0-fv01.0.nc.nc4'
+#AVHRR_file = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/nc_20181010000000-OSISAF-L3C_GHRSST-SSTsubskin-AVHRR_SST_METOP_B_GLB-sstglb_metop01_20181010_000000-v02.0-fv01.0.nc.nc4'
 
 #MIchale 2018/10/09/ 00
 #AVHRR_file = 'https://podaac-opendap.jpl.nasa.gov:443/opendap/allData/ghrsst/data/GDS2/L3C/GLOB/AVHRR_SST_METOP_B_GLB/OSISAF/v1/2018/281/20181009000000-OSISAF-L3C_GHRSST-SSTsubskin-AVHRR_SST_METOP_B_GLB-sstglb_metop01_20181009_000000-v02.0-fv01.0.nc'
 #AVHRR_file = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/nc_20181009000000-OSISAF-L3C_GHRSST-SSTsubskin-AVHRR_SST_METOP_B_GLB-sstglb_metop01_20181009_000000-v02.0-fv01.0.nc.nc4'
 
 # MIchael 2018/10/11 00
-AVHRR_file = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/nc_20181011000000-OSISAF-L3C_GHRSST-SSTsubskin-AVHRR_SST_METOP_B_GLB-sstglb_metop01_20181011_000000-v02.0-fv01.0.nc.nc4'
+#AVHRR_file = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/nc_20181011000000-OSISAF-L3C_GHRSST-SSTsubskin-AVHRR_SST_METOP_B_GLB-sstglb_metop01_20181011_000000-v02.0-fv01.0.nc.nc4'
 
 # Michael 2018/10/12 00
-AVHRR_file = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/nc_20181012000000-OSISAF-L3C_GHRSST-SSTsubskin-AVHRR_SST_METOP_B_GLB-sstglb_metop01_20181012_000000-v02.0-fv01.0.nc.nc4'
+#AVHRR_file = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/nc_20181012000000-OSISAF-L3C_GHRSST-SSTsubskin-AVHRR_SST_METOP_B_GLB-sstglb_metop01_20181012_000000-v02.0-fv01.0.nc.nc4'
 
-#ncavhrr = xr.open_dataset(AVHRR_url + year + '/' + day_of_year + '/' + nc_list[1] , decode_times=False) 
-ncavhrr = xr.open_dataset(AVHRR_file , decode_times=False) 
+ncavhrr = xr.open_dataset(AVHRR_file, decode_times=False) 
+#nc = xr.open_dataset(AVHRR_file + year + '/' + day_of_year + '/' + nc_list[0] + '.bz2'\
+#                          , decode_times=False) 
+
+#xr.open_dataset('https://podaac-opendap.jpl.nasa.gov:443/opendap/allData/ghrsst/data/L4/GLOB/ABOM/GAMSSA_28km/2019/239/20190827-ABOM-L4LRfnd-GLOB-v01-fv01_0-GAMSSA_28km.nc.bz2')
+
 #mcsst = ncavhrr.mcsst[0,:,:]
-sst = ncavhrr.sea_surface_temperature[0,:,:]
-lat_avhrr = ncavhrr.lat
-lon_avhrr = ncavhrr.lon
-time_avhrr = ncavhrr.time
-time_avhrr = np.transpose(netCDF4.num2date(time_avhrr[:],time_avhrr.units))
+#sst = nc.sea_surface_temperature[0,:,:]
+sst = np.asarray(ncavhrr.analysed_sst[0,:,:])
+lat = np.asarray(ncavhrr.lat[:])
+lon = np.asarray(ncavhrr.lon[:])
+time = ncavhrr.time
+time = np.transpose(netCDF4.num2date(time[:],time.units))
 
 #%% Global map
 
@@ -150,42 +167,47 @@ plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 
 #%% Atlantic map
 
-fig = plt.figure(1, figsize=(13,8))
+fig = plt.figure(figsize=(13,8))
 ax = plt.subplot()
 
-oklon = np.logical_and(lon_avhrr > lon_lim[0],lon_avhrr < lon_lim[-1])
-oklat = np.logical_and(lat_avhrr > lat_lim[0],lat_avhrr < lat_lim[-1])
+oklon = np.logical_and(lon > lon_lim[0],lon < lon_lim[-1])
+oklat = np.logical_and(lat > lat_lim[0],lat < lat_lim[-1])
 
-sstsub = sst[oklat,oklon]
-lonsub = lon_avhrr[oklon]
-latsub = lat_avhrr[oklat]
+lonsub = lon[oklon]
+latsub = lat[oklat]
+sstsu = sst[oklat,:]
+sstsub = sstsu[:,oklon]
 
 ax.contour(bath_lonsub,bath_latsub,bath_elevsub,levels=[0],colors='k')
 ax.contourf(bath_lonsub,bath_latsub,bath_elevsub,levels=[0,10000],colors='papayawhip',alpha=0.5)
 ax.contourf(bath_lonsub,bath_latsub,bath_elevsub,levels=[-10000,0],colors='lightskyblue',alpha=0.5)
 
 cs = ax.contourf(lonsub, latsub, sstsub-273.15, \
-                 levels=np.linspace(10,35,6),\
-                 cmap=plt.cm.Spectral_r)
+                 cmap=cmocean.cm.thermal,levels=np.linspace(21,33,25))
 cbar = fig.colorbar(cs, orientation='vertical')
 cbar.set_label('($^o$C)',rotation=270,size = 18,labelpad = 20)
 cbar.ax.set_yticklabels(cbar.ax.get_yticklabels(),fontsize=20)
+ax.set_aspect(1)
 
-plt.xlim(-100,-10)
-plt.ylim(0,50)
-plt.grid('on')
+#plt.xlim(-100,-10)
+#plt.ylim(0,50)
+#plt.grid('on')
 
-plt.title('{0} {1}-{2}-{3}'.format('Sea Surface Temperature',\
-          time_avhrr[0].year,time_avhrr[0].month,time_avhrr[0].day),\
-          fontsize=20)
+#plt.title('{0} {1}-{2}-{3}'.format('Sea Surface Temperature',\
+#          time[0].year,time[0].month,time[0].day),\
+#          fontsize=20)
+
+plt.title('Sea Surface Temperature'+\
+          str(time[0].year) + '-' + str(time[0].month) + '-' + str(time[0].day) +\
+          '\n GHRSST Level 4',fontsize=20)
 
 folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'
 file = folder + '{0}_{1}_{2}_{3}.png'.format('SST_AVHRR_Atlantic',\
-          time_avhrr[0].year,time_avhrr[0].month,time_avhrr[0].day) 
+          time[0].year,time[0].month,time[0].day) 
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
 
 #%% GoM map
-
+'''
 plt.figure(figsize=(10,8))
 
 oklon = np.logical_and(lon_avhrr > lon_lim[0],lon_avhrr < lon_lim[-1])
@@ -217,3 +239,4 @@ plt.title('Sea Surface Temperature '+str(time_avhrr[0]),fontsize=20)
 folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'
 file = folder + 'SST_AVHRR_GoM_' + str(time_avhrr[0])
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
+'''

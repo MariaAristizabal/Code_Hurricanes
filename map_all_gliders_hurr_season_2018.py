@@ -23,22 +23,22 @@ bath_file = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/
 server = 'https://data.ioos.us/gliders/erddap'
 
 # Jun1 -Jul1
-Dir_Argo1 = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/DataSelection_20190501_195036_7920913'
+Dir_Argo1 = '/Volumes/aristizabal/ARGO_data/DataSelection_20190501_195036_7920913'
 
 # Jul1 - Aug1
-Dir_Argo2 = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/DataSelection_20190508_135838_7928110'
+Dir_Argo2 = '/Volumes/aristizabal/ARGO_data/DataSelection_20190508_135838_7928110'
 
 # Aug1 - Sep1
-Dir_Argo3 = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/DataSelection_20190508_141321_7928283'
+Dir_Argo3 = '/Volumes/aristizabal/ARGO_data/DataSelection_20190508_141321_7928283'
 
 # Sep1 - Oct1
-Dir_Argo4 = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/DataSelection_20190508_190253_7934529'
+Dir_Argo4 = '/Volumes/aristizabal/ARGO_data/DataSelection_20190508_190253_7934529'
 
 # Oct1 - Nov1
-Dir_Argo5 = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/DataSelection_20190508_143800_7929144'
+Dir_Argo5 = '/Volumes/aristizabal/ARGO_data/DataSelection_20190508_143800_7929144'
 
 # Nov1 - Nov30
-Dir_Argo6 = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/DataSelection_20190508_190433_7934559'
+Dir_Argo6 = '/Volumes/aristizabal/ARGO_data/DataSelection_20190508_190433_7934559'
 
 #%%
 
