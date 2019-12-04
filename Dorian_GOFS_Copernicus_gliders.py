@@ -12,7 +12,7 @@ Created on Tue Sep 17 09:11:06 2019
 #lat_lim = [10.0,45.0]
 
 lon_lim = [-80.0,-60.0]
-lat_lim = [15.0,30.0]
+lat_lim = [15.0,35.0]
 
 # Server erddap url IOOS glider dap
 server = 'https://data.ioos.us/gliders/erddap'
@@ -24,8 +24,8 @@ gdata_ng668 = 'http://gliders.ioos.us/thredds/dodsC/deployments/aoml/SG668-20190
 gdata_silbo ='http://gliders.ioos.us/thredds/dodsC/deployments/rutgers/silbo-20190717T1917/silbo-20190717T1917.nc3.nc'
 
 #Time window
-date_ini = '2019/08/25/00/00'
-date_end = '2019/09/08/00/00'
+date_ini = '2019/08/28/00/00'
+date_end = '2019/09/02/00/00'
 
 # Bathymetry file
 bath_file = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/GEBCO_2014_2D_-100.0_0.0_-10.0_50.0.nc'
@@ -236,6 +236,12 @@ for i,s in enumerate(soup.find_all("intensitymph")):
     wind_int.append(s.get_text(' ')) 
 wind_int = np.asarray(wind_int)
 wind_int = wind_int.astype(float)  
+
+wind_int_kt = []
+for i,s in enumerate(soup.find_all("intensity")):
+    wind_int_kt.append(s.get_text(' ')) 
+wind_int_kt = np.asarray(wind_int_kt)
+wind_int_kt = wind_int_kt.astype(float)
   
 cat = []
 for i,s in enumerate(soup.find_all("styleurl")):
@@ -246,10 +252,10 @@ cat = np.asarray(cat)
 
 #okd = np.where(depth31 >= 100)[0][0]
 #okt = np.round(np.interp(time31[oktime31],timeg,np.arange(len(timeg)))).astype(int)
-'''
+
 folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'
 
-for i,ind in enumerate(oktime31[::4]):
+for i,ind in enumerate(oktime31[46:81][::2]):
     T31 = df.water_temp[ind,0,botm:top,left:right]
     var = T31
 
@@ -262,7 +268,7 @@ for i,ind in enumerate(oktime31[::4]):
     ax.contourf(bath_lonsub,bath_latsub,bath_elevsub,levels=[-10000,0],colors='lightskyblue',alpha=0.5)
 
     max_v = np.nanmax(abs(var))
-    kw = dict(levels=np.linspace(20,33,14))
+    kw = dict(levels=np.linspace(23,32,10))
         
     plt.contourf(lon31g,lat31g, var, cmap=cmocean.cm.thermal,**kw)
     
@@ -270,7 +276,7 @@ for i,ind in enumerate(oktime31[::4]):
     
     plt.plot(lon_best_track[okt],lat_best_track[okt],'or',label='Dorian ,'+ cat[okt])
     plt.legend(loc='upper left',fontsize=14)
-    plt.plot(lon_best_track[9:okt],lat_best_track[9:okt],'.',color='grey')
+    plt.plot(lon_best_track[14:okt],lat_best_track[14:okt],'.',color='grey')
     
     plt.axis('scaled')
     cb = plt.colorbar()
@@ -279,7 +285,7 @@ for i,ind in enumerate(oktime31[::4]):
     file = folder + '{0}_{1}.png'.format('Temp_GOFS31_Caribbean_',\
                      mdates.num2date(time31[ind]))
     plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)   
-'''
+
 #%% Surface salinity
 '''
 for i,ind in enumerate(oktime31[::4][6:-7]):
@@ -290,7 +296,7 @@ for i,ind in enumerate(oktime31[::4][6:-7]):
     plot_date = mdates.num2date(time31[ind])
     plt.title('Surface Salinity  \n GOFS 3.1 on {}'.format(plot_date))
     
-    ax.contour(bath_lonsub,bath_latsub,bath_elevsub,levels=[0],colors='k')
+    ax.contourf(bath_lonsub,bath_latsub,bath_elevsub,levels=[0],colors='k')
     ax.contourf(bath_lonsub,bath_latsub,bath_elevsub,levels=[0,10000],colors='papayawhip',alpha=0.5)
     ax.contourf(bath_lonsub,bath_latsub,bath_elevsub,levels=[-10000,0],colors='lightskyblue',alpha=0.5)
 
@@ -367,6 +373,7 @@ Smean31[:] = np.nan
 Td31 = np.empty(len(t31)) 
 Td31[:] = np.nan
 for t,tt in enumerate(t31):
+    print(t)
     T10 = temp31[d10,t]
     delta_T = T10 - temp31[:,t] 
     ok_mld = np.where(delta_T <= dt)[0]    
@@ -528,6 +535,7 @@ plt.title('Temperature' + ' Profile ' + 'GOFS 3.1')
 
 file = folder + ' ' + 'temp_profile_point_max_cooling'
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
+
 
 #%% Detail temperature Time series at point underneath Dorian when cat 5
 
@@ -912,6 +920,90 @@ plt.grid(True)
 file = folder + ' ' + 'surf_temp_GOFS31_Dorian_dist_point_max_cool_detail'
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
 
+#%% temperature Time series following Dorian track
+
+okt = np.where(np.logical_and(time_best_track >= datetime(2019,8,30,18),\
+                              time_best_track <= datetime(2019,9,4,18)))[0]
+
+temp31_prof_track = np.empty([len(depth31),len(okt)])
+temp31_prof_track[:] = np.nan
+surf_temp31_track = []
+for t,ind in enumerate(okt):
+    oklon = int(np.round(np.interp(lon_best_track[ind]+360,df.lon,np.arange(len(df.lon)))))
+    oklat = int(np.round(np.interp(lat_best_track[ind],df.lat,np.arange(len(df.lat)))))
+    oktt = np.where(time31 == mdates.date2num(time_best_track[ind]))[0][0]
+
+    temp31_prof_track[:,t] = np.asarray(df.water_temp[oktt,:,oklat,oklon]).T
+    surf_temp31_track.append(np.asarray(df.water_temp[oktt,0,oklat,oklon]))
+
+surf_temp31_track = np.asarray(surf_temp31_track)
+
+color_map = cmocean.cm.thermal
+maxd = 300      
+okm = depth31 <= maxd
+
+'''
+min_val = np.floor(np.nanmin(temp31[okm]))
+max_val = np.ceil(np.nanmax(temp31[okm]))    
+nlevels = max_val - min_val + 1
+kw = dict(levels = np.linspace(min_val,max_val,nlevels))
+'''
+   
+kw = dict(levels = np.linspace(17,31,15)) 
+# plot
+fig, ax = plt.subplots(figsize=(12, 3))
+#plt.contour(mdates.date2num(time31),-depth31,target_temp31,colors = 'lightgrey',**kw)
+cs = plt.contourf(time_best_track[okt],-depth31,temp31_prof_track,cmap=color_map,**kw)
+plt.contour(time_best_track[okt],-depth31,temp31_prof_track,[26],colors='k')
+#plt.plot(time_best_track[okt],-MLD31,'.-',color='grey')
+cs = fig.colorbar(cs, orientation='vertical') 
+cs.ax.set_ylabel('($^oC$)',fontsize=14,labelpad=15)
+'''
+t0 = datetime(2019,8,25)
+deltat= timedelta(1)
+xticks = [t0+nday*deltat for nday in np.arange(15)]
+xticks = np.asarray(xticks)
+plt.xticks(xticks)
+'''
+#ax.set_xlim(datetime(2019,8,25),datetime(2019,9,8))
+ax.set_ylim(-300, 0)
+ax.set_ylabel('Depth (m)',fontsize=14)
+xfmt = mdates.DateFormatter('%d \n %b')
+ax.xaxis.set_major_formatter(xfmt)
+#tDorian = np.tile(datetime(2019,9,2,0),len(np.arange(-maxd,0)))
+#plt.plot(tDorian,np.arange(-maxd,0),'--k')
+plt.title('Temperature' + ' Profile ' + 'GOFS 3.1')  
+
+file = folder + ' ' + 'temp_profile_following_Dorian'
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
+
+#%% Time series temper1ature following Dorian track
+
+indx = np.where(df.lon > -77.4+360)[0][0]
+indy = np.where(df.lat > 27.0)[0][0]
+
+temp31 = df.water_temp[oktime31,0,indy,indx]
+
+fig,ax1 = plt.subplots(figsize=(12, 4))
+
+plt.plot(time_best_track[okt],surf_temp31_track,'o-',linewidth=2,color='steelblue')
+
+#t0 = datetime(2019,8,25)
+#deltat= timedelta(1)
+#xticks = [t0+nday*deltat for nday in np.arange(15)]
+#xticks = np.asarray(xticks)
+#plt.xticks(xticks)
+xfmt = mdates.DateFormatter('%d \n %b')
+ax1.xaxis.set_major_formatter(xfmt)
+#plt.xlim([time31[oktime31[0]],time31[oktime31[-1]]])
+
+plt.ylabel('$^oC$',fontsize = 14,color='steelblue')
+ax1.tick_params('y', colors='steelblue')
+#tDorian = np.tile(datetime(2019,9,2,0),len(np.arange(22,31,0.1)))
+#plt.plot(tDorian,np.arange(22,31,0.1),'--k')
+plt.title('Surface Temperature GOFS 3.1 along Dorian Track',fontsize=16,color='steelblue')
+#plt.legend(loc='upper left',bbox_to_anchor=(0.6,1.3))
+
 #%% Reading glider data
     
 url_glider = gdata_ng665
@@ -923,23 +1015,23 @@ url_glider = gdata_ng665
 
 var = 'temperature'
 #Time window
-date_ini = '2019/08/25/00'
-date_end = '2019/09/08/00'
+#date_ini = '2019/08/25/00'
+#date_end = '2019/09/08/00'
 scatter_plot = 'no'
-kwargs = dict(date_ini=date_ini,date_end=date_end)
+kwargs = dict(date_ini=date_ini[0:-3],date_end=date_end[0:-3])
 
 varg, latg, long, depthg, timeg, inst_id = \
              read_glider_data_thredds_server(url_glider,var,scatter_plot,**kwargs)
              
 #tempg = np.asarray(varg.T)
-tempg = varg.values.T   
+tempg = varg  
 
 var = 'salinity'  
 varg, latg, long, depthg, timeg, inst_id = \
              read_glider_data_thredds_server(url_glider,var,scatter_plot,**kwargs)         
              
 #saltg = np.asarray(varg.T)  
-saltg = varg.values.T
+saltg = varg
  
 var = 'density'  
 varg, latg, long, depthg, timeg, inst_id = \
@@ -948,8 +1040,8 @@ varg, latg, long, depthg, timeg, inst_id = \
 #densg = np.asarray(varg.T)
 #depthg = np.asarray(depthg.T)                
              
-densg = varg.values.T
-depthg = depthg.values.T              
+densg = varg
+depthg = depthg             
   
 #contour_plot='yes'    
 #depthg_gridded, varg_gridded, timegg = \
@@ -1027,8 +1119,8 @@ depth31 = np.asarray(model.depth[:])
 tt31 = model.time
 t31 = netCDF4.num2date(tt31[:],tt31.units) 
 
-tmin = datetime.strptime(date_ini,'%Y/%m/%d/%H')
-tmax = datetime.strptime(date_end,'%Y/%m/%d/%H')
+tmin = datetime.strptime(date_ini[0:-3],'%Y/%m/%d/%H')
+tmax = datetime.strptime(date_end[0:-3],'%Y/%m/%d/%H')
 
 oktime31 = np.where(np.logical_and(t31 >= tmin, t31 <= tmax))
 time31 = np.asarray(t31[oktime31])
@@ -1074,9 +1166,9 @@ target_dens31 = sw.dens(target_salt31,target_temp31,np.tile(depth31,(len(time31)
 
 #%% time of Dorian passing closets to glider
     
-#tDorian = np.tile(datetime(2019,8,28,18),len(np.arange(-1000,0))) #ng665, ng666 
+tDorian = np.tile(datetime(2019,8,28,18),len(np.arange(-1000,0))) #ng665, ng666 
 #tDorian = np.tile(datetime(2019,8,28,6),len(np.arange(-1000,0))) #ng668
-tDorian = np.tile(datetime(2019,8,29,6),len(np.arange(-1000,0))) #silbo    
+#tDorian = np.tile(datetime(2019,8,29,6),len(np.arange(-1000,0))) #silbo    
     
 #%%
 color_map = cmocean.cm.thermal
@@ -1241,11 +1333,45 @@ for t,tt in enumerate(time31):
         
 #%% Tmean and Td
         
+Tmean_dtemp_pom_oper = np.array([28.4089653 , 28.36802826, 28.32124467, 28.36863823, 28.3147935 ,
+       28.28294667, 28.27456093, 28.30914376, 28.31633434, 28.26532156,
+       28.26961396, 28.39389628, 28.42460771, 28.38040543, 28.31607368,
+       28.38089908, 28.43803444, 28.43900433, 28.41603296, 28.42313125,
+       28.41012833])
+    
+Tmean_drho_pom_oper = np.array([28.4390192 , 28.372166  , 28.33453342, 28.37648419, 28.31623023,
+       28.28398252, 28.27493429, 28.34033421, 28.3637139 , 28.2818954 ,
+       28.27561273, 28.41571469, 28.48051453, 28.42306868, 28.35106564,
+       28.46577517, 28.56110115, 28.5258316 , 28.49490395, 28.55054436,
+       28.55966415])
+    
+Tmean_dtemp_pom_exp = np.array([29.28252983, 29.22755661, 29.16900558, 29.17637482, 29.10806592,
+       29.04672941, 28.9209938 , 28.88021628, 28.87556966, 28.91069762,
+       28.94633516, 28.99495284, 28.95316772, 28.86668434, 28.83317539,
+       28.89052909, 28.8785677 , 28.70841135, 28.54443632, 28.56767137,
+       28.61995179])
+    
+Tmean_drho_pom_exp = np.array([29.31585932, 29.25217724, 29.19769192, 29.19869423, 29.1336834 ,
+       29.05274773, 28.92811279, 28.89937363, 28.89851618, 28.9182476 ,
+       28.96085472, 29.01779938, 28.97569799, 28.87948418, 28.8425045 ,
+       28.93228607, 28.90347824, 28.73153114, 28.5518713 , 28.61049271,
+       28.66873217])
+    
+# time POM
+t0 = datetime(2019,8,28)
+time_pom = [t0 + timedelta(hours=int(hrs)) for hrs in np.arange(0,126,6)]
+        
 fig,ax = plt.subplots(figsize=(12, 4))
-plt.plot(timeg,Tmean_dtemp,'-',color='indianred',label='Tmean mixed layer, temp criteria',linewidth=3)
-plt.plot(timeg,Tmean_drho,'-',color='seagreen',label='Tmean mixed layer, dens criteria',linewidth=3)
-plt.plot(time31,Tmean_dtemp31,'--o',color='lightcoral',label='Tmean mixed layer GOFS 3.1, temp criteria')
-plt.plot(time31,Tmean_drho31,'--o',color='lightgreen',label='Tmean mixed layer GOFS 3.1, dens criteria')
+plt.plot(timeg[0],Tmean_dtemp[0],'o-',color='royalblue',label=inst_id.split('-')[0],linewidth=3)
+plt.plot(timeg,Tmean_drho,'s-',color='royalblue',linewidth=3)
+plt.plot(time31,Tmean_dtemp31,'--o',color='indianred',label='GOFS 3.1')
+plt.plot(time31,Tmean_drho31,'--s',color='indianred')
+plt.plot(time_pom,Tmean_dtemp_pom_oper,'-o',color='seagreen',label='POM Oper')
+plt.plot(time_pom,Tmean_drho_pom_oper,'-s',color='seagreen')
+plt.plot(time_pom,Tmean_dtemp_pom_exp,'-o',color='darkorchid',label='POM Exp')
+plt.plot(time_pom,Tmean_drho_pom_exp,'-s',color='darkorchid')
+plt.plot(timeg[0],Tmean_dtemp[0],'o',color='k',label='Temperature criteria',linewidth=3)
+plt.plot(timeg[0],Tmean_drho[0],'s',color='k',label='Density Criteria',linewidth=3)
 #plt.plot(timeg_low,Tmean_low,'-',color='grey',label='12 hours lowpass')
 #plt.plot(timeg,Td,'.-g',label='Td')
 #plt.plot(timeg[np.isfinite(Td)],Td_low,'-',color='lightseagreen',label='12 hours lowpass')
@@ -1254,20 +1380,21 @@ deltat= timedelta(1)
 xticks = [t0+nday*deltat for nday in np.arange(15)]
 xticks = np.asarray(xticks)
 plt.xticks(xticks)
-xfmt = mdates.DateFormatter('%d \n %b')
+xfmt = mdates.DateFormatter('%d-%b')
 ax.xaxis.set_major_formatter(xfmt)
 plt.xlim([timeg[0],timeg[-1]])
 plt.ylabel('$^oC$',fontsize = 14)
-tDorian = np.tile(datetime(2019,8,28,18),len(np.arange(29.0,29.30,0.01)))# ng665,ng666
+tDorian = np.tile(datetime(2019,8,28,18),len(np.arange(28.2,29.4,0.01)))# ng665,ng666
 #tDorian = np.tile(datetime(2019,8,29,6),len(np.arange(29.0,29.30,0.01)))  # ng668
 #tDorian = np.tile(datetime(2019,8,29,6),len(np.arange(29.2,29.7,0.01)))  # ng668
-plt.plot(tDorian,np.arange(29.0,29.30,0.01),'--k')
-plt.title(inst_id.split('T')[0],fontsize=16)
+plt.plot(tDorian,np.arange(28.2,29.4,0.01),'--k')
+plt.title('Mixed Layer Temperature',fontsize=16)
 plt.grid(True)
-plt.legend(loc='upper left',bbox_to_anchor=(0.6,1.3))
+plt.legend(loc='upper left',bbox_to_anchor=(1,0.9))
+plt.xlim([time_pom[0],time_pom[-1]])
 
 file = folder + ' ' + inst_id + '_Tmean_Td'
-#plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
 
 
 #%% Tmean and Td and wind speed
@@ -1420,12 +1547,50 @@ plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 
 
 #%% mld 
+
+MLD_dt_pom_oper = np.array([-36.35997355, -36.35997355, -43.63196736, -36.35997355,
+       -43.63196736, -43.63196736, -43.63196736, -43.63196736,
+       -36.35997355, -43.63196736, -43.63196736, -43.63196736,
+       -43.63196736, -36.35997355, -43.63196736, -43.63196736,
+       -36.35997355, -36.35997355, -43.63196736, -43.63196736,
+       -43.63196736])
+    
+MLD_drho_pom_oper = np.array([-15.64580736, -15.64580736, -19.83271244, -19.83271244,
+       -19.83271244, -24.68070981, -24.68070981, -19.83271244,
+       -15.64580736, -24.68070981, -30.1897961 , -30.1897961 ,
+       -19.83271244, -15.64580736, -15.64580736, -15.64580736,
+       -11.89962746, -11.89962746, -11.89962746, -11.89962746,
+       -11.89962746])
+    
+MLD_dt_pom_exp = np.array([-26.99999884, -26.99999884, -26.99999884, -26.99999884,
+       -35.50000046, -35.50000046, -35.50000046, -35.50000046,
+       -35.50000046, -35.50000046, -35.50000046, -35.50000046,
+       -26.99999884, -26.99999884, -44.99999806, -44.99999806,
+       -35.50000046, -44.99999806, -44.99999806, -44.99999806,
+       -44.99999806])
+    
+MLD_drho_pom_exp = np.array([-19.49999959, -19.49999959, -19.49999959, -19.49999959,
+       -26.99999884, -26.99999884, -26.99999884, -26.99999884,
+       -19.49999959, -26.99999884, -26.99999884, -26.99999884,
+       -19.49999959, -19.49999959, -26.99999884, -26.99999884,
+       -26.99999884, -26.99999884, -19.49999959, -19.49999959,
+       -19.49999959])
+    
+# time POM
+t0 = datetime(2019,8,28)
+time_pom = [t0 + timedelta(hours=int(hrs)) for hrs in np.arange(0,126,6)]
         
 fig,ax = plt.subplots(figsize=(12, 4))
-plt.plot(timeg,MLD_dt,'-',color='indianred',label='Mixed layer depth, temp criteria',linewidth=3)
-plt.plot(timeg,MLD_drho,'-',color='seagreen',label='Mixed layer depth, dens criteria',linewidth=3)
-plt.plot(time31,MLD_dt31,'--o',color='lightcoral',label='Mixed layer depth GOFS 3.1, temp criteria')
-plt.plot(time31,MLD_drho31,'--o',color='lightgreen',label='Mixed layer depth GOFS 3.1, dens criteria')
+plt.plot(timeg,MLD_dt,'-o',color='royalblue',label=inst_id.split('-')[0],linewidth=3)
+plt.plot(timeg,MLD_drho,'-s',color='royalblue',linewidth=3)
+plt.plot(time31,MLD_dt31,'--o',color='indianred',label='GOFS 3.1')
+plt.plot(time31,MLD_drho31,'--s',color='indianred')
+plt.plot(time_pom,-MLD_dt_pom_oper,'-o',color='seagreen',label='POM Oper')
+plt.plot(time_pom,-MLD_drho_pom_oper,'-s',color='seagreen')
+plt.plot(time_pom,-MLD_dt_pom_exp,'-o',color='darkorchid',label='POM Exp')
+plt.plot(time_pom,-MLD_drho_pom_exp,'-s',color='darkorchid')
+plt.plot(timeg[0],MLD_dt[0],'o',color='k',label='Temperature Criteria',linewidth=3)
+plt.plot(timeg[0],MLD_drho[0],'s',color='k',label='Density Criteria',linewidth=3)
 #plt.plot(timeg_low,Tmean_low,'-',color='grey',label='12 hours lowpass')
 #plt.plot(timeg,Td,'.-g',label='Td')
 #plt.plot(timeg[np.isfinite(Td)],Td_low,'-',color='lightseagreen',label='12 hours lowpass')
@@ -1434,17 +1599,17 @@ deltat= timedelta(1)
 xticks = [t0+nday*deltat for nday in np.arange(15)]
 xticks = np.asarray(xticks)
 plt.xticks(xticks)
-xfmt = mdates.DateFormatter('%d \n %b')
+xfmt = mdates.DateFormatter('%d-%b')
 ax.xaxis.set_major_formatter(xfmt)
-plt.xlim([timeg[0],timeg[-1]])
-plt.ylabel('$^oC$',fontsize = 14)
+plt.xlim([time_pom[0],time_pom[-1]])
+plt.ylabel('Depth (m)',fontsize = 14)
 tDorian = np.tile(datetime(2019,8,28,18),len(np.arange(10,50)))# ng665,ng666
 #tDorian = np.tile(datetime(2019,8,29,6),len(np.arange(29.0,29.30,0.01)))  # ng668
 #tDorian = np.tile(datetime(2019,8,29,6),len(np.arange(29.2,29.7,0.01)))  # ng668
 plt.plot(tDorian,np.arange(10,50),'--k')
-plt.title(inst_id.split('T')[0],fontsize=16)
+plt.title('Mixed Layer Depth',fontsize=16)
 plt.grid(True)
-plt.legend(loc='upper left',bbox_to_anchor=(0.6,1.3))
+plt.legend(loc='upper left',bbox_to_anchor=(1,0.9))
 
 file = folder + ' ' + inst_id + '_mld_dt_drho'
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)   
@@ -1484,8 +1649,8 @@ plt.xticks(xticks)
 xfmt = mdates.DateFormatter('%d \n %b')
 ax.xaxis.set_major_formatter(xfmt)
 ax.set_xticklabels(' ')
-#tDorian = np.tile(datetime(2019,8,28,18),len(np.arange(-1000,0)))
-tDorian = np.tile(datetime(2019,8,28,6),len(np.arange(-1000,0)))
+tDorian = np.tile(datetime(2019,8,28,18),len(np.arange(-1000,0))) #ng665
+#tDorian = np.tile(datetime(2019,8,28,6),len(np.arange(-1000,0)))
 plt.plot(tDorian,np.arange(-1000,0),'--k')
 plt.title('Along Track ' + 'Temperature' + ' Profile ' + inst_id)
 plt.legend()   
@@ -1513,6 +1678,145 @@ plt.legend()
 
 file = folder + ' ' + 'along_track_temp_top200 ' + inst_id
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
+
+
+#%% Top 200 m glider temperature from 2019/08/28/00
+
+color_map = cmocean.cm.thermal
+       
+okg = depthg_gridded <= 200
+okm = depth31 <= 200 
+min_val = np.floor(np.min([np.nanmin(tempg_gridded[okg]),np.nanmin(target_temp31[okm])]))
+max_val = np.ceil(np.max([np.nanmax(tempg_gridded[okg]),np.nanmax(target_temp31[okm])]))
+    
+nlevels = max_val - min_val + 1
+kw = dict(levels = np.linspace(min_val,max_val,nlevels))
+    
+
+# plot
+fig, ax = plt.subplots(figsize=(12, 2))
+      
+cs = plt.contourf(timeg,-depthg_gridded,tempg_gridded,cmap=color_map,**kw)
+plt.contour(timeg,-depthg_gridded,tempg_gridded,[26],colors='k')
+plt.plot(timeg,-MLD_dt,'-',label='MLD dt',color='indianred',linewidth=2 )
+plt.plot(timeg,-MLD_drho,'-',label='MLD drho',color='seagreen',linewidth=2 )
+
+cs = fig.colorbar(cs, orientation='vertical') 
+cs.ax.set_ylabel('($^oC$)',fontsize=14,labelpad=15)
+        
+ax.set_ylim(-200, 0)
+ax.set_ylabel('Depth (m)',fontsize=14)
+xticks = [t0+nday*deltat for nday in np.arange(14)]
+xticks = np.asarray(xticks)
+plt.xticks(xticks)
+xfmt = mdates.DateFormatter('%d-%b')
+ax.xaxis.set_major_formatter(xfmt)
+#ax.set_xticklabels(' ')
+tDorian = np.tile(datetime(2019,8,28,18),len(np.arange(-1000,0))) #ng665
+#tDorian = np.tile(datetime(2019,8,28,6),len(np.arange(-1000,0)))
+plt.plot(tDorian,np.arange(-1000,0),'--k')
+plt.title('Along Track ' + 'Temperature' + ' Profile ' + inst_id)
+plt.legend()  
+ax.set_xlim(datetime(2019,8,28), datetime(2019,9,2)) 
+
+file = folder + ' ' + 'along_track_temp_top200 ' + inst_id
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
+
+#%% Top 200 m GOFS 3.1 temperature from 2019/08/28/00
+
+color_map = cmocean.cm.thermal
+       
+okg = depthg_gridded <= 200
+okm = depth31 <= 200 
+min_val = np.floor(np.min([np.nanmin(tempg_gridded[okg]),np.nanmin(target_temp31[okm])]))
+max_val = np.ceil(np.max([np.nanmax(tempg_gridded[okg]),np.nanmax(target_temp31[okm])]))
+    
+nlevels = max_val - min_val + 1
+kw = dict(levels = np.linspace(min_val,max_val,nlevels))
+
+fig, ax = plt.subplots(figsize=(12, 2))     
+#plt.contour(mdates.date2num(time31),-depth31,target_temp31,colors = 'lightgrey',**kw)
+cs = plt.contourf(mdates.date2num(time31),-depth31,target_temp31,cmap=color_map,**kw)
+plt.contour(mdates.date2num(time31),-depth31,target_temp31,[26],colors='k')
+plt.plot(time31,-MLD_dt31,'--.',label='MLD dt',color='indianred' )
+plt.plot(time31,-MLD_drho31,'--.',label='MLD drho',color='seagreen' )
+cs = fig.colorbar(cs, orientation='vertical') 
+cs.ax.set_ylabel('($^oC$)',fontsize=14,labelpad=15)
+
+ax.set_ylim(-200, 0)
+ax.set_ylabel('Depth (m)',fontsize=14)
+xticks = [t0+nday*deltat for nday in np.arange(14)]
+xticks = np.asarray(xticks)
+plt.xticks(xticks)
+xfmt = mdates.DateFormatter('%d-%b')
+ax.xaxis.set_major_formatter(xfmt)
+plt.plot(tDorian,np.arange(-1000,0),'--k')
+plt.title('Along Track ' + 'Temperature' + ' Profile ' + 'GOFS 3.1')  
+plt.legend()  
+ax.set_xlim(datetime(2019,8,28), datetime(2019,9,2))  
+
+file = folder + ' ' + 'along_track_temp_top200_GOFS_' + inst_id
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
+
+#%% Vertican profile sg665, GOFS 3.1, POM
+
+tDorian = datetime(2019,8,28,18)
+okg = np.where(timeg < tDorian)[0][-1]
+ok31 = np.where(time31 == tDorian )[0][0] #tdorian
+
+temp_prof_pom_oper = np.array([28.40577126, 28.39975929, 28.39424515, 28.37770271, 28.34392929,
+       28.3406601 , 28.37332153, 28.38916588, 28.36230278, 28.29952431,
+       28.1592865 , 27.86792564, 27.4238739 , 26.77181053, 25.9107666 ,
+       24.8875103 , 23.86647797, 22.95853615, 22.22094536, 21.50520134,
+       20.73034096, 19.815382  , 18.74596214, 17.55633545, 16.22701836,
+       14.7481432 , 13.208251  , 11.61562538, 10.006423  ,  8.48377323,
+        7.16531754,  6.10278702,  5.30196524,  4.82748652,  4.52641249,
+        4.12195826,  3.68905044,  3.10000157,  1.76830471,      np.nan])
+    
+depth_prof_pom_oper = np.array([-1.10181741e+00, -3.30545217e+00, -5.72945057e+00, -8.59417558e+00,
+       -1.18996275e+01, -1.56458074e+01, -1.98327124e+01, -2.46807098e+01,
+       -3.01897961e+01, -3.63599736e+01, -4.36319674e+01, -5.20057798e+01,
+       -6.12610471e+01, -7.18384967e+01, -8.39584857e+01, -9.76210229e+01,
+       -1.13266822e+02, -1.31336634e+02, -1.51830431e+02, -1.75188963e+02,
+       -2.01852944e+02, -2.32042745e+02, -2.66639811e+02, -3.06084865e+02,
+       -3.50818667e+02, -4.01942996e+02, -4.60339335e+02, -5.26889057e+02,
+       -6.02694124e+02, -6.89076613e+02, -7.87579081e+02, -8.99964494e+02,
+       -1.02821600e+03, -1.17409658e+03, -1.34047099e+03, -1.53020403e+03,
+       -1.74638066e+03, -1.99296733e+03, -2.27415112e+03, -2.42399829e+03])
+    
+temp_prof_pom_exp = np.array([29.19390869, 29.19709778, 29.19932365, 29.20444679, 29.08709717,
+       28.76905441, 28.17053032, 27.37616539, 26.56984138, 25.8953495 ,
+       25.28985214, 24.07573128, 23.02121162, 21.90457916, 20.6519928 ,
+       19.54855728, 18.48551941, 17.23768616, 15.703269  , 13.64709091,
+       11.16824913,  8.85765171,  7.64004326,  6.96062756,  6.01803637,
+        5.20464754,  4.70668983,  4.45792246,  4.34634113,  4.21899176,
+        4.00993824,  3.82045794,  3.47413278,  3.18805742,  3.02687716,
+        2.72020507,  2.32690835,  1.92075431,  1.18043661,         np.nan])
+    
+depth_prof_pom_exp = np.array([-2.50000002e+00, -7.49999989e+00, -1.30000002e+01, -1.94999996e+01,
+       -2.69999988e+01, -3.55000005e+01, -4.49999981e+01, -5.59999999e+01,
+       -6.84999982e+01, -8.24999982e+01, -9.89999957e+01, -1.17999996e+02,
+       -1.38999999e+02, -1.63000004e+02, -1.90499999e+02, -2.21500002e+02,
+       -2.56999984e+02, -2.97999999e+02, -3.44499983e+02, -3.97499990e+02,
+       -4.57999989e+02, -5.26499998e+02, -6.04999997e+02, -6.94499977e+02,
+       -7.96000011e+02, -9.12000015e+02, -1.04450005e+03, -1.19549994e+03,
+       -1.36750001e+03, -1.56350002e+03, -1.78700000e+03, -2.04200009e+03,
+       -2.33300000e+03, -2.66399989e+03, -3.04149985e+03, -3.47200003e+03,
+       -3.96250015e+03, -4.52200001e+03, -5.16000000e+03, -5.50000000e+03])
+    
+plt.figure(figsize=(4,7))
+plt.plot(tempg[:,okg],-depthg[:,okg],'-',color='royalblue',linewidth=4,label='sg665') 
+plt.plot(target_temp31[:,ok31],-depth31,'o-',color='indianred',linewidth=2,label='GOFS 3.1')
+plt.plot(temp_prof_pom_oper,depth_prof_pom_oper,'^-',color='seagreen',linewidth=2,label='POM Oper')
+plt.plot(temp_prof_pom_exp,depth_prof_pom_exp,'s-',color='darkorchid',linewidth=2,label='POM Exp')
+plt.ylim([-200,0])
+plt.xlim([20,30])
+plt.title('Temperature ($^oC$)',fontsize=16)
+plt.ylabel('Depth (m)')
+plt.legend()
+
+file = folder + ' ' + 'temp_profile_sg665_GOFS_POM' + inst_id
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)  
 
 #%% Top 200 m salinity
 
@@ -2238,7 +2542,77 @@ argo_pres[argo_pres == 99999.0] = np.nan
 argo_temp[argo_temp == 99999.0] = np.nan
 argo_psal[argo_psal == 99999.0] = np.nan
 
-#%% Comparing Argo temperature with GOFS 3.1
+#%% Comparing Argo temperature with GOFS 3.1 and POM
+
+# POM before from forecasting cycle 2019082512
+tpom_bef = np.datetime64('2019-08-25T12:00:00.000000000')
+
+z_matrix_pom_bef = np.array([[-6.91818186e-01, -2.07545452e+00, -3.59745459e+00,
+        -5.39618170e+00, -7.47163604e+00, -9.82381831e+00,
+        -1.24527267e+01, -1.54967272e+01, -1.89558177e+01,
+        -2.28299995e+01, -2.73959988e+01, -3.26538171e+01,
+        -3.84650905e+01, -4.51065467e+01, -5.27165451e+01,
+        -6.12950914e+01, -7.11189048e+01, -8.24647269e+01,
+        -9.53325407e+01, -1.09999088e+02, -1.26741088e+02,
+        -1.45696908e+02, -1.67419999e+02, -1.92187085e+02,
+        -2.20274912e+02, -2.52375277e+02, -2.89041651e+02,
+        -3.30827438e+02, -3.78424547e+02, -4.32663096e+02,
+        -4.94511636e+02, -5.65077114e+02, -6.45604728e+02,
+        -7.37201423e+02, -8.41665959e+02, -9.60797100e+02,
+        -1.09653186e+03, -1.25136073e+03, -1.42791273e+03,
+        -1.52200000e+03]])
+    
+temp_pom_bef = np.array([28.486917 , 28.486572 , 28.485542 , 28.48426  , 28.483156 ,
+       28.482365 , 28.479004 , 28.470148 , 28.447077 , 28.40281  ,
+       28.315058 , 28.138271 , 27.850958 , 27.415342 , 26.794386 ,
+       25.978376 , 25.024775 , 24.097149 , 23.349989 , 22.80228  ,
+       22.40235  , 21.980844 , 21.439383 , 20.78513  , 20.065117 ,
+       19.305069 , 18.516937 , 17.76371  , 17.039299 , 16.18957  ,
+       15.114508 , 13.755231 , 11.903246 ,  9.670144 ,  7.437302 ,
+        5.481609 ,  4.130128 ,  3.5499206,  3.624825 ,        np.nan])
+
+salt_pom_bef = np.array([36.312824, 36.313595, 36.315495, 36.319057, 36.32393 , 36.33038 ,
+       36.338696, 36.349174, 36.361782, 36.376316, 36.393936, 36.414734,
+       36.438427, 36.466465, 36.498577, 36.534252, 36.573963, 36.61706 ,
+       36.659332, 36.6948  , 36.717422, 36.726357, 36.72498 , 36.71915 ,
+       36.707985, 36.689487, 36.66004 , 36.606373, 36.51512 , 36.370632,
+       36.163357, 35.891327, 35.575665, 35.257458, 34.98247 , 34.794872,
+       34.7132  , 34.72321 , 34.79677 ,       np.nan])
+    
+# POM after from forecasting cycle 2019090412
+tpom_aft = np.datetime64('2019-09-04T12:00:00.000000000')    
+    
+z_matrix_pom_aft = np.array([[-4.55909066e-01, -1.36772717e+00, -2.37072716e+00,
+        -3.55609062e+00, -4.92381767e+00, -6.47390878e+00,
+        -8.20636278e+00, -1.02123630e+01, -1.24919080e+01,
+        -1.50449987e+01, -1.80539981e+01, -2.15189071e+01,
+        -2.53485437e+01, -2.97252717e+01, -3.47402704e+01,
+        -4.03935433e+01, -4.68674488e+01, -5.43443601e+01,
+        -6.28242658e+01, -7.24895392e+01, -8.35225384e+01,
+        -9.60144483e+01, -1.10329993e+02, -1.26651534e+02,
+        -1.45161448e+02, -1.66315629e+02, -1.90478816e+02,
+        -2.18015703e+02, -2.49382259e+02, -2.85125531e+02,
+        -3.25883798e+02, -3.72386538e+02, -4.25454339e+02,
+        -4.85816677e+02, -5.54658939e+02, -6.33166513e+02,
+        -7.22615893e+02, -8.24648316e+02, -9.40996306e+02,
+        -1.00299994e+03]])
+
+temp_pom_aft = np.array([26.549149 , 26.549137 , 26.54913  , 26.54912  , 26.54911  ,
+       26.549103 , 26.549026 , 26.549122 , 26.5491   , 26.549147 ,
+       26.5485   , 26.545742 , 26.53994  , 26.531277 , 26.51631  ,
+       26.42541  , 26.073051 , 25.338528 , 24.333183 , 23.548782 ,
+       22.882275 , 22.260403 , 21.876997 , 21.643265 , 21.311485 ,
+       20.865627 , 20.185505 , 19.503124 , 18.905855 , 18.251097 ,
+       17.552067 , 16.787643 , 15.946483 , 14.919392 , 13.65732  ,
+       12.044389 , 10.214731 ,  8.642639 ,  7.4338336,        np.nan])
+
+salt_pom_aft = np.array([36.415367, 36.41536 , 36.415394, 36.4154  , 36.415417, 36.41544 ,
+       36.41546 , 36.4155  , 36.415543, 36.41559 , 36.415806, 36.41635 ,
+       36.41732 , 36.419098, 36.42333 , 36.437866, 36.47229 , 36.5248  ,
+       36.580963, 36.615986, 36.64782 , 36.68931 , 36.70738 , 36.72591 ,
+       36.731716, 36.72427 , 36.71356 , 36.698833, 36.678135, 36.644382,
+       36.580257, 36.480103, 36.329998, 36.127525, 35.885815, 35.636875,
+       35.417183, 35.28746 , 35.310886,       np.nan])    
 
 indx = np.where(df.lon > argo_lon[0]+360)[0][0]
 indy = np.where(df.lat > argo_lat[0])[0][0]
@@ -2250,6 +2624,8 @@ plt.plot(argo_temp[0,:],-argo_pres[0,:],'.-',color='indianred',\
          linewidth=2,label='Argo '+str(argo_time[0])[0:16])
 plt.plot(temp31,-depth31,'o-',color='lightcoral',linewidth=2,\
          label='GOFS '+str(mdates.num2date(time31[indt]))[0:16])
+plt.plot(temp_pom_bef,z_matrix_pom_bef[0,:],'^-',color='salmon',linewidth=2,\
+         label='POM '+str(tpom_bef)[0:16])
 
 indx = np.where(df.lon > argo_lon[2]+360)[0][0]
 indy = np.where(df.lat > argo_lat[2])[0][0]
@@ -2260,6 +2636,8 @@ plt.plot(argo_temp[2,:],-argo_pres[2,:],'.-',color='royalblue',\
          linewidth=2,label='Argo '+str(argo_time[2])[0:16])
 plt.plot(temp31,-depth31,'o-',color='skyblue',linewidth=2,\
          label='GOFS '+str(mdates.num2date(time31[indt]))[0:16])
+plt.plot(temp_pom_aft,z_matrix_pom_aft[0,:],'^-',color='steelblue',linewidth=2,\
+         label='POM '+str(tpom_aft)[0:16])
 plt.ylim([-200,0])
 plt.xlim([20,30])
 plt.grid(True)
@@ -2268,7 +2646,7 @@ plt.ylabel('Depth (m)',fontsize=16)
 plt.xlabel('Temperature ($^oC$)',fontsize=16)
 
 folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'
-file = folder + 'Argo_vs_GOFS_temp_profile_Dorian'
+file = folder + 'Argo_GOFS_POM_temp_profile_Dorian'
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 
 #%% Comparing Argo salinity with GOFS 3.1
@@ -2283,6 +2661,8 @@ plt.plot(argo_psal[0,:],-argo_pres[0,:],'.-',color='indianred',\
          linewidth=2,label='Argo '+str(argo_time[0])[0:16])
 plt.plot(salt31,-depth31,'o-',color='lightcoral',linewidth=2,\
          label='GOFS '+str(mdates.num2date(time31[indt]))[0:16])
+plt.plot(salt_pom_bef,z_matrix_pom_bef[0,:],'^-',color='salmon',linewidth=2,\
+         label='POM '+str(tpom_bef)[0:16])
 
 indx = np.where(df.lon > argo_lon[2]+360)[0][0]
 indy = np.where(df.lat > argo_lat[2])[0][0]
@@ -2293,6 +2673,8 @@ plt.plot(argo_psal[2,:],-argo_pres[2,:],'.-',color='royalblue',\
          linewidth=2,label='Argo '+str(argo_time[2])[0:16])
 plt.plot(salt31,-depth31,'o-',color='skyblue',linewidth=2,\
          label='GOFS '+str(mdates.num2date(time31[indt]))[0:16])
+plt.plot(salt_pom_aft,z_matrix_pom_bef[0,:],'^-',color='steelblue',linewidth=2,\
+         label='POM '+str(tpom_bef)[0:16])
 plt.ylim([-200,0])
 plt.xlim([36.2,37])
 plt.grid(True)
@@ -2301,5 +2683,5 @@ plt.ylabel('Depth (m)',fontsize=16)
 plt.xlabel('Salinity',fontsize=16)
 
 folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'
-file = folder + 'Argo_vs_GOFS_salt_profile_Dorian'
+file = folder + 'Argo_GOFS_POM_salt_profile_Dorian'
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
