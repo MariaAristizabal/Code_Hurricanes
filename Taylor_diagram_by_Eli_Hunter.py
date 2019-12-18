@@ -136,8 +136,6 @@ def taylor(scores):
     ax1 = ax1.get_aux_axes(tr)
     
     rs,ts = np.meshgrid(np.linspace(0,2),np.linspace(0,np.pi/2))
-
-
     rms = np.sqrt(1 + rs**2 - 2*rs*np.cos(ts))
         
     contours = ax1.contour(ts, rs, rms, 3,colors='0.5')   

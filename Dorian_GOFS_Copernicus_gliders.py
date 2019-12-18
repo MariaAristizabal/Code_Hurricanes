@@ -53,6 +53,8 @@ Dir_Argo = '/Volumes/aristizabal/ARGO_data/DataSelection_20191014_193816_8936308
 # NAVGEN 10 m wind output
 file_NAVGEN = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/erdNavgem1D10mWind_6da5_e6b3_6991.nc' 
 
+folder_pom = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/POM_Dorian_npz_files/'    
+
 #%%
 
 from matplotlib import pyplot as plt
@@ -2685,3 +2687,125 @@ plt.xlabel('Salinity',fontsize=16)
 folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'
 file = folder + 'Argo_GOFS_POM_salt_profile_Dorian'
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
+
+#%% *************** OHC ****************************************
+
+#%% POM Operational and Experimental
+
+POM_Dorian_2019082800_oper = np.load(folder_pom + 'POM_Dorian_2019082800_oper.npz')
+POM_Dorian_2019082800_oper.files
+timestamp_pom_oper = POM_Dorian_2019082800_oper['timestamp_pom_oper']
+target_temp_pom_oper = POM_Dorian_2019082800_oper['target_temp_pom_oper']
+target_salt_pom_oper = POM_Dorian_2019082800_oper['target_salt_pom_oper']
+target_dens_pom_oper = POM_Dorian_2019082800_oper['target_dens_pom_oper']
+z_matrix_pom_oper = POM_Dorian_2019082800_oper['z_matrix_pom_oper']
+MLD_drho_pom_oper = POM_Dorian_2019082800_oper['MLD_drho_pom_oper']
+Tmean_drho_pom_oper = POM_Dorian_2019082800_oper['Tmean_drho_pom_oper']
+Smean_drho_pom_oper = POM_Dorian_2019082800_oper['Smean_drho_pom_oper']
+
+POM_Dorian_2019082800_exp = np.load(folder_pom + 'POM_Dorian_2019082800_exp.npz')
+POM_Dorian_2019082800_exp.files
+timestamp_pom_exp = POM_Dorian_2019082800_exp['timestamp_pom_exp']
+target_temp_pom_exp = POM_Dorian_2019082800_exp['target_temp_pom_exp']
+target_salt_pom_exp = POM_Dorian_2019082800_exp['target_salt_pom_exp']
+target_dens_pom_exp = POM_Dorian_2019082800_exp['target_dens_pom_exp']
+z_matrix_pom_exp = POM_Dorian_2019082800_exp['z_matrix_pom_exp']
+MLD_drho_pom_exp = POM_Dorian_2019082800_exp['MLD_drho_pom_exp']
+Tmean_drho_pom_exp = POM_Dorian_2019082800_exp['Tmean_drho_pom_exp']
+Smean_drho_pom_exp = POM_Dorian_2019082800_exp['Smean_drho_pom_exp']
+
+#%% Surface Heat content for glider
+
+# Heat capacity in J/(kg K)
+cp = 3985 
+
+OHCg = np.empty((len(timeg)))
+OHCg[:] = np.nan
+for t,tt in enumerate(timeg):
+    ok26 = tempg_gridded[:,t] >= 26
+    if np.nanmin(depthg_gridded[ok26])>10:
+        OHCg[t] = np.nan  
+    else:
+        rho0 = np.nanmean(densg_gridded[ok26,t])
+        OHCg[t] = cp * rho0 * np.trapz(tempg_gridded[ok26,t]-26,depthg_gridded[ok26]) 
+    
+#%% Surface Heat content for GOFS 3.1
+
+# Heat capacity in J/(kg K)
+cp = 3985 
+
+OHC31 = np.empty((target_temp31.shape[1]))
+OHC31[:] = np.nan
+for t,tt in enumerate(time31):
+    print(t)
+    ok26 = target_temp31[:,t] >= 26
+    rho0 = np.nanmean(target_dens31[ok26,t])
+    OHC31[t] = cp * rho0 * np.trapz(target_temp31[ok26,t]-26,depth31[ok26]) 
+
+#%% Surface Heat content for POM Operational
+
+# Heat capacity in J/(kg K)
+cp = 3985 
+
+OHC_pom_oper = np.empty((len(timestamp_pom_oper)))
+OHC_pom_oper[:] = np.nan
+for t,tt in enumerate(timestamp_pom_oper):
+    print(t)
+    ok26 = target_temp_pom_oper[:,t] >= 26
+    rho0 = np.nanmean(target_dens_pom_oper[ok26,t])
+    OHC_pom_oper[t] = cp * rho0 * np.trapz(target_temp_pom_oper[ok26,t]-26,-z_matrix_pom_oper[ok26,t])  
+
+#%% Surface Heat content for POM Experimental
+
+# Heat capacity in J/(kg K)
+cp = 3985 
+
+OHC_pom_exp = np.empty((len(timestamp_pom_exp)))
+OHC_pom_exp[:] = np.nan
+for t,tt in enumerate(timestamp_pom_exp):
+    print(t)
+    ok26 = target_temp_pom_exp[:,t] >= 26
+    rho0 = np.nanmean(target_dens_pom_exp[ok26,t])
+    OHC_pom_exp[t] = cp * rho0 * np.trapz(target_temp_pom_exp[ok26,t]-26,-z_matrix_pom_exp[ok26,t])      
+    
+#%% OHC figure
+    
+oktimeg_gofs = np.round(np.interp(tstamp_model,tstamp_glider,np.arange(len(tstamp_glider)))).astype(int)
+OHCg_to31 = OHCg[oktimeg_gofs]
+
+oktimeg_pom_oper = np.round(np.interp(timestamp_pom_oper,tstamp_glider,np.arange(len(tstamp_glider)))).astype(int)    
+OHCg_to_pom_oper = OHCg[oktimeg_pom_oper] 
+
+fig,ax = plt.subplots(figsize=(12, 4))
+plt.plot(timeg,OHCg,'-o',color='royalblue',label=inst_id.split('-')[0],linewidth=3)
+plt.plot(time31,OHC31,'--o',color='indianred',label='GOFS 3.1')
+iplt.plot(timestamp_pom_oper,OHC_pom_oper,'-o',color='seagreen',label='POM Oper')
+plt.plot(timestamp_pom_exp,OHC_pom_exp,'-o',color='darkorchid',label='POM Exp')
+plt.plot(time31,OHCg_to31,'*-',color='lightblue')
+t0 = datetime(2019,8,25)
+deltat= timedelta(1)
+xticks = [t0+nday*deltat for nday in np.arange(15)]
+xticks = np.asarray(xticks)
+plt.xticks(xticks)
+xfmt = mdates.DateFormatter('%d-%b')
+ax.xaxis.set_major_formatter(xfmt)
+plt.xlim([time_pom[0],time_pom[-1]])
+plt.ylabel('($J/m^2$)',fontsize = 14)
+tDorian = np.tile(datetime(2019,8,28,18),len(np.arange(5,10)))# ng665,ng666
+plt.plot(tDorian,np.arange(5,10)*10**8,'--k')
+plt.title('Ocean Heat Content',fontsize=16)
+plt.grid(True)
+plt.legend(loc='upper left',bbox_to_anchor=(1,0.9))
+
+file = folder + ' ' + inst_id + '_OHC'
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)  
+ 
+#%%
+plt.figure()
+plt.plot(timeg,OHCg,label='glider')
+plt.plot(time31,OHCg_to31,'*-')  
+plt.plot(timestamp_pom_oper,OHCg_to_pom_oper,'*-')  
+plt.plot(time31,OHC31,label='GOFS 3.1')
+plt.plot(timestamp_pom_oper,OHC_pom_oper,label='POM oper')
+plt.plot(timestamp_pom_exp,OHC_pom_exp,label='POM_exp')
+plt.legend()       
