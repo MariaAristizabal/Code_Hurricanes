@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 Created on Wed Dec 11 12:20:03 2019
 
@@ -11,53 +13,32 @@ Created on Wed Dec 11 12:20:03 2019
 lon_lim = [-98.5,-60.0]
 lat_lim = [10.0,45.0]
 
-cycle = '2019082800'
-
 #Time window
-#date_ini = 
-
 date_ini = '2019/08/28/00/00'
 date_end = '2019/09/02/00/00'
 
-delta_lon = 1  # delta longitude around hurricane track to calculate
-               # statistics
-N = 0 # 0 is the start of forecating cycle (2019082800)
-      # 1 is 6 hours of forecasting cycle   (2019082806)
-      # 2 is 12 hours ...... 20 is 120 hours 
-
 # url for GOFS 3.1
 url_GOFS = 'http://tds.hycom.org/thredds/dodsC/GLBv0.08/expt_93.0/ts3z'
+
+# folder nc files POM
+folder_pom =  '/Volumes/aristizabal/POM_Dorian/'
+folder_pom_oper = folder_pom + 'POM_Dorian_2019082800_nc_files_oper/'
+folder_pom_exp = folder_pom + 'POM_Dorian_2019082800_nc_files_exp/'
+prefix = 'dorian05l.2019082800.pom.00'
+folder_pom_grid = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/'
+pom_grid_oper = folder_pom_grid + 'dorian05l.2019082800.pom.grid.oper.nc'
+pom_grid_exp = folder_pom_grid + 'dorian05l.2019082800.pom.grid.exp.nc' 
+folder_pom_local = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/POM_Dorian_npz_files/'    
+
+# Dorian track files
+track_oper = 'dorian05l.2019082800.trak.hwrf_oper.atcfunix'
+track_exp = 'dorian05l.2019082800.trak.hwrf_exp.atcfunix'
 
 # KMZ file best track Dorian
 kmz_file_Dorian = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/KMZ_files/al052019_best_track-5.kmz'   
 
 # folder figures
 folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'
-
-
-
-# folder nc files POM
-folder_pom =  '/Volumes/aristizabal/POM_Dorian/'
-
-###################
-# folder nc files POM
-folder_pom_oper = folder_pom + 'POM_Dorian_' + cycle + '_nc_files_oper/'
-folder_pom_exp = folder_pom + 'POM_Dorian_' + cycle + '_nc_files_exp/'
-prefix = 'dorian05l.' + cycle + '.pom.00'
-
-pom_grid_oper = folder_pom_oper + 'dorian05l.' + cycle + '.pom.grid.nc'
-pom_grid_exp = folder_pom_exp + 'dorian05l.' + cycle + '.pom.grid.nc'
-
-# Dorian track files
-track_oper = folder_pom_oper + 'dorian05l.' + cycle + '.trak.hwrf.atcfunix'
-track_exp = folder_pom_exp + 'dorian05l.' + cycle + '.trak.hwrf.atcfunix'
-
-#folder_pom_grid = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/'
-#pom_grid_oper = folder_pom_grid + 'dorian05l.' + cycle + '.pom.grid.oper.nc'
-#pom_grid_exp = folder_pom_grid + 'dorian05l.' + cycle + '.pom.grid.exp.nc' 
-#folder_pom_local = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/POM_Dorian_npz_files/'    
-#track_oper = 'dorian05l.' + cycle + '.trak.hwrf_oper.atcfunix'
-#track_exp = 'dorian05l.' + cycle + '.trak.hwrf_exp.atcfunix'
 
 #%%
 import pandas as pd
@@ -256,7 +237,7 @@ def read_kmz_file_storm_best_track(kmz_file):
 #%% Reading POM temperature and salinity for the N time step in forecasting cycle
 # following an along track
 
-def get_profiles_from_POM(N,folder_pom,prefix,lon_track,lat_track,\
+def get_profiles_from_POM_along_track(N,folder_pom,prefix,lon_track,lat_track,\
                                           lon_pom,lat_pom,zlev_pom,zmatrix_pom):   
     
     pom_ncfiles = sorted(glob.glob(os.path.join(folder_pom,prefix+'*.nc')))   
@@ -293,7 +274,7 @@ def get_profiles_from_POM(N,folder_pom,prefix,lon_track,lat_track,\
 
 #%% Reading temperature and salinity from DF on target_time following an along track    
 
-def get_profiles_from_GOFS(DF,target_time,lon_track,lat_track):
+def get_profiles_from_GOFS_along_track(DF,target_time,lon_track,lat_track):
 
     depth = np.asarray(DF.depth[:])
     tt_G = DF.time
@@ -314,7 +295,6 @@ def get_profiles_from_GOFS(DF,target_time,lon_track,lat_track):
     return temp_along_track, salt_along_track
 
 #%%   
-    
 def interp_datasets_in_z(temp_orig,salt_orig,depth_orig,depth_target,nz,nx):
 
     temp_interp = np.empty((nz,nx))
@@ -329,22 +309,6 @@ def interp_datasets_in_z(temp_orig,salt_orig,depth_orig,depth_target,nz,nx):
             salt_interp[:,x] = np.interp(depth_target[:,x],depth_orig,salt_orig[:,x])
     
     return temp_interp, salt_interp
-
-#%% 
-    
-def depth_aver_top_100(depth,var):
-
-    if depth.ndim == 1:
-        okd = np.abs(depth) <= 100
-        varmean100 = np.nanmean(var[okd,:],0)
-    else:
-        varmean100 = np.empty(depth.shape[1])
-        varmean100[:] = np.nan
-        for t in np.arange(depth.shape[1]):
-            okd = np.abs(depth[:,t]) <= 100
-            varmean100[t] = np.nanmean(var[okd,t])
-    
-    return varmean100
 
 #%% Taylor Diagram
 
@@ -505,82 +469,74 @@ depth_GOFS = np.asarray(GOFS.depth[:])
 
 #%% Get Dorian track from POM
 
-lon_forec_track_oper, lat_forec_track_oper, lead_time_oper = get_storm_track_POM(track_oper)
+lon_forec_track_oper, lat_forec_track_oper, lead_time_oper = get_storm_track_POM(folder_pom_local + track_oper)
 
-lon_forec_track_exp, lat_forec_track_exp, lead_time_exp = get_storm_track_POM(track_exp)
+lon_forec_track_exp, lat_forec_track_exp, lead_time_exp = get_storm_track_POM(folder_pom_local + track_exp)
 
 #%% Get Dorian best track 
 
 lon_best_track, lat_best_track, time_best_track, _, _, _ = \
 read_kmz_file_storm_best_track(kmz_file_Dorian)
 
-#%% Obtain lat and lon band around forecated track operational
-
-dlon = 0.1
-nlevels = int(2*delta_lon /dlon) + 1
-
-lon_bnd = np.linspace(lon_forec_track_oper[2*N:]-delta_lon,lon_forec_track_oper[2*N:]+delta_lon,nlevels) 
-lon_band = lon_bnd.ravel()
-lat_bd = np.tile(lat_forec_track_oper[2*N:],lon_bnd.shape[0])
-lat_bnd = lat_bd.reshape(lon_bnd.shape[0],lon_bnd.shape[1])
-lat_band = lat_bnd.ravel()
-
 #%% Reading POM operational temperature and salinity for firts time step in forecast cycle 2018082800
-# following a band around the forecasted storm track by HWRF/POM
+# following the forecasted storm track by HWRF/POM
 
-#N = 1
-temp_POM_band_oper , salt_POM_band_oper, dens_POM_band_oper,\
-zmatrix_POM_band_oper, time_POM = \
-get_profiles_from_POM(N,folder_pom_oper,prefix,lon_band,lat_band,\
-                                          lon_pom_oper,lat_pom_oper,zlev_pom_oper,zmatrix_pom_oper)    
-    
+N = 0
+temp_POM_forec_track_oper , salt_POM_forec_track_oper, dens_POM_forec_track_oper,\
+zmatrix_POM_forec_track_oper, time_POM = \
+get_profiles_from_POM_along_track(N,folder_pom_oper,prefix,lon_forec_track_oper,lat_forec_track_oper,\
+                                          lon_pom_oper,lat_pom_oper,zlev_pom_oper,zmatrix_pom_oper)
+
+
 #%% Reading POM experimental temperature and salinity for firts time step in forecast cycle 2018082800
-# following a band around the forecasted storm track by HWRF/POM
+# following the forecasted storm track by HWRF/POM
 
-#N = 1
-temp_POM_band_exp , salt_POM_band_exp, dens_POM_band_exp, \
-zmatrix_POM_band_exp, time_POM = \
-get_profiles_from_POM(N,folder_pom_exp,prefix,lon_band,lat_band,\
+N = 0
+temp_POM_forec_track_exp , salt_POM_forec_track_exp, dens_POM_forec_track_exp, \
+zmatrix_POM_forec_track_exp, time_POM = \
+get_profiles_from_POM_along_track (N,folder_pom_exp,prefix,lon_forec_track_oper,lat_forec_track_oper,\
                                           lon_pom_exp,lat_pom_exp,zlev_pom_exp,zmatrix_pom_exp)
-
+    
 #%% Reading GOFS temperature and salinity for firts time step in forecast cycle 2018082800
-# following a band around the forecasted storm track by HWRF/POM     
+# following the forecasted storm track by HWRF/POM     
 
+lon_track = lon_forec_track_oper
+lat_track = lat_forec_track_oper
 DF = GOFS
 target_time = time_POM 
 
-temp_GOFS_band , salt_GOFS_band = \
-get_profiles_from_GOFS(DF,target_time,lon_band,lat_band)
+temp_GOFS_forec_track , salt_GOFS_forec_track = \
+get_profiles_from_GOFS_along_track(DF,target_time,lon_track,lat_track)
 
 #%% Calculate density for GOFS
 
-nx = temp_GOFS_band.shape[1]
-dens_GOFS_band = sw.dens(salt_GOFS_band,temp_GOFS_band,np.tile(depth_GOFS,(nx,1)).T)
+nx = temp_GOFS_forec_track.shape[1]
+dens_GOFS_forec_track = sw.dens(salt_GOFS_forec_track,temp_GOFS_forec_track,np.tile(depth_GOFS,(nx,1)).T)
     
 #%% Interpolate GOFS into POM operational 
 # Why? because POM vertical grid has more levels in top 2000 meters
 
-temp_orig = temp_GOFS_band
-salt_orig = salt_GOFS_band
+temp_orig = temp_GOFS_forec_track
+salt_orig = salt_GOFS_forec_track
 depth_orig = depth_GOFS
 nz = len(zlev_pom_oper)
-nx = temp_GOFS_band.shape[1]
-depth_target = -zmatrix_POM_band_oper
+nx = temp_GOFS_forec_track.shape[1]
+depth_target = -zmatrix_POM_forec_track_oper
 
-temp_GOFS_band_to_pom_oper, salt_GOFS_band_to_pom_oper = \
+temp_GOFS_forec_track_to_pom_oper, salt_GOFS_forec_track_to_pom_oper = \
 interp_datasets_in_z(temp_orig,salt_orig,depth_orig,depth_target,nz,nx)
 
 #%% Interpolate GOFS into POM experimental 
 # Why? because POM vertical grid has more levels in top 2000 meters
 
-temp_orig = temp_GOFS_band
-salt_orig = salt_GOFS_band
+temp_orig = temp_GOFS_forec_track
+salt_orig = salt_GOFS_forec_track
 depth_orig = depth_GOFS
 nz = len(zlev_pom_exp)
-nx = temp_GOFS_band.shape[1]
-depth_target = -zmatrix_POM_band_exp
+nx = temp_GOFS_forec_track.shape[1]
+depth_target = -zmatrix_POM_forec_track_exp
 
-temp_GOFS_band_to_pom_exp, salt_GOFS_band_to_pom_exp = \
+temp_GOFS_forec_track_to_pom_exp, salt_GOFS_forec_track_to_pom_exp = \
 interp_datasets_in_z(temp_orig,salt_orig,depth_orig,depth_target,nz,nx)
 
 #%% Calculation of mixed layer depth based on temperature and density critria
@@ -592,40 +548,32 @@ drho = 0.125
 
 # for GOFS 3.1 output 
 MLD_temp_crit_GOFS, _, _, _, MLD_dens_crit_GOFS, Tmean_dens_crit_GOFS, Smean_dens_crit_GOFS, _ = \
-MLD_temp_and_dens_criteria(dt,drho,depth_GOFS,temp_GOFS_band,salt_GOFS_band,dens_GOFS_band)          
+MLD_temp_and_dens_criteria(dt,drho,depth_GOFS,temp_GOFS_forec_track,salt_GOFS_forec_track,dens_GOFS_forec_track)          
 
 # for POM operational
 MLD_temp_crit_POM_oper, _, _, _, MLD_dens_crit_POM_oper, Tmean_dens_crit_POM_oper, \
 Smean_dens_crit_POM_oper, _ = \
-MLD_temp_and_dens_criteria(dt,drho,zmatrix_POM_band_oper,temp_POM_band_oper,\
-                           salt_POM_band_oper,dens_POM_band_oper)
+MLD_temp_and_dens_criteria(dt,drho,zmatrix_POM_forec_track_oper,temp_POM_forec_track_oper,\
+                           salt_POM_forec_track_oper,dens_POM_forec_track_oper)
 
 # for POM experimental
 MLD_temp_crit_POM_exp, _, _, _, MLD_dens_crit_POM_exp, Tmean_dens_crit_POM_exp, \
 Smean_dens_crit_POM_exp, _ = \
-MLD_temp_and_dens_criteria(dt,drho,zmatrix_POM_band_exp,temp_POM_band_exp,\
-                           salt_POM_band_exp,dens_POM_band_exp)
+MLD_temp_and_dens_criteria(dt,drho,zmatrix_POM_forec_track_exp,temp_POM_forec_track_exp,\
+                           salt_POM_forec_track_exp,dens_POM_forec_track_exp)
 
 #%% Surface Ocean Heat Content
 
 # GOFS
-OHC_GOFS = OHC_surface(temp_GOFS_band,depth_GOFS,dens_GOFS_band)
+OHC_GOFS = OHC_surface(temp_GOFS_forec_track,depth_GOFS,dens_GOFS_forec_track)
 
 # POM operational    
-OHC_POM_oper = OHC_surface(temp_POM_band_oper,zmatrix_POM_band_oper,\
-                           dens_POM_band_oper)
+OHC_POM_oper = OHC_surface(temp_POM_forec_track_oper,zmatrix_POM_forec_track_oper,\
+                           dens_POM_forec_track_oper)
 
 # POM experimental
-OHC_POM_exp = OHC_surface(temp_POM_band_exp,zmatrix_POM_band_exp,\
-                           dens_POM_band_exp)
-    
-#%% Calculate T100
-
-T100_GOFS = depth_aver_top_100(depth_GOFS,temp_GOFS_band)
-
-T100_POM_oper = depth_aver_top_100(zmatrix_POM_band_oper,temp_POM_band_oper) 
-
-T100_POM_exp = depth_aver_top_100(zmatrix_POM_band_exp,temp_POM_band_exp)    
+OHC_POM_exp = OHC_surface(temp_POM_forec_track_exp,zmatrix_POM_forec_track_exp,\
+                           dens_POM_forec_track_exp)
 
 #%% Read GOFS 3.1 output and interpolating into POM operational
 '''
@@ -657,19 +605,19 @@ temp_GOFS_to_pom_oper = GOFS_Dorian_2019082800['temp_GOFS_to_pom_oper']
 '''
 #%% Define dataframe
 
-DF_temp_GOFS_POM = pd.DataFrame(data=np.array([np.ravel(temp_GOFS_band_to_pom_oper,order='F'),\
-                                      np.ravel(temp_POM_band_oper,order='F'),\
-                                      np.ravel(temp_GOFS_band_to_pom_exp,order='F'),\
-                                      np.ravel(temp_POM_band_exp,order='F')]).T,\
+DF_temp_GOFS_POM = pd.DataFrame(data=np.array([np.ravel(temp_GOFS_forec_track_to_pom_oper,order='F'),\
+                                      np.ravel(temp_POM_forec_track_oper,order='F'),\
+                                      np.ravel(temp_GOFS_forec_track_to_pom_exp,order='F'),\
+                                      np.ravel(temp_POM_forec_track_exp,order='F')]).T,\
                   columns=['GOFS_to_POM_oper','POM_oper',\
                            'GOFS_to_POM_exp','POM_exp'])
     
 #%% Define dataframe
 
-DF_salt_GOFS_POM = pd.DataFrame(data=np.array([np.ravel(salt_GOFS_band_to_pom_oper,order='F'),\
-                                      np.ravel(salt_POM_band_oper,order='F'),\
-                                      np.ravel(salt_GOFS_band_to_pom_exp,order='F'),\
-                                      np.ravel(salt_POM_band_exp,order='F')]).T,\
+DF_salt_GOFS_POM = pd.DataFrame(data=np.array([np.ravel(salt_GOFS_forec_track_to_pom_oper,order='F'),\
+                                      np.ravel(salt_POM_forec_track_oper,order='F'),\
+                                      np.ravel(salt_GOFS_forec_track_to_pom_exp,order='F'),\
+                                      np.ravel(salt_POM_forec_track_exp,order='F')]).T,\
                   columns=['GOFS_to_POM_oper','POM_oper',\
                            'GOFS_to_POM_exp','POM_exp'])   
     
@@ -684,11 +632,6 @@ DF_mld_GOFS_POM = pd.DataFrame(data=np.array([MLD_dens_crit_GOFS,MLD_dens_crit_P
 
 DF_OHC_GOFS_POM = pd.DataFrame(data=np.array([OHC_GOFS,OHC_POM_oper,OHC_POM_exp]).T,\
                       columns=['OHC_GOFS','OHC_POM_oper','OHC_POM_exp']) 
-    
-#%% Define dataframe
-
-DF_T100_GOFS_POM = pd.DataFrame(data=np.array([T100_GOFS,T100_POM_oper,T100_POM_exp]).T,\
-                      columns=['T100_GOFS','T100_POM_oper','T100_POM_exp'])     
     
 #%% Temperature statistics.
 
@@ -880,56 +823,11 @@ OHC_skillscores = pd.DataFrame(tskill,
                         columns=cols)
 print(OHC_skillscores) 
 
-#%% T100 statistics.
 
-DF = DF_T100_GOFS_POM
-
-N = len(DF)-1  #For Unbiased estimmator.
-
-
-cols = ['CORRELATION','OSTD','MSTD','CRMSE','BIAS']
-    
-tskill = np.empty((3,5))
-tskill[:] = np.nan
-
-#CORR
-tskill[0,0] = DF.corr()['T100_GOFS']['T100_GOFS']
-tskill[1,0] = DF.corr()['T100_GOFS']['T100_POM_oper']
-tskill[2,0] = DF.corr()['T100_GOFS']['T100_POM_oper']
-
-#OSTD
-tskill[0,1] = DF.std().T100_GOFS
-tskill[1,1] = DF.std().T100_GOFS
-tskill[2,1] = DF.std().T100_GOFS
-
-#MSTD
-tskill[0,2] = DF.std().T100_GOFS
-tskill[1,2] = DF.std().T100_POM_oper
-tskill[2,2] = DF.std().T100_POM_exp
-
-#CRMSE
-tskill[0,3] = 0
-tskill[1,3] = np.sqrt(np.nansum(((DF.T100_GOFS-DF.mean().T100_GOFS)-\
-                                 (DF.T100_POM_oper-DF.mean().T100_POM_oper))**2)/N)
-tskill[2,3] = np.sqrt(np.nansum(((DF.T100_GOFS-DF.mean().T100_GOFS)-\
-                                 (DF.T100_POM_exp-DF.mean().T100_POM_exp))**2)/N)
-
-#BIAS
-tskill[0,4] = 0
-tskill[1,4] = DF.mean().T100_GOFS - DF.mean().T100_POM_oper
-tskill[2,4] = DF.mean().T100_GOFS - DF.mean().T100_POM_exp
-
-#color
-colors = ['indianred','seagreen','darkorchid']
-    
-T100_skillscores = pd.DataFrame(tskill,
-                        index=['GOFS_to_POM_oper','POM_oper','POM_exp'],
-                        columns=cols)
-print(T100_skillscores) 
 
 #%% Combine all metrics into one normalized Taylor diagram 
 
-angle_lim = np.pi/2 + np.pi/16
+angle_lim = np.pi/2
 fig,ax1 = taylor_template(angle_lim)
 markers = ['.','X','^']
   
@@ -960,13 +858,6 @@ for i,r in enumerate(scores.iterrows()):
     rr=r[1].MSTD/r[1].OSTD
     ax1.plot(theta,rr,markers[i],color = 'indianred',markersize=8) 
 ax1.plot(theta,rr,markers[i],label='OHC',color = 'indianred',markersize=8) 
-
-scores = T100_skillscores  
-for i,r in enumerate(scores.iterrows()):
-    theta=np.arccos(r[1].CORRELATION)            
-    rr=r[1].MSTD/r[1].OSTD
-    ax1.plot(theta,rr,markers[i],color = 'royalblue',markersize=8) 
-ax1.plot(theta,rr,markers[i],label='T100',color = 'royalblue',markersize=8) 
         
 #ax1.plot(0,1,'o',label='Obs',markersize=8) 
 ax1.plot(0,1,'or',label='GOFS',markersize=8,zorder=10)

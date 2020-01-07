@@ -276,7 +276,7 @@ def OHC_surface(time,temp,depth,dens):
     return OHC
 
 #%%   
-def interp_datasets_in_z(temp_orig,salt_orig,depth_orig,depth_target,indexes_time,din_vars):
+def interp_datasets_in_z(temp_orig,salt_orig,depth_orig,depth_target,indexes_time,dim_vars):
 
     temp_interp = np.empty((dim_vars[0],dim_vars[1]))
     temp_interp[:] = np.nan
@@ -292,6 +292,22 @@ def interp_datasets_in_z(temp_orig,salt_orig,depth_orig,depth_target,indexes_tim
             salt_interp[:,i] = np.interp(depth_target[:,i],depth_orig[pos,indexes_time[i]],salt_orig[pos,indexes_time[i]])
 
     return temp_interp, salt_interp
+
+#%%
+    
+def depth_aver_top_100(depth,var):
+
+    if depth.ndim == 1:
+        okd = np.abs(depth) <= 100
+        varmean100 = np.nanmean(var[okd,:],0)
+    else:
+        varmean100 = np.empty(depth.shape[1])
+        varmean100[:] = np.nan
+        for t in np.arange(depth.shape[1]):
+            okd = np.abs(depth[:,t]) <= 100
+            varmean100[t] = np.nanmean(var[okd,t])
+    
+    return varmean100
 
 #%% 
 
@@ -582,6 +598,7 @@ lon_GOFS = lon_G[oklon_GOFS]
 
 depth_GOFS = np.asarray(GOFS.depth[:])
 
+# Conversion from GOFS longitude and latitude to glider convention
 lon_GOFSg, lat_GOFSg = GOFS_coor_to_glider_coord(lon_GOFS,lat_GOFS)
 
 #%% Reading glider data
@@ -592,6 +609,8 @@ DF_GOFS_MLD = pd.DataFrame()
 DF_POM_MLD = pd.DataFrame()
 DF_GOFS_OHC = pd.DataFrame()
 DF_POM_OHC = pd.DataFrame()
+DF_GOFS_T100 = pd.DataFrame()
+DF_POM_T100 = pd.DataFrame()
 
 for f,file in enumerate(gdata):
     print(file)    
@@ -718,6 +737,20 @@ for f,file in enumerate(gdata):
     # POM experimental
     OHC_POM_exp = OHC_surface(timestamp_pom_exp,target_temp_POM_exp,target_depth_POM_exp,target_dens_POM_exp)
     
+    #%% Calculate T100
+    
+    # glider
+    T100_glid = depth_aver_top_100(depthg_gridded,tempg_gridded)
+
+    # GOFS
+    T100_GOFS = depth_aver_top_100(depth_GOFS,target_temp_GOFS)
+
+    # POM operational
+    T100_POM_oper = depth_aver_top_100(target_depth_POM_oper,target_temp_POM_oper) 
+
+    # POM experimental
+    T100_POM_exp = depth_aver_top_100(target_temp_POM_exp,target_temp_POM_exp)  
+    
     #%% Interpolate glider transect onto GOFS time and depth
         
     oktimeg_gofs = np.round(np.interp(tstamp_model,tstamp_glider,np.arange(len(tstamp_glider)))).astype(int)    
@@ -735,7 +768,8 @@ for f,file in enumerate(gdata):
     MLD_dens_crit_glid_to_GOFS = MLD_dens_crit_glid[oktimeg_gofs]    
     Tmean_dens_crit_glid_to_GOFS = Tmean_dens_crit_glid[oktimeg_gofs] 
     Smean_dens_crit_glid_to_GOFS = Smean_dens_crit_glid[oktimeg_gofs] 
-    OHC_glid_to_GOFS = OHC_glid[oktimeg_gofs]  
+    OHC_glid_to_GOFS = OHC_glid[oktimeg_gofs] 
+    T100_glid_to_GOFS = T100_glid[oktimeg_gofs] 
     
     #%% Interpolate glider transect onto POM operational time and depth
         
@@ -755,6 +789,7 @@ for f,file in enumerate(gdata):
     Tmean_dens_crit_glid_to_POM_oper = Tmean_dens_crit_glid[oktimeg_pom_oper] 
     Smean_dens_crit_glid_to_POM_oper = Smean_dens_crit_glid[oktimeg_pom_oper] 
     OHC_glid_to_POM_oper = OHC_glid[oktimeg_pom_oper]
+    T100_glid_to_POM_oper = T100_glid[oktimeg_pom_oper]
     
     #%% Interpolate glider transect onto POM experimental time and depth
         
@@ -774,6 +809,7 @@ for f,file in enumerate(gdata):
     Tmean_dens_crit_glid_to_POM_exp = Tmean_dens_crit_glid[oktimeg_pom_exp] 
     Smean_dens_crit_glid_to_POM_exp = Smean_dens_crit_glid[oktimeg_pom_exp] 
     OHC_glid_to_POM_exp = OHC_glid[oktimeg_pom_exp]
+    T100_glid_to_POM_exp = T100_glid[oktimeg_pom_exp]
     
     #%% Define dataframe
     
@@ -830,6 +866,18 @@ for f,file in enumerate(gdata):
                                               OHC_POM_oper,OHC_POM_exp]).T,\
                       columns=['OHC_obs_to_oper','OHC_obs_to_exp',\
                                'OHC_POM_oper','OHC_POM_exp'])
+        
+    #%% Define dataframe
+    
+    df_GOFS_T100 = pd.DataFrame(data=np.array([T100_glid_to_GOFS,T100_GOFS]).T,\
+                      columns=['T100_obs','T100_GOFS'])  
+        
+    #%% DEfine dataframe
+    
+    df_POM_T100 = pd.DataFrame(data=np.array([T100_glid_to_POM_oper,T100_glid_to_POM_exp,\
+                                              T100_POM_oper,T100_POM_exp]).T,\
+                      columns=['T100_obs_to_oper','T100_obs_to_exp',\
+                               'T100_POM_oper','T100_POM_exp'])
 
     #%% Concatenate data frames       
     
@@ -839,6 +887,8 @@ for f,file in enumerate(gdata):
     DF_POM_MLD = pd.concat([DF_POM_MLD, df_POM_MLD])
     DF_GOFS_OHC = pd.concat([DF_GOFS_OHC, df_GOFS_OHC])
     DF_POM_OHC = pd.concat([DF_POM_OHC, df_POM_OHC])
+    DF_GOFS_T100 = pd.concat([DF_GOFS_T100, df_GOFS_T100])
+    DF_POM_T100 = pd.concat([DF_POM_T100, df_POM_T100])
     
 #%% Temperature statistics.
 
@@ -1035,6 +1085,55 @@ OHC_skillscores = pd.DataFrame(tskill,
                         index=['GOFS','POM_oper','POM_exp'],
                         columns=cols)
 print(OHC_skillscores)
+
+#%% T100 statistics 
+
+DF_GOFS = DF_GOFS_T100
+DF_POM = DF_POM_T100
+
+NGOFS = len(DF_GOFS)-1  #For Unbiased estimmator.
+NPOM = len(DF_POM)-1
+
+cols = ['CORRELATION','OSTD','MSTD','CRMSE','BIAS']
+    
+tskill = np.empty((3,5))
+tskill[:] = np.nan
+
+#CORR
+tskill[0,0] = DF_GOFS.corr()['T100_obs']['T100_GOFS']
+tskill[1,0] = DF_POM.corr()['T100_obs_to_oper']['T100_POM_oper']
+tskill[2,0] = DF_POM.corr()['T100_obs_to_exp']['T100_POM_exp']
+
+#OSTD
+tskill[0,1] = DF_GOFS.std().T100_obs
+tskill[1,1] = DF_POM.std().T100_obs_to_oper
+tskill[2,1] = DF_POM.std().T100_obs_to_exp
+
+#MSTD
+tskill[0,2] = DF_GOFS.std().T100_GOFS
+tskill[1,2] = DF_POM.std().T100_POM_oper
+tskill[2,2] = DF_POM.std().T100_POM_exp
+
+#CRMSE
+tskill[0,3] = np.sqrt(np.nansum(((DF_GOFS.T100_obs-DF_GOFS.mean().T100_obs)-\
+                                 (DF_GOFS.T100_GOFS-DF_GOFS.mean().T100_GOFS))**2)/NGOFS)
+tskill[1,3] = np.sqrt(np.nansum(((DF_POM.T100_obs_to_exp-DF_POM.mean().T100_obs_to_oper)-\
+                                 (DF_POM.T100_POM_oper-DF_POM.mean().T100_POM_oper))**2)/NPOM)
+tskill[2,3] = np.sqrt(np.nansum(((DF_POM.T100_obs_to_exp-DF_POM.mean().T100_obs_to_exp)-\
+                                 (DF_POM.T100_POM_exp-DF_POM.mean().T100_POM_exp))**2)/NPOM)
+
+#BIAS
+tskill[0,4] = DF_GOFS.mean().T100_obs - DF_GOFS.mean().T100_GOFS
+tskill[1,4] = DF_POM.mean().T100_obs_to_oper - DF_POM.mean().T100_POM_oper
+tskill[2,4] = DF_POM.mean().T100_obs_to_exp - DF_POM.mean().T100_POM_exp
+
+#color
+colors = ['indianred','seagreen','darkorchid']
+    
+T100_skillscores = pd.DataFrame(tskill,
+                        index=['GOFS','POM_oper','POM_exp'],
+                        columns=cols)
+print(T100_skillscores)
     
 #%%    
     
@@ -1067,6 +1166,14 @@ taylor_normalized(OHC_skillscores,colors,np.pi/2)
 plt.title('OHC \n cycle 2019082800',fontsize=16)
 
 file = folder + 'Taylor_ohc_2019082800'
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
+
+#%%    
+    
+taylor(T100_skillscores,colors,'$^oC$',np.pi/2)
+plt.title('T100 \n cycle 2019082800',fontsize=16)
+
+file = folder + 'Taylor_T100_2019082800'
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
 
 #%% Combine all metrics into one normalized Taylor diagram 
@@ -1149,6 +1256,13 @@ for i,r in enumerate(scores.iterrows()):
     rr=r[1].MSTD/r[1].OSTD
     ax1.plot(theta,rr,markers[i],color = 'indianred',markersize=8) 
 ax1.plot(theta,rr,markers[i],label='OHC',color = 'indianred',markersize=8) 
+
+scores = T100_skillscores  
+for i,r in enumerate(scores.iterrows()):
+    theta=np.arccos(r[1].CORRELATION)            
+    rr=r[1].MSTD/r[1].OSTD
+    ax1.plot(theta,rr,markers[i],color = 'royalblue',markersize=8) 
+ax1.plot(theta,rr,markers[i],label='T100',color = 'royalblue',markersize=8) 
         
 ax1.plot(0,1,'o',label='Obs',markersize=8) 
 ax1.plot(0,0,'sk',label='GOFS',markersize=8)
