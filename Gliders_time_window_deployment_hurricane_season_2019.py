@@ -63,6 +63,8 @@ search = pd.read_csv(search_url)
 
 # Extract the IDs
 gliders = search['Dataset ID'].values
+# get rid off glos gliders (great lakes ocean observing)
+gliders = np.concatenate((gliders[0:14],gliders[15:])) 
 
 msg = 'Found {} Glider Datasets:\n\n{}'.format
 print(msg(len(gliders), '\n'.join(gliders)))
@@ -137,6 +139,7 @@ plt.show()
 #%%
         
 glider = [l.split('-')[0] for l in gliders]
+#glider = np.concatenate((glider[0:14],glider[15:]))
 
 fund_agency = [None]*(len(glider))
 for i,l in enumerate(glider):
@@ -180,8 +183,8 @@ for i,l in enumerate(glider):
         fund_agency[i] = 'TWR'
     if glider[i] == 'Sverdrup':
         fund_agency[i] = 'NOAA'
-    if glider[i] == 'glos_236':
-        fund_agency[i] = 'NOAA'
+    #if glider[i] == 'glos_236':
+    #    fund_agency[i] = 'NOAA'
     if glider[i] == 'ru33':
         fund_agency[i] = 'NOAA'
 
@@ -214,7 +217,7 @@ plt.figure()
 patches, texts = plt.pie(sizes,startangle=90,colors=colors) #,autopct='%2d')
 plt.legend(patches,labels,loc='best',bbox_to_anchor=(0.85, 1))
 plt.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
-plt.title('Total Number of Gliders = '+str(len(gliders)),fontsize=16)
+plt.title('Total Number of Gliders = '+str(len(glider)),fontsize=16)
 
 plt.savefig("/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/pie_chart_number_gliders_hurica_season_2019.png"\
             ,bbox_inches = 'tight',pad_inches = 0.1)
@@ -232,7 +235,7 @@ plt.title('Gliders During Hurricane Season 2019',fontsize=24)
 ax.set_facecolor('lightgrey')
 
 for i, id in enumerate(gliders):
-    if id[0:3] != 'all':
+    if id[0:4] != 'glos':
         print(id)
         e.dataset_id = id
         e.constraints = constraints

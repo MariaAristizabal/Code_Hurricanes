@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Mon Dec 16 11:18:51 2019
+Created on Tue Jan 14 16:13:06 2020
 
 @author: root
 """
@@ -14,19 +14,25 @@ lat_lim = [15.0,35.0]
 # Server erddap url IOOS glider dap
 server = 'https://data.ioos.us/gliders/erddap'
 
-#gliders sg666, sg665, sg668, silbo
 url_aoml = 'http://gliders.ioos.us/thredds/dodsC/deployments/aoml/'
-#url_RU = 'http://gliders.ioos.us/thredds/dodsC/deployments/rutgers/'
-gdata = [url_aoml+'SG665-20190718T1155/SG665-20190718T1155.nc3.nc',\
-         url_aoml+'SG666-20190718T1206/SG666-20190718T1206.nc3.nc',\
-         url_aoml+'SG668-20190819T1217/SG668-20190819T1217.nc3.nc',\
-         url_aoml+'SG664-20190716T1218/SG664-20190716T1218.nc3.nc',\
-         url_aoml+'SG663-20190716T1159/SG663-20190716T1159.nc3.nc',\
-         url_aoml+'SG667-20190815T1247/SG667-20190815T1247.nc3.nc']
+url_RU = 'http://gliders.ioos.us/thredds/dodsC/deployments/rutgers/'
+
+#gdata_north = [url_RU+'silbo-20190717T1917/silbo-20190717T1917.nc3.nc',\
+#               url_aoml+'SG666-20190718T1206/SG666-20190718T1206.nc3.nc']
+    
+gdata_north = [url_aoml+'SG666-20190718T1206/SG666-20190718T1206.nc3.nc']  
+    
+gdata_south = [url_aoml+'SG665-20190718T1155/SG665-20190718T1155.nc3.nc',\
+               url_aoml+'SG668-20190819T1217/SG668-20190819T1217.nc3.nc',\
+               url_aoml+'SG664-20190716T1218/SG664-20190716T1218.nc3.nc',\
+               url_aoml+'SG663-20190716T1159/SG663-20190716T1159.nc3.nc',\
+               url_aoml+'SG667-20190815T1247/SG667-20190815T1247.nc3.nc']
+    
+gdata = gdata_south
 
 #Time window
 date_ini = '2019/08/28/00/00'
-date_end = '2019/09/02/00/00'
+date_end = '2019/09/02/00/06'
 
 # url for GOFS 3.1
 url_GOFS = 'http://tds.hycom.org/thredds/dodsC/GLBv0.08/expt_93.0/ts3z'
@@ -96,7 +102,7 @@ def varsg_gridded(depth,time,temp,salt,dens,delta_z):
                                  depthg_gridded < np.max(depthf[okt]))
             tempg_gridded[okd,t] = np.interp(depthg_gridded[okd],depthf[okt],tempf[okt])
             
-            oks = np.isfinite(saltf)
+        oks = np.isfinite(saltf)
         if np.sum(oks) < 3:
             saltg_gridded[:,t] = np.nan
         else:
@@ -293,25 +299,35 @@ def interp_datasets_in_z(temp_orig,salt_orig,depth_orig,depth_target,indexes_tim
 
     return temp_interp, salt_interp
 
-#%%
-    
+#%%    
 def depth_aver_top_100(depth,var):
 
+    varmean100 = np.empty(var.shape[1])
+    varmean100[:] = np.nan
     if depth.ndim == 1:
         okd = np.abs(depth) <= 100
-        varmean100 = np.nanmean(var[okd,:],0)
+        if len(depth[okd]) != 0:
+            for t in np.arange(var.shape[1]):
+                if len(np.where(np.isnan(var[okd,t]))[0])>10:
+                    varmean100[t] = np.nan
+                else:
+                    varmean100[t] = np.nanmean(var[okd,t],0)
     else:
-        varmean100 = np.empty(depth.shape[1])
-        varmean100[:] = np.nan
         for t in np.arange(depth.shape[1]):
             okd = np.abs(depth[:,t]) <= 100
-            varmean100[t] = np.nanmean(var[okd,t])
+            if len(depth[okd,t]) != 0:
+                if len(np.where(np.isnan(var[okd,t]))[0])>10:
+                    varmean100[t] = np.nan
+                else:
+                    varmean100[t] = np.nanmean(var[okd,t])
+            else:
+                varmean100[t] = np.nan
     
-    return varmean100
+    return varmean100    
 
-#%% 
+#%% Taylor Diagram
 
-def taylor_template(angle_lim):
+def taylor_template(angle_lim,std_lim):
 
     fig = plt.figure()
     tr = PolarAxes.PolarTransform()
@@ -322,12 +338,12 @@ def taylor_template(angle_lim):
     gf=FixedLocator(CCpolar)
     tf=DictFormatter(dict(zip(CCpolar, map(str,CCgrid))))
     
-    STDgrid=np.arange(0,2.0,.5)
+    STDgrid=np.arange(0,std_lim,.5)
     gfs=FixedLocator(STDgrid)
     tfs=DictFormatter(dict(zip(STDgrid, map(str,STDgrid))))
     
     ra0, ra1 =0, angle_lim
-    cz0, cz1 = 0, 2.0
+    cz0, cz1 = 0, std_lim
     grid_helper = floating_axes.GridHelperCurveLinear(
         tr, extremes=(ra0, ra1, cz0, cz1),
         grid_locator1=gf,
@@ -607,10 +623,6 @@ DF_GOFS_temp_salt = pd.DataFrame()
 DF_POM_temp_salt = pd.DataFrame()
 DF_GOFS_MLD = pd.DataFrame()
 DF_POM_MLD = pd.DataFrame()
-DF_GOFS_OHC = pd.DataFrame()
-DF_POM_OHC = pd.DataFrame()
-DF_GOFS_T100 = pd.DataFrame()
-DF_POM_T100 = pd.DataFrame()
 
 for f,file in enumerate(gdata):
     print(file)    
@@ -723,34 +735,6 @@ for f,file in enumerate(gdata):
     MLD_temp_crit_POM_exp, _, _, _, MLD_dens_crit_POM_exp, Tmean_dens_crit_POM_exp, Smean_dens_crit_POM_exp, _ = \
     MLD_temp_and_dens_criteria(dt,drho,timestamp_pom_exp,target_depth_POM_exp,target_temp_POM_exp,target_salt_POM_exp,target_dens_POM_exp)
     
-    #%% Surface Ocean Heat Content
-    
-    # glider
-    OHC_glid = OHC_surface(timeg,tempg_gridded,depthg_gridded,densg_gridded)
-    
-    # GOFS
-    OHC_GOFS = OHC_surface(time_GOFS,target_temp_GOFS,depth_GOFS,target_dens_GOFS)
-    
-    # POM operational    
-    OHC_POM_oper = OHC_surface(timestamp_pom_oper,target_temp_POM_oper,target_depth_POM_oper,target_dens_POM_oper)
-    
-    # POM experimental
-    OHC_POM_exp = OHC_surface(timestamp_pom_exp,target_temp_POM_exp,target_depth_POM_exp,target_dens_POM_exp)
-    
-    #%% Calculate T100
-    
-    # glider
-    T100_glid = depth_aver_top_100(depthg_gridded,tempg_gridded)
-
-    # GOFS
-    T100_GOFS = depth_aver_top_100(depth_GOFS,target_temp_GOFS)
-
-    # POM operational
-    T100_POM_oper = depth_aver_top_100(target_depth_POM_oper,target_temp_POM_oper) 
-
-    # POM experimental
-    T100_POM_exp = depth_aver_top_100(target_temp_POM_exp,target_temp_POM_exp)  
-    
     #%% Interpolate glider transect onto GOFS time and depth
         
     oktimeg_gofs = np.round(np.interp(tstamp_model,tstamp_glider,np.arange(len(tstamp_glider)))).astype(int)    
@@ -768,9 +752,7 @@ for f,file in enumerate(gdata):
     MLD_dens_crit_glid_to_GOFS = MLD_dens_crit_glid[oktimeg_gofs]    
     Tmean_dens_crit_glid_to_GOFS = Tmean_dens_crit_glid[oktimeg_gofs] 
     Smean_dens_crit_glid_to_GOFS = Smean_dens_crit_glid[oktimeg_gofs] 
-    OHC_glid_to_GOFS = OHC_glid[oktimeg_gofs] 
-    T100_glid_to_GOFS = T100_glid[oktimeg_gofs] 
-    
+
     #%% Interpolate glider transect onto POM operational time and depth
         
     oktimeg_pom_oper = np.round(np.interp(timestamp_pom_oper,tstamp_glider,np.arange(len(tstamp_glider)))).astype(int)   
@@ -788,8 +770,6 @@ for f,file in enumerate(gdata):
     MLD_dens_crit_glid_to_POM_oper = MLD_dens_crit_glid[oktimeg_pom_oper]    
     Tmean_dens_crit_glid_to_POM_oper = Tmean_dens_crit_glid[oktimeg_pom_oper] 
     Smean_dens_crit_glid_to_POM_oper = Smean_dens_crit_glid[oktimeg_pom_oper] 
-    OHC_glid_to_POM_oper = OHC_glid[oktimeg_pom_oper]
-    T100_glid_to_POM_oper = T100_glid[oktimeg_pom_oper]
     
     #%% Interpolate glider transect onto POM experimental time and depth
         
@@ -808,8 +788,6 @@ for f,file in enumerate(gdata):
     MLD_dens_crit_glid_to_POM_exp = MLD_dens_crit_glid[oktimeg_pom_exp]    
     Tmean_dens_crit_glid_to_POM_exp = Tmean_dens_crit_glid[oktimeg_pom_exp] 
     Smean_dens_crit_glid_to_POM_exp = Smean_dens_crit_glid[oktimeg_pom_exp] 
-    OHC_glid_to_POM_exp = OHC_glid[oktimeg_pom_exp]
-    T100_glid_to_POM_exp = T100_glid[oktimeg_pom_exp]
     
     #%% Define dataframe
     
@@ -840,44 +818,26 @@ for f,file in enumerate(gdata):
     #%% Define dataframe
     
     df_GOFS_MLD = pd.DataFrame(data=np.array([MLD_dens_crit_glid_to_GOFS,MLD_dens_crit_GOFS,\
-                                              Tmean_dens_crit_glid_to_GOFS,Tmean_dens_crit_GOFS]).T,\
+                                              Tmean_dens_crit_glid_to_GOFS,Tmean_dens_crit_GOFS,
+                                              Smean_dens_crit_glid_to_GOFS,Smean_dens_crit_GOFS]).T,\
                       columns=['MLD_obs','MLD_GOFS',\
-                              'Tmean_obs','Tmean_GOFS'])  
+                              'Tmean_obs','Tmean_GOFS',
+                              'Smean_obs','Smean_GOFS'])  
         
     #%% Define dataframe
     
     df_POM_MLD = pd.DataFrame(data=np.array([MLD_dens_crit_glid_to_POM_oper,MLD_dens_crit_POM_oper,\
                                              Tmean_dens_crit_glid_to_POM_oper,Tmean_dens_crit_POM_oper,\
+                                             Smean_dens_crit_glid_to_POM_oper,Smean_dens_crit_POM_oper,\
                                              MLD_dens_crit_glid_to_POM_exp,MLD_dens_crit_POM_exp,\
-                                             Tmean_dens_crit_glid_to_POM_exp,Tmean_dens_crit_POM_exp]).T,\
+                                             Tmean_dens_crit_glid_to_POM_exp,Tmean_dens_crit_POM_exp,\
+                                             Smean_dens_crit_glid_to_POM_exp,Smean_dens_crit_POM_exp]).T,\
                       columns=['MLD_obs_to_oper','MLD_POM_oper',\
                               'Tmean_obs_to_oper','Tmean_POM_oper',\
+                              'Smean_obs_to_oper','Smean_POM_oper',\
                               'MLD_obs_to_exp','MLD_POM_exp',\
-                              'Tmean_obs_to_exp','Tmean_POM_exp']) 
-    
-    #%% Define dataframe
-    
-    df_GOFS_OHC = pd.DataFrame(data=np.array([OHC_glid_to_GOFS,OHC_GOFS]).T,\
-                      columns=['OHC_obs','OHC_GOFS'])  
-    
-    #%% DEfine dataframe
-    
-    df_POM_OHC = pd.DataFrame(data=np.array([OHC_glid_to_POM_oper,OHC_glid_to_POM_exp,\
-                                              OHC_POM_oper,OHC_POM_exp]).T,\
-                      columns=['OHC_obs_to_oper','OHC_obs_to_exp',\
-                               'OHC_POM_oper','OHC_POM_exp'])
-        
-    #%% Define dataframe
-    
-    df_GOFS_T100 = pd.DataFrame(data=np.array([T100_glid_to_GOFS,T100_GOFS]).T,\
-                      columns=['T100_obs','T100_GOFS'])  
-        
-    #%% DEfine dataframe
-    
-    df_POM_T100 = pd.DataFrame(data=np.array([T100_glid_to_POM_oper,T100_glid_to_POM_exp,\
-                                              T100_POM_oper,T100_POM_exp]).T,\
-                      columns=['T100_obs_to_oper','T100_obs_to_exp',\
-                               'T100_POM_oper','T100_POM_exp'])
+                              'Tmean_obs_to_exp','Tmean_POM_exp',\
+                              'Smean_obs_to_exp','Smean_POM_exp']) 
 
     #%% Concatenate data frames       
     
@@ -885,15 +845,11 @@ for f,file in enumerate(gdata):
     DF_POM_temp_salt = pd.concat([DF_POM_temp_salt, df_POM_temp_salt])
     DF_GOFS_MLD = pd.concat([DF_GOFS_MLD, df_GOFS_MLD])
     DF_POM_MLD = pd.concat([DF_POM_MLD, df_POM_MLD])
-    DF_GOFS_OHC = pd.concat([DF_GOFS_OHC, df_GOFS_OHC])
-    DF_POM_OHC = pd.concat([DF_POM_OHC, df_POM_OHC])
-    DF_GOFS_T100 = pd.concat([DF_GOFS_T100, df_GOFS_T100])
-    DF_POM_T100 = pd.concat([DF_POM_T100, df_POM_T100])
     
 #%% Temperature statistics.
 
-DF_GOFS = DF_GOFS_temp_salt
-DF_POM = DF_POM_temp_salt
+DF_GOFS = DF_GOFS_temp_salt.dropna()
+DF_POM = DF_POM_temp_salt.dropna()
        
 NGOFS = len(DF_GOFS)-1  #For Unbiased estimmator.
 NPOM = len(DF_POM)-1
@@ -941,8 +897,8 @@ print(temp_skillscores)
 
 #%% Salinity statistics.
 
-DF_GOFS = DF_GOFS_temp_salt
-DF_POM = DF_POM_temp_salt
+DF_GOFS = DF_GOFS_temp_salt.dropna()
+DF_POM = DF_POM_temp_salt.dropna()
 
 NGOFS = len(DF_GOFS)-1  #For Unbiased estimmator.
 NPOM = len(DF_POM)-1
@@ -988,10 +944,10 @@ salt_skillscores = pd.DataFrame(tskill,
                         columns=cols)
 print(salt_skillscores)
 
-#%% Mixed layer statistics.
+#%% Mixed layer statistics Temperature.
 
-DF_GOFS = DF_GOFS_MLD
-DF_POM = DF_POM_MLD
+DF_GOFS = DF_GOFS_MLD.dropna()
+DF_POM = DF_POM_MLD.dropna()
 
 NGOFS = len(DF_GOFS)-1  #For Unbiased estimmator.
 NPOM = len(DF_POM)-1
@@ -1037,59 +993,10 @@ Tmean_mld_skillscores = pd.DataFrame(tskill,
                         columns=cols)
 print(Tmean_mld_skillscores)
 
-#%% OHC statistics 
+#%% Mixed layer statistics Salinity.
 
-DF_GOFS = DF_GOFS_OHC
-DF_POM = DF_POM_OHC
-
-NGOFS = len(DF_GOFS)-1  #For Unbiased estimmator.
-NPOM = len(DF_POM)-1
-
-cols = ['CORRELATION','OSTD','MSTD','CRMSE','BIAS']
-    
-tskill = np.empty((3,5))
-tskill[:] = np.nan
-
-#CORR
-tskill[0,0] = DF_GOFS.corr()['OHC_obs']['OHC_GOFS']
-tskill[1,0] = DF_POM.corr()['OHC_obs_to_oper']['OHC_POM_oper']
-tskill[2,0] = DF_POM.corr()['OHC_obs_to_exp']['OHC_POM_exp']
-
-#OSTD
-tskill[0,1] = DF_GOFS.std().OHC_obs
-tskill[1,1] = DF_POM.std().OHC_obs_to_oper
-tskill[2,1] = DF_POM.std().OHC_obs_to_exp
-
-#MSTD
-tskill[0,2] = DF_GOFS.std().OHC_GOFS
-tskill[1,2] = DF_POM.std().OHC_POM_oper
-tskill[2,2] = DF_POM.std().OHC_POM_exp
-
-#CRMSE
-tskill[0,3] = np.sqrt(np.nansum(((DF_GOFS.OHC_obs-DF_GOFS.mean().OHC_obs)-\
-                                 (DF_GOFS.OHC_GOFS-DF_GOFS.mean().OHC_GOFS))**2)/NGOFS)
-tskill[1,3] = np.sqrt(np.nansum(((DF_POM.OHC_obs_to_exp-DF_POM.mean().OHC_obs_to_oper)-\
-                                 (DF_POM.OHC_POM_oper-DF_POM.mean().OHC_POM_oper))**2)/NPOM)
-tskill[2,3] = np.sqrt(np.nansum(((DF_POM.OHC_obs_to_exp-DF_POM.mean().OHC_obs_to_exp)-\
-                                 (DF_POM.OHC_POM_exp-DF_POM.mean().OHC_POM_exp))**2)/NPOM)
-
-#BIAS
-tskill[0,4] = DF_GOFS.mean().OHC_obs - DF_GOFS.mean().OHC_GOFS
-tskill[1,4] = DF_POM.mean().OHC_obs_to_oper - DF_POM.mean().OHC_POM_oper
-tskill[2,4] = DF_POM.mean().OHC_obs_to_exp - DF_POM.mean().OHC_POM_exp
-
-#color
-colors = ['indianred','seagreen','darkorchid']
-    
-OHC_skillscores = pd.DataFrame(tskill,
-                        index=['GOFS','POM_oper','POM_exp'],
-                        columns=cols)
-print(OHC_skillscores)
-
-#%% T100 statistics 
-
-DF_GOFS = DF_GOFS_T100
-DF_POM = DF_POM_T100
+DF_GOFS = DF_GOFS_MLD.dropna()
+DF_POM = DF_POM_MLD.dropna()
 
 NGOFS = len(DF_GOFS)-1  #For Unbiased estimmator.
 NPOM = len(DF_POM)-1
@@ -1100,40 +1007,40 @@ tskill = np.empty((3,5))
 tskill[:] = np.nan
 
 #CORR
-tskill[0,0] = DF_GOFS.corr()['T100_obs']['T100_GOFS']
-tskill[1,0] = DF_POM.corr()['T100_obs_to_oper']['T100_POM_oper']
-tskill[2,0] = DF_POM.corr()['T100_obs_to_exp']['T100_POM_exp']
+tskill[0,0] = DF_GOFS.corr()['Smean_obs']['Smean_GOFS']
+tskill[1,0] = DF_POM.corr()['Smean_obs_to_oper']['Smean_POM_oper']
+tskill[2,0] = DF_POM.corr()['Smean_obs_to_exp']['Smean_POM_exp']
 
 #OSTD
-tskill[0,1] = DF_GOFS.std().T100_obs
-tskill[1,1] = DF_POM.std().T100_obs_to_oper
-tskill[2,1] = DF_POM.std().T100_obs_to_exp
+tskill[0,1] = DF_GOFS.std().Smean_obs
+tskill[1,1] = DF_POM.std().Smean_obs_to_oper
+tskill[2,1] = DF_POM.std().Smean_obs_to_exp
 
 #MSTD
-tskill[0,2] = DF_GOFS.std().T100_GOFS
-tskill[1,2] = DF_POM.std().T100_POM_oper
-tskill[2,2] = DF_POM.std().T100_POM_exp
+tskill[0,2] = DF_GOFS.std().Smean_GOFS
+tskill[1,2] = DF_POM.std().Smean_POM_oper
+tskill[2,2] = DF_POM.std().Smean_POM_exp
 
 #CRMSE
-tskill[0,3] = np.sqrt(np.nansum(((DF_GOFS.T100_obs-DF_GOFS.mean().T100_obs)-\
-                                 (DF_GOFS.T100_GOFS-DF_GOFS.mean().T100_GOFS))**2)/NGOFS)
-tskill[1,3] = np.sqrt(np.nansum(((DF_POM.T100_obs_to_exp-DF_POM.mean().T100_obs_to_oper)-\
-                                 (DF_POM.T100_POM_oper-DF_POM.mean().T100_POM_oper))**2)/NPOM)
-tskill[2,3] = np.sqrt(np.nansum(((DF_POM.T100_obs_to_exp-DF_POM.mean().T100_obs_to_exp)-\
-                                 (DF_POM.T100_POM_exp-DF_POM.mean().T100_POM_exp))**2)/NPOM)
+tskill[0,3] = np.sqrt(np.nansum(((DF_GOFS.Smean_obs-DF_GOFS.mean().Smean_obs)-\
+                                 (DF_GOFS.Smean_GOFS-DF_GOFS.mean().Smean_GOFS))**2)/NGOFS)
+tskill[1,3] = np.sqrt(np.nansum(((DF_POM.Smean_obs_to_exp-DF_POM.mean().Smean_obs_to_oper)-\
+                                 (DF_POM.Smean_POM_oper-DF_POM.mean().Smean_POM_oper))**2)/NPOM)
+tskill[2,3] = np.sqrt(np.nansum(((DF_POM.Smean_obs_to_exp-DF_POM.mean().Smean_obs_to_exp)-\
+                                 (DF_POM.Smean_POM_exp-DF_POM.mean().Smean_POM_exp))**2)/NPOM)
 
 #BIAS
-tskill[0,4] = DF_GOFS.mean().T100_obs - DF_GOFS.mean().T100_GOFS
-tskill[1,4] = DF_POM.mean().T100_obs_to_oper - DF_POM.mean().T100_POM_oper
-tskill[2,4] = DF_POM.mean().T100_obs_to_exp - DF_POM.mean().T100_POM_exp
+tskill[0,4] = DF_GOFS.mean().Smean_obs - DF_GOFS.mean().Smean_GOFS
+tskill[1,4] = DF_POM.mean().Smean_obs_to_oper - DF_POM.mean().Smean_POM_oper
+tskill[2,4] = DF_POM.mean().Smean_obs_to_exp - DF_POM.mean().Smean_POM_exp
 
 #color
 colors = ['indianred','seagreen','darkorchid']
     
-T100_skillscores = pd.DataFrame(tskill,
+Smean_mld_skillscores = pd.DataFrame(tskill,
                         index=['GOFS','POM_oper','POM_exp'],
                         columns=cols)
-print(T100_skillscores)
+print(Smean_mld_skillscores)
     
 #%%    
     
@@ -1154,7 +1061,7 @@ plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 
 #%%    
     
-taylor(Tmean_mld_skillscores,colors,'$^oC$',np.pi/2+np.pi/8)
+taylor(Tmean_mld_skillscores,colors,'$^oC$',np.pi/2)
 plt.title('Temperature MLD \n cycle 2019082800',fontsize=16)
 
 file = folder + 'Taylor_temp_mld_2019082800'
@@ -1162,74 +1069,20 @@ plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 
 #%%    
     
-taylor_normalized(OHC_skillscores,colors,np.pi/2)
-plt.title('OHC \n cycle 2019082800',fontsize=16)
+taylor(Smean_mld_skillscores,colors,'psu',np.pi/2)
+plt.title('Salinity MLD \n cycle 2019082800',fontsize=16)
 
-file = folder + 'Taylor_ohc_2019082800'
-plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
-
-#%%    
-    
-taylor(T100_skillscores,colors,'$^oC$',np.pi/2)
-plt.title('T100 \n cycle 2019082800',fontsize=16)
-
-file = folder + 'Taylor_T100_2019082800'
+file = folder + 'Taylor_salt_mld_2019082800'
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
 
 #%% Combine all metrics into one normalized Taylor diagram 
 
-angle_lim = np.pi/2+np.pi/8
-fig,ax1 = taylor_template(angle_lim)
-  
-scores = temp_skillscores  
-for i,r in enumerate(scores.iterrows()):
-    theta=np.arccos(r[1].CORRELATION)
-    rr=r[1].MSTD/r[1].OSTD
-    ax1.plot(theta,rr,'o',label=r[0],color = colors[i])
-      
-scores = salt_skillscores  
-for i,r in enumerate(scores.iterrows()):
-    theta=np.arccos(r[1].CORRELATION)            
-    rr=r[1].MSTD/r[1].OSTD
-    ax1.plot(theta,rr,'*',color = colors[i])
-        
-scores = Tmean_mld_skillscores  
-for i,r in enumerate(scores.iterrows()):
-    theta=np.arccos(r[1].CORRELATION)            
-    rr=r[1].MSTD/r[1].OSTD
-    ax1.plot(theta,rr,'s',color = colors[i])  
-        
-scores = OHC_skillscores  
-for i,r in enumerate(scores.iterrows()):
-    theta=np.arccos(r[1].CORRELATION)            
-    rr=r[1].MSTD/r[1].OSTD
-    ax1.plot(theta,rr,'^',color = colors[i]) 
-        
-ax1.plot(0,1,'o',label='Obs') 
-ax1.plot(0,0,'ok',label='Temp')
-ax1.plot(0,0,'*k',label='Salt')
-ax1.plot(0,0,'sk',label='Temp ML')
-ax1.plot(0,0,'^k',label='OHC')
-     
-plt.legend(loc='upper right',bbox_to_anchor=[1.45,1.2])    
-
-rs,ts = np.meshgrid(np.linspace(0,2.0),np.linspace(0,angle_lim))
-rms = np.sqrt(1 + rs**2 - 2*rs*np.cos(ts))
-    
-contours = ax1.contour(ts, rs, rms,3,colors='0.5')
-plt.clabel(contours, inline=1, fontsize=10)
-plt.grid(linestyle=':',alpha=0.5)
-
-file = folder + 'Taylor_norm_2019082800'
-plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
-
-#%% Combine all metrics into one normalized Taylor diagram 
-
-angle_lim
-fig,ax1 = taylor_template(angle_lim)
+angle_lim = np.pi/2 + np.pi/8
+std_lim = 2.0
+fig,ax1 = taylor_template(angle_lim,std_lim)
 markers = ['s','X','^']
   
-scores = temp_skillscores  
+scores = temp_skillscores 
 for i,r in enumerate(scores.iterrows()):
     theta=np.arccos(r[1].CORRELATION)
     rr=r[1].MSTD/r[1].OSTD
@@ -1249,20 +1102,13 @@ for i,r in enumerate(scores.iterrows()):
     rr=r[1].MSTD/r[1].OSTD
     ax1.plot(theta,rr,markers[i],color = 'darkorchid',markersize=8)
 ax1.plot(theta,rr,markers[i],label='Temp ML',color = 'darkorchid',markersize=8)
-        
-scores = OHC_skillscores  
-for i,r in enumerate(scores.iterrows()):
-    theta=np.arccos(r[1].CORRELATION)            
-    rr=r[1].MSTD/r[1].OSTD
-    ax1.plot(theta,rr,markers[i],color = 'indianred',markersize=8) 
-ax1.plot(theta,rr,markers[i],label='OHC',color = 'indianred',markersize=8) 
 
-scores = T100_skillscores  
+scores = Smean_mld_skillscores  
 for i,r in enumerate(scores.iterrows()):
     theta=np.arccos(r[1].CORRELATION)            
     rr=r[1].MSTD/r[1].OSTD
-    ax1.plot(theta,rr,markers[i],color = 'royalblue',markersize=8) 
-ax1.plot(theta,rr,markers[i],label='T100',color = 'royalblue',markersize=8) 
+    ax1.plot(theta,rr,markers[i],color = 'y',markersize=8)
+ax1.plot(theta,rr,markers[i],label='Salt ML',color = 'y',markersize=8) 
         
 ax1.plot(0,1,'o',label='Obs',markersize=8) 
 ax1.plot(0,0,'sk',label='GOFS',markersize=8)
@@ -1271,12 +1117,12 @@ ax1.plot(0,0,'^k',label='POM Exp',markersize=8)
      
 plt.legend(loc='upper right',bbox_to_anchor=[1.45,1.2])    
 
-rs,ts = np.meshgrid(np.linspace(0,2.0),np.linspace(0,angle_lim))
+rs,ts = np.meshgrid(np.linspace(0,std_lim),np.linspace(0,angle_lim))
 rms = np.sqrt(1 + rs**2 - 2*rs*np.cos(ts))
     
 contours = ax1.contour(ts, rs, rms,3,colors='0.5')
 plt.clabel(contours, inline=1, fontsize=10)
 plt.grid(linestyle=':',alpha=0.5)
 
-file = folder + 'Taylor_norm_2019082800_v2'
+file = folder + 'Taylor_norm_salt_2019082800_v2'
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Wed Dec 11 12:20:03 2019
+Created on Mon Jan 13 11:06:24 2020
 
 @author: root
 """
@@ -39,6 +39,9 @@ folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Mode
 # folder nc files POM
 folder_pom =  '/Volumes/aristizabal/POM_Dorian/'
 
+# Bathymetry file
+bath_file = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/GEBCO_2014_2D_-100.0_0.0_-10.0_50.0.nc'
+
 ###################
 # folder nc files POM
 folder_pom_oper = folder_pom + 'POM_Dorian_' + cycle + '_nc_files_oper/'
@@ -53,7 +56,6 @@ track_oper = folder_pom_oper + 'dorian05l.' + cycle + '.trak.hwrf.atcfunix'
 track_exp = folder_pom_exp + 'dorian05l.' + cycle + '.trak.hwrf.atcfunix'
 
 #%%
-import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import mpl_toolkits.axisartist.floating_axes as floating_axes
@@ -70,6 +72,7 @@ from bs4 import BeautifulSoup
 from zipfile import ZipFile
 import glob
 import seawater as sw
+import cmocean
 
 # Increase fontsize of labels globally
 plt.rc('xtick',labelsize=14)
@@ -475,6 +478,21 @@ def taylor_normalized(scores,colors,angle_lim):
         print(crmse)
         c1 = ax1.contour(ts, rs, rms,[crmse],colors=colors[i])
         plt.clabel(c1, inline=1, fontsize=10,fmt='%1.2f')
+        
+#%% Reading bathymetry data
+
+ncbath = xr.open_dataset(bath_file)
+bath_lat = ncbath.variables['lat'][:]
+bath_lon = ncbath.variables['lon'][:]
+bath_elev = ncbath.variables['elevation'][:]
+
+oklatbath = np.logical_and(bath_lat >= lat_lim[0],bath_lat <= lat_lim[-1])
+oklonbath = np.logical_and(bath_lon >= lon_lim[0],bath_lon <= lon_lim[-1])
+
+bath_latsub = bath_lat[oklatbath]
+bath_lonsub = bath_lon[oklonbath]
+bath_elevs = bath_elev[oklatbath,:]
+bath_elevsub = bath_elevs[:,oklonbath]
 
 #%% Read POM grid
 
@@ -621,7 +639,7 @@ OHC_POM_oper = OHC_surface(temp_POM_band_oper,zmatrix_POM_band_oper,\
 # POM experimental
 OHC_POM_exp = OHC_surface(temp_POM_band_exp,zmatrix_POM_band_exp,\
                            dens_POM_band_exp)
-    
+
 #%% Calculate T100
 
 T100_GOFS = depth_aver_top_100(depth_GOFS,temp_GOFS_band)
@@ -629,337 +647,6 @@ T100_GOFS = depth_aver_top_100(depth_GOFS,temp_GOFS_band)
 T100_POM_oper = depth_aver_top_100(zmatrix_POM_band_oper,temp_POM_band_oper) 
 
 T100_POM_exp = depth_aver_top_100(zmatrix_POM_band_exp,temp_POM_band_exp)    
-
-#%% Define dataframe
-
-DF_temp_GOFS_POM = pd.DataFrame(data=np.array([np.ravel(temp_GOFS_band_to_pom_oper,order='F'),\
-                                      np.ravel(temp_POM_band_oper,order='F'),\
-                                      np.ravel(temp_GOFS_band_to_pom_exp,order='F'),\
-                                      np.ravel(temp_POM_band_exp,order='F')]).T,\
-                  columns=['GOFS_to_POM_oper','POM_oper',\
-                           'GOFS_to_POM_exp','POM_exp'])
-    
-#%% Define dataframe
-
-DF_salt_GOFS_POM = pd.DataFrame(data=np.array([np.ravel(salt_GOFS_band_to_pom_oper,order='F'),\
-                                      np.ravel(salt_POM_band_oper,order='F'),\
-                                      np.ravel(salt_GOFS_band_to_pom_exp,order='F'),\
-                                      np.ravel(salt_POM_band_exp,order='F')]).T,\
-                  columns=['GOFS_to_POM_oper','POM_oper',\
-                           'GOFS_to_POM_exp','POM_exp'])   
-    
-#%% Define dataframe
-
-DF_mld_GOFS_POM = pd.DataFrame(data=np.array([MLD_dens_crit_GOFS,MLD_dens_crit_POM_oper,MLD_dens_crit_POM_exp,\
-                                          Tmean_dens_crit_GOFS,Tmean_dens_crit_POM_oper,Tmean_dens_crit_POM_exp]).T,\
-                      columns=['MLD_GOFS','MLD_POM_oper','MLD_POM_exp',\
-                               'Tmean_GOFS','Tmean_POM_oper','Tmean_POM_exp']) 
-    
-#%% Define dataframe
-
-DF_OHC_GOFS_POM = pd.DataFrame(data=np.array([OHC_GOFS,OHC_POM_oper,OHC_POM_exp]).T,\
-                      columns=['OHC_GOFS','OHC_POM_oper','OHC_POM_exp']) 
-    
-#%% Define dataframe
-
-DF_T100_GOFS_POM = pd.DataFrame(data=np.array([T100_GOFS,T100_POM_oper,T100_POM_exp]).T,\
-                      columns=['T100_GOFS','T100_POM_oper','T100_POM_exp'])     
-    
-#%% Temperature statistics.
-
-DF = DF_temp_GOFS_POM.dropna()
-
-N = len(DF)-1  #For Unbiased estimmator.
-
-
-cols = ['CORRELATION','OSTD','MSTD','CRMSE','BIAS']
-    
-tskill = np.empty((3,5))
-tskill[:] = np.nan
-
-#CORR
-tskill[0,0] = DF.corr()['GOFS_to_POM_oper']['GOFS_to_POM_oper']
-tskill[1,0] = DF.corr()['GOFS_to_POM_oper']['POM_oper']
-tskill[2,0] = DF.corr()['GOFS_to_POM_exp']['POM_exp']
-
-#OSTD
-tskill[0,1] = DF.std().GOFS_to_POM_oper
-tskill[1,1] = DF.std().GOFS_to_POM_oper
-tskill[2,1] = DF.std().GOFS_to_POM_oper
-
-#MSTD
-tskill[0,2] = DF.std().GOFS_to_POM_oper
-tskill[1,2] = DF.std().POM_oper
-tskill[2,2] = DF.std().POM_exp
-
-#CRMSE
-tskill[0,3] = 0
-tskill[1,3] = np.sqrt(np.nansum(((DF.GOFS_to_POM_oper-DF.mean().GOFS_to_POM_oper)-\
-                                 (DF.POM_oper-DF.mean().POM_oper))**2)/N)
-tskill[2,3] = np.sqrt(np.nansum(((DF.GOFS_to_POM_exp-DF.mean().GOFS_to_POM_exp)-\
-                                 (DF.POM_exp-DF.mean().POM_exp))**2)/N)
-
-#BIAS
-tskill[0,4] = 0
-tskill[1,4] = DF.mean().GOFS_to_POM_oper - DF.mean().POM_oper
-tskill[2,4] = DF.mean().GOFS_to_POM_exp - DF.mean().POM_exp
-
-#color
-colors = ['indianred','seagreen','darkorchid']
-    
-temp_skillscores = pd.DataFrame(tskill,
-                        index=['GOFS_to_POM_oper','POM_oper','POM_exp'],
-                        columns=cols)
-print(temp_skillscores)
-
-#%% salt statistics.
-
-DF = DF_salt_GOFS_POM.dropna()
-
-
-N = len(DF)-1  #For Unbiased estimmator.
-
-
-cols = ['CORRELATION','OSTD','MSTD','CRMSE','BIAS']
-    
-tskill = np.empty((3,5))
-tskill[:] = np.nan
-
-#CORR
-tskill[0,0] = DF.corr()['GOFS_to_POM_oper']['GOFS_to_POM_oper']
-tskill[1,0] = DF.corr()['GOFS_to_POM_oper']['POM_oper']
-tskill[2,0] = DF.corr()['GOFS_to_POM_exp']['POM_exp']
-
-#OSTD
-tskill[0,1] = DF.std().GOFS_to_POM_oper
-tskill[1,1] = DF.std().GOFS_to_POM_oper
-tskill[2,1] = DF.std().GOFS_to_POM_oper
-
-#MSTD
-tskill[0,2] = DF.std().GOFS_to_POM_oper
-tskill[1,2] = DF.std().POM_oper
-tskill[2,2] = DF.std().POM_exp
-
-#CRMSE
-tskill[0,3] = 0
-tskill[1,3] = np.sqrt(np.nansum(((DF.GOFS_to_POM_oper-DF.mean().GOFS_to_POM_oper)-\
-                                 (DF.POM_oper-DF.mean().POM_oper))**2)/N)
-tskill[2,3] = np.sqrt(np.nansum(((DF.GOFS_to_POM_exp-DF.mean().GOFS_to_POM_exp)-\
-                                 (DF.POM_exp-DF.mean().POM_exp))**2)/N)
-
-#BIAS
-tskill[0,4] = 0
-tskill[1,4] = DF.mean().GOFS_to_POM_oper - DF.mean().POM_oper
-tskill[2,4] = DF.mean().GOFS_to_POM_exp - DF.mean().POM_exp
-
-#color
-colors = ['indianred','seagreen','darkorchid']
-    
-salt_skillscores = pd.DataFrame(tskill,
-                        index=['GOFS_to_POM_oper','POM_oper','POM_exp'],
-                        columns=cols)
-print(salt_skillscores) 
-   
-
-#%% MLD statistics.
-
-DF = DF_mld_GOFS_POM.dropna()
-
-N = len(DF)-1  #For Unbiased estimmator.
-
-
-cols = ['CORRELATION','OSTD','MSTD','CRMSE','BIAS']
-    
-tskill = np.empty((3,5))
-tskill[:] = np.nan
-
-#CORR
-tskill[0,0] = DF.corr()['Tmean_GOFS']['Tmean_GOFS']
-tskill[1,0] = DF.corr()['Tmean_GOFS']['Tmean_POM_oper']
-tskill[2,0] = DF.corr()['Tmean_GOFS']['Tmean_POM_oper']
-
-#OSTD
-tskill[0,1] = DF.std().Tmean_GOFS
-tskill[1,1] = DF.std().Tmean_GOFS
-tskill[2,1] = DF.std().Tmean_GOFS
-
-#MSTD
-tskill[0,2] = DF.std().Tmean_GOFS
-tskill[1,2] = DF.std().Tmean_POM_oper
-tskill[2,2] = DF.std().Tmean_POM_exp
-
-#CRMSE
-tskill[0,3] = 0
-tskill[1,3] = np.sqrt(np.nansum(((DF.Tmean_GOFS-DF.mean().Tmean_GOFS)-\
-                                 (DF.Tmean_POM_oper-DF.mean().Tmean_POM_oper))**2)/N)
-tskill[2,3] = np.sqrt(np.nansum(((DF.Tmean_GOFS-DF.mean().Tmean_GOFS)-\
-                                 (DF.Tmean_POM_exp-DF.mean().Tmean_POM_exp))**2)/N)
-
-#BIAS
-tskill[0,4] = 0
-tskill[1,4] = DF.mean().Tmean_GOFS - DF.mean().Tmean_POM_oper
-tskill[2,4] = DF.mean().Tmean_GOFS - DF.mean().Tmean_POM_exp
-
-#color
-colors = ['indianred','seagreen','darkorchid']
-    
-Tmean_mld_skillscores = pd.DataFrame(tskill,
-                        index=['GOFS_to_POM_oper','POM_oper','POM_exp'],
-                        columns=cols)
-print(Tmean_mld_skillscores) 
-
-#%% OHC statistics.
-
-DF = DF_OHC_GOFS_POM.dropna()
-
-N = len(DF)-1  #For Unbiased estimmator.
-
-
-cols = ['CORRELATION','OSTD','MSTD','CRMSE','BIAS']
-    
-tskill = np.empty((3,5))
-tskill[:] = np.nan
-
-#CORR
-tskill[0,0] = DF.corr()['OHC_GOFS']['OHC_GOFS']
-tskill[1,0] = DF.corr()['OHC_GOFS']['OHC_POM_oper']
-tskill[2,0] = DF.corr()['OHC_GOFS']['OHC_POM_oper']
-
-#OSTD
-tskill[0,1] = DF.std().OHC_GOFS
-tskill[1,1] = DF.std().OHC_GOFS
-tskill[2,1] = DF.std().OHC_GOFS
-
-#MSTD
-tskill[0,2] = DF.std().OHC_GOFS
-tskill[1,2] = DF.std().OHC_POM_oper
-tskill[2,2] = DF.std().OHC_POM_exp
-
-#CRMSE
-tskill[0,3] = 0
-tskill[1,3] = np.sqrt(np.nansum(((DF.OHC_GOFS-DF.mean().OHC_GOFS)-\
-                                 (DF.OHC_POM_oper-DF.mean().OHC_POM_oper))**2)/N)
-tskill[2,3] = np.sqrt(np.nansum(((DF.OHC_GOFS-DF.mean().OHC_GOFS)-\
-                                 (DF.OHC_POM_exp-DF.mean().OHC_POM_exp))**2)/N)
-
-#BIAS
-tskill[0,4] = 0
-tskill[1,4] = DF.mean().OHC_GOFS - DF.mean().OHC_POM_oper
-tskill[2,4] = DF.mean().OHC_GOFS - DF.mean().OHC_POM_exp
-
-#color
-colors = ['indianred','seagreen','darkorchid']
-    
-OHC_skillscores = pd.DataFrame(tskill,
-                        index=['GOFS_to_POM_oper','POM_oper','POM_exp'],
-                        columns=cols)
-print(OHC_skillscores) 
-
-#%% T100 statistics.
-
-DF = DF_T100_GOFS_POM.dropna()
-
-N = len(DF)-1  #For Unbiased estimmator.
-
-
-cols = ['CORRELATION','OSTD','MSTD','CRMSE','BIAS']
-    
-tskill = np.empty((3,5))
-tskill[:] = np.nan
-
-#CORR
-tskill[0,0] = DF.corr()['T100_GOFS']['T100_GOFS']
-tskill[1,0] = DF.corr()['T100_GOFS']['T100_POM_oper']
-tskill[2,0] = DF.corr()['T100_GOFS']['T100_POM_oper']
-
-#OSTD
-tskill[0,1] = DF.std().T100_GOFS
-tskill[1,1] = DF.std().T100_GOFS
-tskill[2,1] = DF.std().T100_GOFS
-
-#MSTD
-tskill[0,2] = DF.std().T100_GOFS
-tskill[1,2] = DF.std().T100_POM_oper
-tskill[2,2] = DF.std().T100_POM_exp
-
-#CRMSE
-tskill[0,3] = 0
-tskill[1,3] = np.sqrt(np.nansum(((DF.T100_GOFS-DF.mean().T100_GOFS)-\
-                                 (DF.T100_POM_oper-DF.mean().T100_POM_oper))**2)/N)
-tskill[2,3] = np.sqrt(np.nansum(((DF.T100_GOFS-DF.mean().T100_GOFS)-\
-                                 (DF.T100_POM_exp-DF.mean().T100_POM_exp))**2)/N)
-
-#BIAS
-tskill[0,4] = 0
-tskill[1,4] = DF.mean().T100_GOFS - DF.mean().T100_POM_oper
-tskill[2,4] = DF.mean().T100_GOFS - DF.mean().T100_POM_exp
-
-#color
-colors = ['indianred','seagreen','darkorchid']
-    
-T100_skillscores = pd.DataFrame(tskill,
-                        index=['GOFS_to_POM_oper','POM_oper','POM_exp'],
-                        columns=cols)
-print(T100_skillscores) 
-
-#%% Combine all metrics into one normalized Taylor diagram 
-
-angle_lim = np.pi/2 #+ np.pi/16
-std_lim = 2.0
-fig,ax1 = taylor_template(angle_lim,std_lim)
-markers = ['.','X','^']
-  
-scores = temp_skillscores  
-for i,r in enumerate(scores.iterrows()):
-    theta=np.arccos(r[1].CORRELATION)
-    rr=r[1].MSTD/r[1].OSTD
-    ax1.plot(theta,rr,markers[i],color = 'darkorange',markersize=8)
-ax1.plot(theta,rr,markers[i],label='Temp',color = 'darkorange',markersize=8)
-      
-scores = salt_skillscores  
-for i,r in enumerate(scores.iterrows()):
-    theta=np.arccos(r[1].CORRELATION)            
-    rr=r[1].MSTD/r[1].OSTD
-    ax1.plot(theta,rr,markers[i],color = 'seagreen',markersize=8)
-ax1.plot(theta,rr,markers[i],label='Salt',color = 'seagreen',markersize=8)
-       
-scores = Tmean_mld_skillscores  
-for i,r in enumerate(scores.iterrows()):
-    theta=np.arccos(r[1].CORRELATION)            
-    rr=r[1].MSTD/r[1].OSTD
-    ax1.plot(theta,rr,markers[i],color = 'darkorchid',markersize=8)
-ax1.plot(theta,rr,markers[i],label='Temp ML',color = 'darkorchid',markersize=8)
-       
-scores = OHC_skillscores  
-for i,r in enumerate(scores.iterrows()):
-    theta=np.arccos(r[1].CORRELATION)            
-    rr=r[1].MSTD/r[1].OSTD
-    ax1.plot(theta,rr,markers[i],color = 'indianred',markersize=8) 
-ax1.plot(theta,rr,markers[i],label='OHC',color = 'indianred',markersize=8) 
-
-scores = T100_skillscores  
-for i,r in enumerate(scores.iterrows()):
-    theta=np.arccos(r[1].CORRELATION)            
-    rr=r[1].MSTD/r[1].OSTD
-    ax1.plot(theta,rr,markers[i],color = 'royalblue',markersize=8) 
-ax1.plot(theta,rr,markers[i],label='T100',color = 'royalblue',markersize=8) 
-        
-#ax1.plot(0,1,'o',label='Obs',markersize=8) 
-ax1.plot(0,1,'or',label='GOFS',markersize=8,zorder=10)
-ax1.plot(0,0,'Xk',label='POM Oper',markersize=8)
-ax1.plot(0,0,'^k',label='POM Exp',markersize=8)
-     
-plt.legend(loc='upper right',bbox_to_anchor=[1.45,1.2])    
-
-rs,ts = np.meshgrid(np.linspace(0,std_lim),np.linspace(0,angle_lim))
-rms = np.sqrt(1 + rs**2 - 2*rs*np.cos(ts))
-    
-contours = ax1.contour(ts, rs, rms,3,colors='0.5')
-plt.clabel(contours, inline=1, fontsize=10)
-plt.grid(linestyle=':',alpha=0.5)
-
-file = folder + 'Taylor_norm_'+cycle+'_IC'
-plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
 
 #%% Figure forecasted track operational POM
 
@@ -974,13 +661,20 @@ okt = np.logical_and(time_best_track >= tini,time_best_track <= tend)
 # time forecasted track_exp
 time_forec_track_oper = np.asarray([tini + timedelta(hours = float(t)) for t in lead_time_oper])
 oktt = [np.where(t == time_forec_track_oper)[0][0] for t in time_best_track[okt]]
+
+lev = np.arange(-9000,9100,100)
     
 plt.figure()
-plt.plot(lon_forec_track_oper[oktt], lat_forec_track_oper[oktt],'X-',color='mediumorchid',label='POM Oper')
-plt.plot(lon_forec_track_exp[oktt], lat_forec_track_exp[oktt],'^-',color='teal',label='POM Exp')
+plt.contourf(bath_lonsub,bath_latsub,bath_elevsub,lev,cmap=cmocean.cm.topo)
+plt.plot(lon_forec_track_oper[oktt], lat_forec_track_oper[oktt],'X-',color='mediumorchid',\
+         markeredgecolor='k',label='POM Oper',markersize=7)
+plt.plot(lon_forec_track_exp[oktt], lat_forec_track_exp[oktt],'^-',color='teal',\
+         markeredgecolor='k',label='POM Exp',markersize=7)
 plt.plot(lon_best_track[okt], lat_best_track[okt],'o-',color='k',label='Best Track')   
 plt.legend()
 plt.title('Track Forecast Dorian '+ cycle,fontsize=18)
+plt.xlim([np.min(lon_forec_track_oper[oktt])-0.5,np.max(lon_forec_track_oper[oktt])+0.5])
+plt.ylim([np.min(lat_forec_track_oper[oktt])-0.5,np.max(lat_forec_track_oper[oktt])+0.5])
 
 file = folder + 'best_track_vs_forec_track_POM_2019082800'
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
@@ -992,13 +686,152 @@ okt = np.logical_and(time_best_track >= tini,time_best_track <= tend)
 # time forecasted track_exp
 time_forec_track_oper = np.asarray([tini + timedelta(hours = float(t)) for t in lead_time_oper])
 oktt = [np.where(t == time_forec_track_oper)[0][0] for t in time_best_track[okt]]
+
+lev = np.arange(-9000,9100,100)
     
 plt.figure()
+plt.contourf(bath_lonsub,bath_latsub,bath_elevsub,lev,cmap=cmocean.cm.topo)
 plt.plot(lon_band, lat_band,'o',color='lightblue',label='band')
-plt.plot(lon_forec_track_oper[oktt], lat_forec_track_oper[oktt],'X-',color='slateblue',label='POM Oper')
+plt.plot(lon_forec_track_oper[oktt], lat_forec_track_oper[oktt],'X-',color='mediumorchid',\
+         markeredgecolor='k',label='POM Oper',markersize=7)
 #plt.plot(lon_best_track[okt], lat_best_track[okt],'o-',color='red',label='Best Track')   
 plt.legend()
+plt.xlim([np.min(lon_forec_track_oper[oktt])-0.5,np.max(lon_forec_track_oper[oktt])+0.5])
+plt.ylim([np.min(lat_forec_track_oper[oktt])-0.5,np.max(lat_forec_track_oper[oktt])+0.5])
 
 file = folder + 'forec_track_band_POM_2019082800'
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
+
+#%% Top 200 m GOFS 3.1 temperature along forecasted Dorian track
+
+color_map = cmocean.cm.thermal
+       
+okm = depth_GOFS <= 200 
+#min_val = np.floor(np.min([np.nanmin(tempg_gridded[okg]),np.nanmin(target_temp_GOFS[okm])]))
+#max_val = np.ceil(np.max([np.nanmax(tempg_gridded[okg]),np.nanmax(target_temp_GOFS[okm])]))
+    
+#nlevels = max_val - min_val + 1
+#kw = dict(levels = np.linspace(min_val,max_val,nlevels))
+kw = dict(levels = np.linspace(16,31,16))
+
+dist_along_track = np.cumsum(np.append(0,sw.dist(lat_bnd[0],lon_bnd[0],units='km')[0]))
+
+fig, ax = plt.subplots(figsize=(12, 2))     
+cs = plt.contourf(dist_along_track,-depth_GOFS,temp_GOFS_band,cmap=color_map,**kw)
+plt.contour(dist_along_track,-depth_GOFS,temp_GOFS_band,[26],colors='k')
+#plt.plot(time_GOFS,-MLD_temp_crit_GOFS,'-o',label='MLD dt',color='indianred' )
+#plt.plot(time_GOFS,-MLD_dens_crit_GOFS,'-o',label='MLD drho',color='seagreen' )
+cs = fig.colorbar(cs, orientation='vertical') 
+cs.ax.set_ylabel('($^oC$)',fontsize=14,labelpad=15)
+ax.set_ylim(-200, 0)
+ax.set_ylabel('Depth (m)',fontsize=14)
+ax.set_xlabel('Distance Along Track (km)',fontsize=14)
+plt.title('Along Forecasted Track ' + 'Temperature ' + 'GOFS 3.1 '+ str(time_POM)[0:13] + ' (cycle= ' + cycle +')',fontsize=14)  
+
+file = folder + ' ' + 'along_track_temp_top200_GOFS_' + cycle + '_' + str(time_POM)[0:13]
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)  
+
+#%% Top 200 m POM oper temperature along forecasted Dorian track
+
+color_map = cmocean.cm.thermal
+dist_matrix = np.tile(dist_along_track,(zmatrix_POM_band_oper.shape[0],1))
+       
+okm = depth_GOFS <= 200 
+#min_val = np.floor(np.min([np.nanmin(tempg_gridded[okg]),np.nanmin(target_temp_GOFS[okm])]))
+#max_val = np.ceil(np.max([np.nanmax(tempg_gridded[okg]),np.nanmax(target_temp_GOFS[okm])]))
+    
+#nlevels = max_val - min_val + 1
+#kw = dict(levels = np.linspace(min_val,max_val,nlevels))
+kw = dict(levels = np.linspace(16,31,16))
+
+fig, ax = plt.subplots(figsize=(12, 2))     
+cs = plt.contourf(dist_matrix,zmatrix_POM_band_oper,temp_POM_band_oper,cmap=color_map,**kw)
+plt.contour(dist_matrix,zmatrix_POM_band_oper,temp_POM_band_oper,[26],colors='k')
+#plt.plot(time_GOFS,-MLD_temp_crit_GOFS,'-o',label='MLD dt',color='indianred' )
+#plt.plot(time_GOFS,-MLD_dens_crit_GOFS,'-o',label='MLD drho',color='seagreen' )
+cs = fig.colorbar(cs, orientation='vertical') 
+cs.ax.set_ylabel('($^oC$)',fontsize=14,labelpad=15)
+ax.set_ylim(-200, 0)
+ax.set_ylabel('Depth (m)',fontsize=14) 
+ax.set_xlabel('Distance Along Track (km)',fontsize=14)
+plt.title('Along Forecasted Track ' + 'Temperature '  + 'POM Operational',fontsize=14)  
+ 
+
+file = folder + ' ' + 'along_track_temp_top200_POM_oper_' + cycle + '_' + str(time_POM)[0:13]
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)  
+
+#%% Top 200 m POM exp temperature along forecasted Dorian track
+
+color_map = cmocean.cm.thermal
+lat_matrix = np.tile(lat_bnd,(zmatrix_POM_band_exp.shape[0],1))
+       
+okm = depth_GOFS <= 200 
+#min_val = np.floor(np.min([np.nanmin(tempg_gridded[okg]),np.nanmin(target_temp_GOFS[okm])]))
+#max_val = np.ceil(np.max([np.nanmax(tempg_gridded[okg]),np.nanmax(target_temp_GOFS[okm])]))
+    
+#nlevels = max_val - min_val + 1
+#kw = dict(levels = np.linspace(min_val,max_val,nlevels))
+kw = dict(levels = np.linspace(16,31,16))
+
+fig, ax = plt.subplots(figsize=(12, 2))     
+cs = plt.contourf(dist_matrix,zmatrix_POM_band_exp,temp_POM_band_exp,cmap=color_map,**kw)
+plt.contour(dist_matrix,zmatrix_POM_band_exp,temp_POM_band_exp,[26],colors='k')
+#plt.plot(time_GOFS,-MLD_temp_crit_GOFS,'-o',label='MLD dt',color='indianred' )
+#plt.plot(time_GOFS,-MLD_dens_crit_GOFS,'-o',label='MLD drho',color='seagreen' )
+cs = fig.colorbar(cs, orientation='vertical') 
+cs.ax.set_ylabel('($^oC$)',fontsize=14,labelpad=15)
+
+ax.set_ylim(-200, 0)
+ax.set_ylabel('Depth (m)',fontsize=14)
+ax.set_xlabel('Distance Along Track (km)',fontsize=14)
+plt.title('Along Forecasted Track ' + 'Temperature ' + 'POM Experimental',fontsize=14)  
+ 
+
+file = folder + ' ' + 'along_track_temp_top200_POM_exp_' + cycle + '_' + str(time_POM)[0:13]
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)  
+
+#%% time series temp ML
+
+fig,ax = plt.subplots(figsize=(12, 2))
+plt.plot(dist_along_track,Tmean_dens_crit_GOFS,'--o',color='indianred',label='GOFS 3.1')
+plt.plot(dist_along_track,Tmean_dens_crit_POM_oper,'-o',color='mediumpurple',label='POM Oper')
+plt.plot(dist_along_track,Tmean_dens_crit_POM_exp,'-o',color='teal',label='POM Exp')
+plt.ylabel('($^oC$)',fontsize = 14)
+plt.xlabel('Distance Along Track (km)',fontsize = 14)
+plt.title('Mixed Layer Temperature Dorian Track on ' + str(time_POM)[0:13] + ' (cycle= ' + cycle +')',fontsize=16)
+plt.grid(True)
+plt.legend(loc='upper left',bbox_to_anchor=(1,0.9))
+
+file = folder + 'temp_ml_' + cycle + ' ' + str(time_POM)[0:13]
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)  
+
+#%% time series temp OHC
+
+fig,ax = plt.subplots(figsize=(12, 2))
+plt.plot(dist_along_track,OHC_GOFS,'--o',color='indianred',label='GOFS 3.1')
+plt.plot(dist_along_track,OHC_POM_oper,'-o',color='mediumpurple',label='POM Oper')
+plt.plot(dist_along_track,OHC_POM_exp,'-o',color='teal',label='POM Exp')
+plt.ylabel('($^oC$)',fontsize = 14)
+plt.xlabel('Distance Along Track (km)',fontsize = 14)
+plt.title('Ocean Heat Content Dorian Track on ' + str(time_POM)[0:13] + ' (cycle= ' + cycle +')',fontsize=16)
+plt.grid(True)
+plt.legend(loc='upper left',bbox_to_anchor=(1,0.9))
+
+file = folder + 'OHC_' + cycle + ' ' + str(time_POM)[0:13]
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)  
+
+#%% time series temp T100
+
+fig,ax = plt.subplots(figsize=(12, 2))
+plt.plot(dist_along_track,T100_GOFS,'--o',color='indianred',label='GOFS 3.1')
+plt.plot(dist_along_track,T100_POM_oper,'-o',color='mediumpurple',label='POM Oper')
+plt.plot(dist_along_track,T100_POM_exp,'-o',color='teal',label='POM Exp')
+plt.ylabel('($^oC$)',fontsize = 14)
+plt.xlabel('Distance Along Track (km)',fontsize = 14)
+plt.title('T100 Dorian Track on ' + str(time_POM)[0:13] + ' (cycle= ' + cycle +')',fontsize=16)
+plt.grid(True)
+plt.legend(loc='upper left',bbox_to_anchor=(1,0.9))
+
+file = folder + 'T100_' + cycle + ' ' + str(time_POM)[0:13]
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)  
 

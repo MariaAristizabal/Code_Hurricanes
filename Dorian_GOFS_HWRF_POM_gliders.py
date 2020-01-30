@@ -55,6 +55,10 @@ file_NAVGEN = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_file
 
 folder_pom = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/POM_Dorian_npz_files/'    
 
+# Wind data
+# data from url_NDBC_41043 = 'https://www.ndbc.noaa.gov/data/realtime2/41043.txt'
+csv_file = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/txt_csv_files/41043.csv'
+
 #%%
 
 from matplotlib import pyplot as plt
@@ -86,6 +90,34 @@ from read_glider_data import read_glider_data_thredds_server
 plt.rc('xtick',labelsize=14)
 plt.rc('ytick',labelsize=14)
 plt.rc('legend',fontsize=14)
+
+#%%
+time_NDBC = []
+wspd_NDBC = []
+wdir_NDBC = []
+
+with open(csv_file) as csvfile:
+    readcsv = csv.reader(csvfile, delimiter=',')
+    for j,row in enumerate(readcsv):
+        if j == 0:
+            ind_dir = [i for i,cont in enumerate(row[0].split()) if cont=='WDIR'][0]
+            ind_wsp = [i for i,cont in enumerate(row[0].split()) if cont=='WSPD'][0]
+        if j > 1:
+            if np.logical_or(row[0].split()[ind_dir] == 'MM',row[0].split()[ind_dir]  == ''):
+                wdir_NDBC.append(np.nan)
+            else:
+                wdir_NDBC.append(float(row[0].split()[ind_dir]))
+            if np.logical_or(row[0].split()[ind_wsp] == 'MM',row[0].split()[ind_wsp]  == ''):
+                wspd_NDBC.append(np.nan)
+            else:
+                wspd_NDBC.append(float(row[0].split()[ind_wsp]))
+                
+            year = int(row[0].split()[0])
+            month = int(row[0].split()[1])
+            day = int(row[0].split()[2])
+            hour = int(row[0].split()[3])
+            minu = int(row[0].split()[4])                
+            time_NDBC.append(datetime(year,month,day,hour,minu))
 
 #%% Precipitation data from https://www.cocorahs.org/ViewData/ListDailyPrecipReports.aspx
 # for station VI-SC-8 Virgin Islands
@@ -2114,8 +2146,13 @@ plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 #%% Map detail
 
 # Time bounds
-min_time = '2019-08-24T00:00:00Z'
-max_time = '2019-09-07T00:00:00Z'
+#min_time = '2019-08-24T00:00:00Z'
+#max_time = '2019-09-07T00:00:00Z'
+
+# Time bounds
+min_time = '2019-08-28T00:00:00Z'
+max_time = '2019-08-29T00:00:00Z'
+tmin = datetime.strptime(min_time[0:10],'%Y-%m-%d')
 
 lat_lim = [15,23]
 lon_lim = [-70,-63.5]
@@ -2243,14 +2280,16 @@ for i,id_all in enumerate(gliders_all):
         latg = df['latitude (degrees_north)'].values[ind]
         long = df['longitude (degrees_east)'].values[ind]
         ax.plot(long,latg,'.-',color='darkorange',markersize=1)
-        ax.plot(long[-1],latg[-1],'o',color='k',markersize=4)
+        
+        okt = np.where(mdates.date2num(timeg) >= mdates.date2num(tmin))[0][0]        
+        ax.plot(long[okt],latg[okt],'o',color='k',markersize=4)
             #ax.plot(df['longitude (degrees_east)'][len(df['longitude (degrees_east)'])-1],\
             #     df['latitude (degrees_north)'][len(df['longitude (degrees_east)'])-1],\
             #     '-',color=col[i],\
             #     marker = mark[i],markeredgecolor = 'k',markersize=6,\
             #     label=id.split('-')[0])
         
-        ax.text(long[-1],latg[-1],id[0].split('-')[0],weight='bold',
+        ax.text(long[okt],latg[okt],id[0].split('-')[0],weight='bold',
                 bbox=dict(facecolor='white',alpha=0.4,edgecolor='none'))
 
 #ax.legend(fontsize=14,bbox_to_anchor = [1,1])
@@ -2385,11 +2424,14 @@ plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 #%% Map of North Atlantic with glider tracks and ARGO floats detail
 
 # Time bounds
-min_time = '2019-08-24T00:00:00Z'
-max_time = '2019-09-07T00:00:00Z'
+min_time = '2019-08-29T00:00:00Z'
+max_time = '2019-08-30T00:00:00Z'
 
-lat_lim = [24,31]
-lon_lim = [-81,-74]
+#lat_lim = [24,31]
+#lon_lim = [-81,-74]
+
+lat_lim = [21,27]
+lon_lim = [-77,-66]
 
 # Reading bathymetry data
 ncbath = Dataset(bath_file)

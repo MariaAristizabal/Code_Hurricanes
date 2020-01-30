@@ -52,6 +52,7 @@ from datetime import datetime
 import glob
 import os
 from netCDF4 import Dataset
+import cmocean
 #from matplotlib.dates import date2num
 
 #%% Look for datasets 
@@ -299,7 +300,36 @@ for id in gliders:
 plt.savefig("/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/map_ARGOS_gliders_hurric_season_2018.png",\
             bbox_inches = 'tight',pad_inches = 0.1)
 
+#%% Map all gliders durimg hurricane season 2018
 
+lev = np.arange(-9000,9100,100)
+fig, ax = plt.subplots(figsize=(10, 5))
+plt.contourf(bath_lonsub,bath_latsub,bath_elevsub,lev,cmap=cmocean.cm.topo)    
+plt.yticks([])
+plt.xticks([])
+plt.title('Glider Tracks Hurricane Season 2018',fontsize=20)
+
+for id in gliders:
+    if id[0:4] != 'glos':
+        #print(id)
+        e.dataset_id = id
+        e.constraints = constraints
+        e.variables = variables
+    
+        df = e.to_pandas(
+        parse_dates=True,
+        skiprows=(1,)  # units information can be dropped.
+            ).dropna()
+        ax.plot(df['longitude (degrees_east)'],\
+                df['latitude (degrees_north)'],'.',color='darkorange',markersize=1)   
+        #ax.text(np.mean(df['longitude']),np.mean(df['latitude']),id.split('-')[0])
+
+plt.axis('scaled') 
+plt.axis([-100,-50,10,50])    
+plt.savefig("/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/map_gliders_hurric_season_2018.png",\
+            bbox_inches = 'tight',pad_inches = 0.1)
+    
+    
 #%% Reading glider data and plotting lat and lon on the map
 
 fig, ax = plt.subplots(figsize=(10, 5))

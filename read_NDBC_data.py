@@ -43,8 +43,9 @@ wspd_NDBC = np.asarray(wspd_NDBC)
          
 #%%
          
-plt.figure()
+plt.figure(figsize=(12, 4))
 plt.plot(time_NDBC,wspd_NDBC,'.-')
+plt.xlim([datetime(2019,8,25),datetime(2019,9,8)])
 
 #%%
 
