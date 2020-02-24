@@ -36,7 +36,7 @@ cycle = '2019082800'
 url_GOFS = 'http://tds.hycom.org/thredds/dodsC/GLBv0.08/expt_93.0/ts3z'
 
 # figures
-folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'
+folder_fig = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'
 
 # folder nc files POM
 folder_pom =  '/Volumes/aristizabal/POM_Dorian/'
@@ -207,9 +207,9 @@ def get_glider_transect_from_GOFS(depth_GOFS,oktime_GOFS):
 
 #%%  Function Getting glider transect from POM
     
-def get_glider_transect_from_POM(folder,prefix,zlev,zmatrix_pom,lon_pom,lat_pom,tstamp_glider,long,latg):
+def get_glider_transect_from_POM(folder_pom,prefix,zlev,zmatrix_pom,lon_pom,lat_pom,tstamp_glider,long,latg):
 
-    ncfiles = sorted(glob.glob(os.path.join(folder,prefix+'*.nc')))
+    ncfiles = sorted(glob.glob(os.path.join(folder_pom,prefix+'*.nc')))
 
     target_temp_POM = np.empty((len(zlev),len(ncfiles)))
     target_temp_POM[:] = np.nan
@@ -870,7 +870,7 @@ for f,file in enumerate(gdata):
     
     tstamp_glider = [mdates.date2num(timeg[i]) for i in np.arange(len(timeg))]             
     
-    folder = folder_pom_oper
+    folder_pom = folder_pom_oper
     prefix = prefix_pom
     zlev = zlev_pom_oper
     zmatrix_pom = zmatrix_pom_oper
@@ -882,7 +882,7 @@ for f,file in enumerate(gdata):
     
     time_POM_oper, target_temp_POM_oper, target_salt_POM_oper, \
         target_dens_POM_oper, target_depth_POM_oper = \
-        get_glider_transect_from_POM(folder,prefix,zlev,zmatrix_pom,lon_pom,lat_pom,\
+        get_glider_transect_from_POM(folder_pom,prefix,zlev,zmatrix_pom,lon_pom,lat_pom,\
                                      tstamp_glider,long,latg)
             
     timestamp_POM_oper = mdates.date2num(time_POM_oper)
@@ -906,7 +906,7 @@ for f,file in enumerate(gdata):
 
     tstamp_glider = [mdates.date2num(timeg[i]) for i in np.arange(len(timeg))]             
     
-    folder = folder_pom_exp
+    folder_pom = folder_pom_exp
     prefix = prefix_pom
     zlev = zlev_pom_exp
     zmatrix_pom = zmatrix_pom_exp
@@ -918,7 +918,7 @@ for f,file in enumerate(gdata):
    
     time_POM_exp, target_temp_POM_exp, target_salt_POM_exp,\
         target_dens_POM_exp, target_depth_POM_exp = \
-        get_glider_transect_from_POM(folder,prefix,zlev,zmatrix_pom,lon_pom,lat_pom,\
+        get_glider_transect_from_POM(folder_pom,prefix,zlev,zmatrix_pom,lon_pom,lat_pom,\
                                      tstamp_glider,long,latg)
     timestamp_POM_exp = mdates.date2num(time_POM_exp)
             
@@ -1728,7 +1728,7 @@ print(T100_to_ml_skillscores)
 fig, ax1 = taylor(temp_skillscores,colors,'$^oC$',np.pi/2)
 plt.title('Temperature \n cycle 2019082800',fontsize=16)
 
-file = folder + 'Taylor_temperature_2019082800'
+file = folder_fig + 'Taylor_temperature_2019082800'
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
 
 #%%    
@@ -1736,16 +1736,16 @@ plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 taylor(salt_skillscores,colors,'psu',np.pi/2)
 plt.title('Salinity \n cycle 2019082800',fontsize=16)
 
-file = folder + 'Taylor_salinity_2019082800'
+file = folder_fig + 'Taylor_salinity_2019082800'
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
 
 
 #%%    
     
-taylor(Tmean_mld_skillscores,colors,'$^oC$',np.pi/2+np.pi/8)
+taylor(Tmean_mld_skillscores,colors,'$^oC$',np.pi/2)
 plt.title('Temperature MLD \n cycle 2019082800',fontsize=16)
 
-file = folder + 'Taylor_temp_mld_2019082800'
+file = folder_fig + 'Taylor_temp_mld_2019082800'
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
 
 #%%    
@@ -1753,7 +1753,7 @@ plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 taylor(Smean_mld_skillscores,colors,'psu',np.pi/2)
 plt.title('Salinity MLD \n cycle 2019082800',fontsize=16)
 
-file = folder + 'Taylor_salt_mld_2019082800'
+file = folder_fig + 'Taylor_salt_mld_2019082800'
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
 
 #%%    
@@ -1761,7 +1761,7 @@ plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 taylor_normalized(OHC_skillscores,colors,np.pi/2)
 plt.title('OHC \n cycle 2019082800',fontsize=16)
 
-file = folder + 'Taylor_ohc_2019082800'
+file = folder_fig + 'Taylor_ohc_2019082800'
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
 
 #%%    
@@ -1769,7 +1769,7 @@ plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 taylor(T100_skillscores,colors,'$^oC$',np.pi/2)
 plt.title('T100 \n cycle 2019082800',fontsize=16)
 
-file = folder + 'Taylor_T100_2019082800'
+file = folder_fig + 'Taylor_T100_2019082800'
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
 
 #%%    
@@ -1777,7 +1777,7 @@ plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 taylor(T100_to_ml_skillscores,colors,'$^oC$',np.pi/2)
 plt.title('Temp Mean from 100 m to Base Mixed Layer  \n cycle 2019082800',fontsize=16)
 
-file = folder + 'Taylor_T100_to_ml_2019082800'
+file = folder_fig + 'Taylor_T100_to_ml_2019082800'
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
 
 #%% Combine all metrics into one normalized Taylor diagram 
@@ -1785,7 +1785,7 @@ plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 angle_lim = np.pi/2
 std_lim = 1.5
 fig,ax1 = taylor_template(angle_lim,std_lim)
-markers = ['s','X','^','*']
+markers = ['s','X','^','H']
   
 scores = temp_skillscores  
 for i,r in enumerate(scores.iterrows()):
@@ -1840,9 +1840,9 @@ ax1.plot(0,1,'o',label='Obs',markersize=8)
 ax1.plot(0,0,'sk',label='GOFS',markersize=8)
 ax1.plot(0,0,'Xk',label='POM Oper',markersize=8)
 ax1.plot(0,0,'^k',label='POM Exp',markersize=8)
-ax1.plot(0,0,'*k',label='HYCOM Exp',markersize=8)
+ax1.plot(0,0,'Hk',label='HYCOM Exp',markersize=8)
      
-plt.legend(loc='upper right',bbox_to_anchor=[1.45,1.2])    
+plt.legend(loc='upper right',bbox_to_anchor=[1.55,1.2])    
 
 rs,ts = np.meshgrid(np.linspace(0,std_lim),np.linspace(0,angle_lim))
 rms = np.sqrt(1 + rs**2 - 2*rs*np.cos(ts))
@@ -1851,7 +1851,7 @@ contours = ax1.contour(ts, rs, rms,3,colors='0.5')
 plt.clabel(contours, inline=1, fontsize=10)
 plt.grid(linestyle=':',alpha=0.5)
 
-file = folder + 'Taylor_norm_2019082800_v2'
+file = folder_fig + 'Taylor_norm_2019082800_v2'
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
 
 #%% Combine all metrics into one normalized Taylor diagram 
@@ -1859,7 +1859,7 @@ plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 angle_lim = np.pi/2
 std_lim = 1.5
 fig,ax1 = taylor_template(angle_lim,std_lim)
-markers = ['s','X','^','*']
+markers = ['s','X','^','H']
   
 scores = temp_skillscores  
 for i,r in enumerate(scores.iterrows()):
@@ -1894,9 +1894,9 @@ ax1.plot(0,1,'o',label='Obs',markersize=8)
 ax1.plot(0,0,'sk',label='GOFS',markersize=8)
 ax1.plot(0,0,'Xk',label='POM Oper',markersize=8)
 ax1.plot(0,0,'^k',label='POM Exp',markersize=8)
-ax1.plot(0,0,'*k',label='HYCOM Exp',markersize=8)  
+ax1.plot(0,0,'Hk',label='HYCOM Exp',markersize=8)  
    
-plt.legend(loc='upper right',bbox_to_anchor=[1.45,1.2])    
+plt.legend(loc='upper right',bbox_to_anchor=[1.5,1.2])    
 
 rs,ts = np.meshgrid(np.linspace(0,std_lim),np.linspace(0,angle_lim))
 rms = np.sqrt(1 + rs**2 - 2*rs*np.cos(ts))
@@ -1905,7 +1905,7 @@ contours = ax1.contour(ts, rs, rms,3,colors='0.5')
 plt.clabel(contours, inline=1, fontsize=10)
 plt.grid(linestyle=':',alpha=0.5)
 
-file = folder + 'Taylor_norm_2019082800_v3'
+file = folder_fig + 'Taylor_norm_2019082800_v3'
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
 
 #%% Sketch normalized example
@@ -1937,5 +1937,5 @@ for i,r in enumerate(scores.iterrows()):
 ax1.plot(0,1,'o',label='Obs',markersize=8)
 plt.legend(loc='upper right',bbox_to_anchor=[1.1,1.1]) 
         
-file = folder + 'Taylor_norm_example'
+file = folder_fig + 'Taylor_norm_example'
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 

@@ -11,7 +11,7 @@ Created on Thu Jan  9 11:40:28 2020
 #lon_lim = [-100.0,-55.0]
 #lat_lim = [10.0,45.0]
 
-lon_lim = [-80.0,-60.0]
+lon_lim = [-85.0,-60.0]
 lat_lim = [15.0,35.0]
 
 # Server erddap url IOOS glider dap
@@ -32,7 +32,7 @@ gdata_sg664 = url_aoml+'SG664-20190716T1218/SG664-20190716T1218.nc3.nc'
 gdata_sg663 = url_aoml+'SG663-20190716T1159/SG663-20190716T1159.nc3.nc'
 gdata_sg667 = url_aoml+'SG667-20190815T1247/SG667-20190815T1247.nc3.nc'
 
-gdata = gdata_sg665
+gdata = gdata_sg666
 
 # forecasting cycle to be used
 cycle = '2019082800'
@@ -45,13 +45,13 @@ cycle = '2019082800'
 bath_file = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/GEBCO_2014_2D_-100.0_0.0_-10.0_50.0.nc'
 
 # KMZ file
-kmz_file = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/KMZ_files/al052019_best_track-5.kmz'
+kmz_file_Dorian = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/KMZ_files/al052019_best_track-5.kmz'
 
 # url for GOFS 
 url_GOFS = 'http://tds.hycom.org/thredds/dodsC/GLBv0.08/expt_93.0/ts3z'
 
 # Folder where to save figure
-folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'
+folder_fig = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'
 
 # folder nc files POM
 folder_pom =  '/Volumes/aristizabal/POM_Dorian/'
@@ -70,8 +70,8 @@ pom_grid_oper = folder_pom_oper + 'dorian05l.' + cycle + '.pom.grid.nc'
 pom_grid_exp = folder_pom_exp + 'dorian05l.' + cycle + '.pom.grid.nc'
 
 # Dorian track files
-track_oper = folder_pom_oper + 'dorian05l.' + cycle + '.trak.hwrf.atcfunix'
-track_exp = folder_pom_exp + 'dorian05l.' + cycle + '.trak.hwrf.atcfunix'
+hwrf_pom_track_oper = folder_pom_oper + 'dorian05l.' + cycle + '.trak.hwrf.atcfunix'
+hwrf_pom_track_exp = folder_pom_exp + 'dorian05l.' + cycle + '.trak.hwrf.atcfunix'
 
 
 ##################
@@ -85,7 +85,7 @@ Dir_HMON_HYCOM = '/Volumes/aristizabal/ncep_model/HWRF-Hycom-WW3_exp_Michael/'
 hycom_grid_exp = Dir_HMON_HYCOM + 'hwrf_rtofs_hat10.basin.regional.grid'
 
 # Dorian track files
-hycom_track_exp = folder_hycom_exp + 'dorian05l.' + cycle + '.trak.hwrf.atcfunix'
+hwrf_hycom_track_exp = folder_hycom_exp + 'dorian05l.' + cycle + '.trak.hwrf.atcfunix'
 
 '''
 # POM output
@@ -110,7 +110,8 @@ import seawater as sw
 import os
 import os.path
 import glob 
-
+from bs4 import BeautifulSoup
+from zipfile import ZipFile
 
 sys.path.append('/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/All_code/Remote_repos/glider_model_comparisons_Python')
 from read_glider_data import read_glider_data_thredds_server
@@ -118,7 +119,7 @@ from read_glider_data import read_glider_data_thredds_server
 
 import sys
 sys.path.append('/Users/aristizabal/Desktop/MARACOOS_project/NCEP_scripts')
-from utils4HYCOM import readBinz
+from utils4HYCOM import readBinz, readgrids
 
 # Increase fontsize of labels globally
 plt.rc('xtick',labelsize=14)
@@ -261,29 +262,6 @@ def get_glider_transect_from_POM(folder,prefix,zlev,zmatrix_pom,lon_pom,lat_pom,
     target_dens_POM[target_dens_POM==1000.0] = np.nan
             
     return time_POM, target_temp_POM, target_salt_POM, target_dens_POM, target_depth_POM
-
-'''
-def get_glider_transect_from_POM(temp_pom,salt_pom,rho_pom,zlev_pom,timestamp_pom,\
-                                  oklat_pom,oklon_pom,zmatrix_pom):
-    
-    target_temp_POM = np.empty((len(zlev_pom),len(timestamp_pom)))
-    target_temp_POM[:] = np.nan
-    target_salt_POM = np.empty((len(zlev_pom),len(timestamp_pom)))
-    target_salt_POM[:] = np.nan
-    target_rho_POM = np.empty((len(zlev_pom),len(timestamp_pom)))
-    target_rho_POM[:] = np.nan
-    for i in range(len(timestamp_pom)):
-        print(len(timestamp_pom),' ',i)
-        target_temp_POM[:,i] = temp_pom[i,:,oklat_pom[i],oklon_pom[i]]
-        target_salt_POM[:,i] = salt_pom[i,:,oklat_pom[i],oklon_pom[i]]
-        target_rho_POM[:,i] = rho_pom[i,:,oklat_pom[i],oklon_pom[i]]
-        
-    target_dens_POM = target_rho_POM * 1000 + 1000 
-    target_dens_POM[target_dens_POM == 1000.0] = np.nan   
-    target_depth_POM = zmatrix_pom[oklat_pom,oklon_pom,:].T
-
-    return target_temp_POM, target_salt_POM, target_dens_POM, target_depth_POM
-'''
     
 #%%
     
@@ -438,7 +416,88 @@ def depth_aver_top_100(depth,var):
             else:
                 varmean100[t] = np.nan
     
-    return varmean100   
+    return varmean100  
+
+#%% Get storm track from HWRF/POM output
+
+def get_storm_track_POM(file_track):
+
+    ff = open(file_track,'r')
+    f = ff.readlines()
+    
+    latt = []
+    lont = []
+    lead_time = []
+    for l in f:
+        lat = float(l.split(',')[6][0:4])/10
+        if l.split(',')[6][4] == 'N':
+            lat = lat
+        else:
+            lat = -lat
+        lon = float(l.split(',')[7][0:5])/10
+        if l.split(',')[7][4] == 'E':
+            lon = lon
+        else:
+            lon = -lon
+        latt.append(lat)
+        lont.append(lon)
+        lead_time.append(int(l.split(',')[5][1:4]))
+    
+    latt = np.asarray(latt)
+    lont = np.asarray(lont)
+    lead_time, ind = np.unique(lead_time,return_index=True)
+    lat_track = latt[ind]
+    lon_track = lont[ind]  
+
+    return lon_track, lat_track, lead_time
+
+#%% Read best storm track from kmz file
+    
+def read_kmz_file_storm_best_track(kmz_file):
+    
+    os.system('cp ' + kmz_file + ' ' + kmz_file[:-3] + 'zip')
+    os.system('unzip -o ' + kmz_file + ' -d ' + kmz_file[:-4])
+    kmz = ZipFile(kmz_file[:-3]+'zip', 'r')
+    kml_file = kmz_file.split('/')[-1].split('_')[0] + '.kml'
+    kml_best_track = kmz.open(kml_file, 'r').read()
+    
+    # best track coordinates
+    soup = BeautifulSoup(kml_best_track,'html.parser')
+    
+    lon_best_track = np.empty(len(soup.find_all("point")))
+    lon_best_track[:] = np.nan
+    lat_best_track = np.empty(len(soup.find_all("point")))
+    lat_best_track[:] = np.nan
+    for i,s in enumerate(soup.find_all("point")):
+        lon_best_track[i] = float(s.get_text("coordinates").split('coordinates')[1].split(',')[0])
+        lat_best_track[i] = float(s.get_text("coordinates").split('coordinates')[1].split(',')[1])
+             
+    #  get time stamp
+    time_best_track = []
+    for i,s in enumerate(soup.find_all("atcfdtg")):
+        tt = datetime.strptime(s.get_text(' '),'%Y%m%d%H')
+        time_best_track.append(tt)
+    time_best_track = np.asarray(time_best_track)    
+    
+    # get type 
+    wind_int_mph = []
+    for i,s in enumerate(soup.find_all("intensitymph")):
+        wind_int_mph.append(s.get_text(' ')) 
+    wind_int_mph = np.asarray(wind_int_mph)
+    wind_int_mph = wind_int_mph.astype(float)  
+    
+    wind_int_kt = []
+    for i,s in enumerate(soup.find_all("intensity")):
+        wind_int_kt.append(s.get_text(' ')) 
+    wind_int_kt = np.asarray(wind_int_kt)
+    wind_int_kt = wind_int_kt.astype(float)
+      
+    cat = []
+    for i,s in enumerate(soup.find_all("styleurl")):
+        cat.append(s.get_text('#').split('#')[-1]) 
+    cat = np.asarray(cat)
+    
+    return lon_best_track, lat_best_track, time_best_track, wind_int_mph, wind_int_kt, cat 
 
 #%% Read POM grid
 
@@ -496,7 +555,29 @@ depth_GOFS = np.asarray(GOFS.depth[:])
 # Conversion from GOFS longitude and latitude to glider convention
 lon_GOFSg, lat_GOFSg = GOFS_coor_to_glider_coord(lon_GOFS,lat_GOFS)
 
+#%% Reading HYCOM grid
 
+# Reading lat and lon
+lines_grid = [line.rstrip() for line in open(hycom_grid_exp+'.b')]
+lon_hycom = np.array(readgrids(hycom_grid_exp,'plon:',[0]))
+lat_hycom = np.array(readgrids(hycom_grid_exp,'plat:',[0]))
+
+# Extracting the longitudinal and latitudinal size array
+idm=int([line.split() for line in lines_grid if 'longitudinal' in line][0][0])
+jdm=int([line.split() for line in lines_grid if 'latitudinal' in line][0][0])
+
+afiles = sorted(glob.glob(os.path.join(folder_hycom_exp,prefix_hycom+'*.a')))
+
+# Reading depths
+lines=[line.rstrip() for line in open(afiles[0][:-2]+'.b')]
+z = []
+for line in lines[6:]:
+    if line.split()[2]=='temp':
+        #print(line.split()[1])
+        z.append(float(line.split()[1]))
+depth_HYCOM_exp = np.asarray(z) 
+
+nz = len(depth_HYCOM_exp) 
 
 #%% Reading bathymetry data
 
@@ -545,7 +626,7 @@ delta_z = 0.5
 depthg_gridded,tempg_gridded,saltg_gridded,densg_gridded = \
 varsg_gridded(depthg,timeg,tempg,saltg,densg,delta_z)  
 
-#%%
+#%% Getting glider transect from GOFS 
 
 # Conversion from glider longitude and latitude to GOFS convention
 target_lon, target_lat = glider_coor_to_GOFS_coord(long,latg)
@@ -573,83 +654,74 @@ target_temp_GOFS, target_salt_GOFS = \
 
 target_dens_GOFS = sw.dens(target_salt_GOFS,target_temp_GOFS,np.tile(depth_GOFS,(len(time_GOFS),1)).T) 
     
-#%% POM Operational and Experimental
-
-# Operational
-POM_Dorian_2019082800_oper = np.load(folder_pom + 'pom_oper_Doria_2019082800.npz')
-POM_Dorian_2019082800_oper.files
-
-timestamp_pom_oper = POM_Dorian_2019082800_oper['timestamp_pom_oper']
-temp_pom_oper = POM_Dorian_2019082800_oper['temp_pom_oper']
-salt_pom_oper = POM_Dorian_2019082800_oper['salt_pom_oper']
-rho_pom_oper = POM_Dorian_2019082800_oper['rho_pom_oper']
-
-# Experimental
-POM_Dorian_2019082800_exp = np.load(folder_pom + 'pom_exp_Doria_2019082800.npz')
-POM_Dorian_2019082800_exp.files
-
-timestamp_pom_exp = POM_Dorian_2019082800_exp['timestamp_pom_exp']
-temp_pom_exp = POM_Dorian_2019082800_exp['temp_pom_exp']
-salt_pom_exp = POM_Dorian_2019082800_exp['salt_pom_exp']
-rho_pom_exp = POM_Dorian_2019082800_exp['rho_pom_exp']
-
-# time POM
-time_pom = [tini + timedelta(hours=int(hrs)) for hrs in np.arange(0,126,6)]   
-
-#%% Read POM grid
-
-print('Retrieving coordinates from POM')
-POM_grid_oper = xr.open_dataset(pom_grid_oper,decode_times=False)
-lon_pom_oper = np.asarray(POM_grid_oper['east_e'][:])
-lat_pom_oper = np.asarray(POM_grid_oper['north_e'][:])
-zlev_pom_oper = np.asarray(POM_grid_oper['zz'][:])
-hpom_oper = np.asarray(POM_grid_oper['h'][:])
-zmatrix = np.dot(hpom_oper.reshape(-1,1),zlev_pom_oper.reshape(1,-1))
-zmatrix_pom_oper = zmatrix.reshape(hpom_oper.shape[0],hpom_oper.shape[1],zlev_pom_oper.shape[0])
-
-POM_grid_exp = xr.open_dataset(pom_grid_exp,decode_times=False)
-lon_pom_exp = np.asarray(POM_grid_exp['east_e'][:])
-lat_pom_exp = np.asarray(POM_grid_exp['north_e'][:])
-zlev_pom_exp = np.asarray(POM_grid_exp['zz'][:])
-hpom_exp = np.asarray(POM_grid_exp['h'][:])
-zmatrix = np.dot(hpom_exp.reshape(-1,1),zlev_pom_exp.reshape(1,-1))
-zmatrix_pom_exp = zmatrix.reshape(hpom_exp.shape[0],hpom_exp.shape[1],zlev_pom_exp.shape[0])
-
 #%% Retrieve glider transect from POM operational
 
-# Changing times to timestamp
-tstamp_glider = [mdates.date2num(timeg[i]) for i in np.arange(len(timeg))]
+tstamp_glider = [mdates.date2num(timeg[i]) for i in np.arange(len(timeg))]             
 
-# interpolating glider lon and lat to lat and lon on model time
-sublon_pom = np.interp(timestamp_pom_oper,tstamp_glider,long)
-sublat_pom = np.interp(timestamp_pom_oper,tstamp_glider,latg)
+folder_pom = folder_pom_oper
+prefix = prefix_pom
+zlev = zlev_pom_oper
+zmatrix_pom = zmatrix_pom_oper
+lon_pom = lon_pom_oper
+lat_pom = lat_pom_oper
+tstamp_glider = tstamp_glider
+long = long
+latg = latg
 
-# getting the model grid positions for sublonm and sublatm
-oklon_pom = np.round(np.interp(sublon_pom,lon_pom_oper[0,:],np.arange(len(lon_pom_oper[0,:])))).astype(int)
-oklat_pom = np.round(np.interp(sublat_pom,lat_pom_oper[:,0],np.arange(len(lat_pom_oper[:,0])))).astype(int)
+time_POM_oper, target_temp_POM_oper, target_salt_POM_oper, \
+    target_dens_POM_oper, target_depth_POM_oper = \
+    get_glider_transect_from_POM(folder_pom,prefix,zlev,zmatrix_pom,lon_pom,lat_pom,\
+                                 tstamp_glider,long,latg)
+        
+timestamp_POM_oper = mdates.date2num(time_POM_oper)
 
-target_temp_POM_oper, target_salt_POM_oper, target_dens_POM_oper,\
-target_depth_POM_oper = \
-get_glider_transect_from_POM(temp_pom_oper,salt_pom_oper,rho_pom_oper,zlev_pom_oper,\
-                             timestamp_pom_oper,oklat_pom,oklon_pom,zmatrix_pom_oper)
-   
 #%% Retrieve glider transect from POM experimental
 
+tstamp_glider = [mdates.date2num(timeg[i]) for i in np.arange(len(timeg))]             
+
+folder_pom = folder_pom_exp
+prefix = prefix_pom
+zlev = zlev_pom_exp
+zmatrix_pom = zmatrix_pom_exp
+lon_pom = lon_pom_exp
+lat_pom = lat_pom_exp
+tstamp_glider = tstamp_glider
+long = long
+latg = latg
+   
+time_POM_exp, target_temp_POM_exp, target_salt_POM_exp,\
+    target_dens_POM_exp, target_depth_POM_exp = \
+    get_glider_transect_from_POM(folder_pom,prefix,zlev,zmatrix_pom,lon_pom,lat_pom,\
+                                 tstamp_glider,long,latg)
+timestamp_POM_exp = mdates.date2num(time_POM_exp)
+
+#%% Get glider transect from HYCOM
+
+folder_hycom = folder_hycom_exp
+prefix = prefix_hycom
+    
 # Changing times to timestamp
 tstamp_glider = [mdates.date2num(timeg[i]) for i in np.arange(len(timeg))]
 
-# interpolating glider lon and lat to lat and lon on model time
-sublon_pom = np.interp(timestamp_pom_exp,tstamp_glider,long)
-sublat_pom = np.interp(timestamp_pom_exp,tstamp_glider,latg)
+# Conversion from glider longitude and latitude to GOFS convention
+target_lonG, target_latG = glider_coor_to_GOFS_coord(long,latg)
 
-# getting the model grid positions for sublonm and sublatm
-oklon_pom = np.round(np.interp(sublon_pom,lon_pom_exp[0,:],np.arange(len(lon_pom_exp[0,:])))).astype(int)
-oklat_pom = np.round(np.interp(sublat_pom,lat_pom_exp[:,0],np.arange(len(lat_pom_exp[:,0])))).astype(int)
+lon_glider = target_lonG 
+lat_glider = target_latG
 
-target_temp_POM_exp, target_salt_POM_exp, target_dens_POM_exp,\
-target_depth_POM_exp = \
-get_glider_transect_from_POM(temp_pom_exp,salt_pom_exp,rho_pom_exp,zlev_pom_exp,\
-                             timestamp_pom_exp,oklat_pom,oklon_pom,zmatrix_pom_exp)
+var = 'temp'
+target_temp_HYCOM_exp, time_HYCOM_exp = \
+    get_glider_transect_from_HYCOM(folder_hycom,prefix,nz,\
+    lon_hycom,lat_hycom,var,tstamp_glider,lon_glider,lat_glider)
+
+var = 'salinity'
+target_salt_HYCOM_exp, _ = \
+    get_glider_transect_from_HYCOM(folder_hycom,prefix,nz,\
+      lon_hycom,lat_hycom,var,tstamp_glider,lon_glider,lat_glider)
+        
+#%% Calculate density for HYCOM
+
+target_dens_HYCOM_exp = sw.dens(target_salt_HYCOM_exp,target_temp_HYCOM_exp,np.tile(depth_HYCOM_exp,(len(time_HYCOM_exp),1)).T) 
     
 #%% Calculation of mixed layer depth based on temperature and density critria
 # Tmean: mean temp within the mixed layer and 
@@ -668,11 +740,16 @@ MLD_temp_and_dens_criteria(dt,drho,time_GOFS,depth_GOFS,target_temp_GOFS,target_
 
 # for POM operational
 MLD_temp_crit_POM_oper, _, _, _, MLD_dens_crit_POM_oper, Tmean_dens_crit_POM_oper, Smean_dens_crit_POM_oper, _ = \
-MLD_temp_and_dens_criteria(dt,drho,timestamp_pom_oper,target_depth_POM_oper,target_temp_POM_oper,target_salt_POM_oper,target_dens_POM_oper)
+MLD_temp_and_dens_criteria(dt,drho,timestamp_POM_oper,target_depth_POM_oper,target_temp_POM_oper,target_salt_POM_oper,target_dens_POM_oper)
 
 # for POM experimental
 MLD_temp_crit_POM_exp, _, _, _, MLD_dens_crit_POM_exp, Tmean_dens_crit_POM_exp, Smean_dens_crit_POM_exp, _ = \
-MLD_temp_and_dens_criteria(dt,drho,timestamp_pom_exp,target_depth_POM_exp,target_temp_POM_exp,target_salt_POM_exp,target_dens_POM_exp)    
+MLD_temp_and_dens_criteria(dt,drho,timestamp_POM_exp,target_depth_POM_exp,target_temp_POM_exp,target_salt_POM_exp,target_dens_POM_exp)    
+
+# for HYCOM experimental
+timestamp_HYCOM_exp = mdates.date2num(time_HYCOM_exp)
+MLD_temp_crit_HYCOM_exp, _, _, _, MLD_dens_crit_HYCOM_exp, Tmean_dens_crit_HYCOM_exp, Smean_dens_crit_HYCOM_exp, _ = \
+MLD_temp_and_dens_criteria(dt,drho,timestamp_HYCOM_exp,depth_HYCOM_exp,target_temp_HYCOM_exp,target_salt_HYCOM_exp,target_dens_HYCOM_exp)
 
 #%% Surface Ocean Heat Content
 
@@ -683,10 +760,13 @@ OHC_glid = OHC_surface(timeg,tempg_gridded,depthg_gridded,densg_gridded)
 OHC_GOFS = OHC_surface(time_GOFS,target_temp_GOFS,depth_GOFS,target_dens_GOFS)
 
 # POM operational    
-OHC_POM_oper = OHC_surface(timestamp_pom_oper,target_temp_POM_oper,target_depth_POM_oper,target_dens_POM_oper)
+OHC_POM_oper = OHC_surface(timestamp_POM_oper,target_temp_POM_oper,target_depth_POM_oper,target_dens_POM_oper)
 
 # POM experimental
-OHC_POM_exp = OHC_surface(timestamp_pom_exp,target_temp_POM_exp,target_depth_POM_exp,target_dens_POM_exp)
+OHC_POM_exp = OHC_surface(timestamp_POM_exp,target_temp_POM_exp,target_depth_POM_exp,target_dens_POM_exp)
+
+# HYCOM experimental
+OHC_HYCOM_exp = OHC_surface(timestamp_HYCOM_exp,target_temp_HYCOM_exp,depth_HYCOM_exp,target_dens_HYCOM_exp)
 
 #%% Calculate T100
 
@@ -702,9 +782,26 @@ T100_POM_oper = depth_aver_top_100(target_depth_POM_oper,target_temp_POM_oper)
 # POM experimental
 T100_POM_exp = depth_aver_top_100(target_depth_POM_exp,target_temp_POM_exp)  
 
+# HYCOM experimental
+T100_HYCOM_exp = depth_aver_top_100(depth_HYCOM_exp,target_temp_HYCOM_exp)
+
+#%% Get Dorian track from POM
+
+lon_forec_track_pom_oper, lat_forec_track_pom_oper, lead_time_pom_oper = get_storm_track_POM(hwrf_pom_track_oper)
+
+lon_forec_track_pom_exp, lat_forec_track_pom_exp, lead_time_pom_exp = get_storm_track_POM(hwrf_pom_track_exp)
+
+lon_forec_track_hycom_exp, lat_forec_track_hycom_exp, lead_time_hycom_exp = get_storm_track_POM(hwrf_hycom_track_exp)
+
+#%% Get Dorian best track 
+
+lon_best_track, lat_best_track, time_best_track, _, _, _ = \
+read_kmz_file_storm_best_track(kmz_file_Dorian)
+
 #%% Figure transets
 
-def figure_transect(var1,min_var1,max_var1,nlevels,var2,var3,time,tini,tend,depth,max_depth):
+def figure_transect(var1,min_var1,max_var1,nlevels,var2,var3,\
+                    time,tini,tend,depth,max_depth,color_map):
 
     if depth.ndim == 1:
         time_matrix = time
@@ -750,12 +847,13 @@ nlevels = max_var1 - min_var1 + 1
 tini = tini
 tend = tend
  
-figure_transect(var1,min_var1,max_var1,nlevels,var2,var3,time,tini,tend,depth,max_depth)
+figure_transect(var1,min_var1,max_var1,nlevels,var2,var3,\
+                time,tini,tend,depth,max_depth,color_map)
 
 tDorian = np.tile(datetime(2019,8,28,18),len(np.arange(max_depth,0))) #ng665, ng666
 plt.plot(tDorian,np.arange(max_depth,0),'--k')
 plt.title('Along Track ' + 'Temperature' + ' Profile ' + inst_id,fontsize=14)
-file = folder + ' ' + 'along_track_temp_top200 ' + inst_id
+file = folder_fig + ' ' + 'along_track_temp_top200 ' + inst_id
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 
 #%% Top 200 m GOFS 3.1 temperature from 2019/08/28/00
@@ -774,12 +872,13 @@ nlevels = max_var1 - min_var1 + 1
 tini = tini
 tend = tend
 
-figure_transect(var1,min_var1,max_var1,nlevels,var2,var3,time,tini,tend,depth,max_depth)
+figure_transect(var1,min_var1,max_var1,nlevels,var2,var3,\
+                time,tini,tend,depth,max_depth,color_map)
 
 tDorian = np.tile(datetime(2019,8,28,18),len(np.arange(max_depth,0))) #ng665, ng666
 plt.plot(tDorian,np.arange(max_depth,0),'--k')
 plt.title('Along Track ' + 'Temperature' + ' Profile ' + 'GOFS 3.1',fontsize=14)
-file = folder + ' ' + 'along_track_temp_top200_GOFS_' + inst_id
+file = folder_fig + ' ' + 'along_track_temp_top200_GOFS_' + inst_id
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 
 #%% Top 200 m POM operational temperature from 2019/08/28/00
@@ -789,7 +888,7 @@ color_map = cmocean.cm.thermal
 var1 = target_temp_POM_oper
 var2 = MLD_temp_crit_POM_oper
 var3 = MLD_dens_crit_POM_oper
-time = mdates.date2num(time_pom)
+time = mdates.date2num(time_POM_oper)
 depth = target_depth_POM_oper
 max_depth = -200
 min_var1 = 19
@@ -798,12 +897,13 @@ nlevels = max_var1 - min_var1 + 1
 tini = tini
 tend = tend
 
-figure_transect(var1,min_var1,max_var1,nlevels,var2,var3,time,tini,tend,depth,max_depth)
+figure_transect(var1,min_var1,max_var1,nlevels,var2,var3,\
+                time,tini,tend,depth,max_depth,color_map)
 
 tDorian = np.tile(datetime(2019,8,28,18),len(np.arange(max_depth,0))) #ng665, ng666
 plt.plot(tDorian,np.arange(max_depth,0),'--k')
 plt.title('Along Track Temperature Profile HWRF-POM Operational',fontsize=14)
-file = folder + ' ' + 'along_track_temp_top200_POM_oper_' + inst_id
+file = folder_fig + ' ' + 'along_track_temp_top200_POM_oper_' + inst_id
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 
 #%% Top 200 m POM experimental temperature from 2019/08/28/00
@@ -813,7 +913,7 @@ color_map = cmocean.cm.thermal
 var1 = target_temp_POM_exp
 var2 = MLD_temp_crit_POM_exp
 var3 = MLD_dens_crit_POM_exp
-time = mdates.date2num(time_pom)
+time = mdates.date2num(time_POM_exp)
 depth = target_depth_POM_exp
 max_depth = -200
 min_var1 = 19
@@ -822,13 +922,40 @@ nlevels = max_var1 - min_var1 + 1
 tini = tini
 tend = tend
 
-figure_transect(var1,min_var1,max_var1,nlevels,var2,var3,time,tini,tend,depth,max_depth)
+figure_transect(var1,min_var1,max_var1,nlevels,var2,var3,\
+                time,tini,tend,depth,max_depth,color_map)
 
 tDorian = np.tile(datetime(2019,8,28,18),len(np.arange(max_depth,0))) #ng665, ng666
 plt.plot(tDorian,np.arange(max_depth,0),'--k')
 plt.plot(tDorian,np.arange(max_depth,0),'--k')
 plt.title('Along Track Temperature Profile HWRF-POM Experimental',fontsize=14)
-file = folder + ' ' + 'along_track_temp_top200_POM_exp_' + inst_id
+file = folder_fig + ' ' + 'along_track_temp_top200_POM_exp_' + inst_id
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
+
+#%% Top 200 m HYCOM experimental temperature from 2019/08/28/00
+
+color_map = cmocean.cm.thermal
+
+var1 = target_temp_HYCOM_exp
+var2 = -MLD_temp_crit_HYCOM_exp
+var3 = -MLD_dens_crit_HYCOM_exp
+time = mdates.date2num(time_HYCOM_exp)
+depth = -depth_HYCOM_exp
+max_depth = -200
+min_var1 = 19
+max_var1 = 31
+nlevels = max_var1 - min_var1 + 1
+tini = tini
+tend = tend
+
+figure_transect(var1,min_var1,max_var1,nlevels,var2,var3,\
+                time,tini,tend,depth,max_depth,color_map)
+
+tDorian = np.tile(datetime(2019,8,28,18),len(np.arange(max_depth,0))) #ng665, ng666
+plt.plot(tDorian,np.arange(max_depth,0),'--k')
+plt.plot(tDorian,np.arange(max_depth,0),'--k')
+plt.title('Along Track Temperature Profile HWRF-HYCOM Experimental',fontsize=14)
+file = folder_fig + ' ' + 'along_track_temp_top200_HYCOM_exp_' + inst_id
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 
 #%% Top 200 m glider salinity from 2019/08/28/00
@@ -847,12 +974,13 @@ nlevels = 19 #np.round((max_var1 - min_var1)*10+1)
 tini = tini
 tend = tend
  
-figure_transect(var1,min_var1,max_var1,nlevels,var2,var3,time,tini,tend,depth,max_depth)
+figure_transect(var1,min_var1,max_var1,nlevels,var2,var3,\
+                time,tini,tend,depth,max_depth,color_map)
 
 tDorian = np.tile(datetime(2019,8,28,18),len(np.arange(max_depth,0))) #ng665, ng666
 plt.plot(tDorian,np.arange(max_depth,0),'--k')
 plt.title('Along Track ' + 'Salinity' + ' Profile ' + inst_id,fontsize=14)
-file = folder + ' ' + 'along_track_salt_top200 ' + inst_id
+file = folder_fig + ' ' + 'along_track_salt_top200 ' + inst_id
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 
 #%% Top 200 m GOFS salinity from 2019/08/28/00
@@ -871,12 +999,13 @@ nlevels = 19
 tini = tini
 tend = tend
  
-figure_transect(var1,min_var1,max_var1,nlevels,var2,var3,time,tini,tend,depth,max_depth)
+figure_transect(var1,min_var1,max_var1,nlevels,var2,var3,\
+                time,tini,tend,depth,max_depth,color_map)
 
 tDorian = np.tile(datetime(2019,8,28,18),len(np.arange(max_depth,0))) #ng665, ng666
 plt.plot(tDorian,np.arange(max_depth,0),'--k')
 plt.title('Along Track ' + 'Salinity' + ' Profile ' + 'GOFS 3.1',fontsize=14)
-file = folder + ' ' + 'along_track_salt_top200_GOFS_' + inst_id
+file = folder_fig + ' ' + 'along_track_salt_top200_GOFS_' + inst_id
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 
 #%% Top 200 m POM oper salinity from 2019/08/28/00
@@ -886,7 +1015,7 @@ color_map = cmocean.cm.haline
 var1 = target_salt_POM_oper
 var2 = MLD_temp_crit_POM_oper
 var3 = MLD_dens_crit_POM_oper
-time = mdates.date2num(time_pom)
+time = mdates.date2num(time_POM_oper)
 depth = target_depth_POM_oper
 max_depth = -200
 min_var1 = 35.5
@@ -895,12 +1024,13 @@ nlevels = 19
 tini = tini
 tend = tend
  
-figure_transect(var1,min_var1,max_var1,nlevels,var2,var3,time,tini,tend,depth,max_depth)
+figure_transect(var1,min_var1,max_var1,nlevels,var2,var3,\
+                time,tini,tend,depth,max_depth,color_map)
 
 tDorian = np.tile(datetime(2019,8,28,18),len(np.arange(max_depth,0))) #ng665, ng666
 plt.plot(tDorian,np.arange(max_depth,0),'--k')
 plt.title('Along Track Salinity Profile HWRF-POM Operational',fontsize=14)
-file = folder + ' ' + 'along_track_salt_top200_POM_oper_' + inst_id
+file = folder_fig + ' ' + 'along_track_salt_top200_POM_oper_' + inst_id
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 
 #%% Top 200 m POM exp salinity from 2019/08/28/00
@@ -910,7 +1040,7 @@ color_map = cmocean.cm.haline
 var1 = target_salt_POM_exp
 var2 = MLD_temp_crit_POM_exp
 var3 = MLD_dens_crit_POM_exp
-time = mdates.date2num(time_pom)
+time = mdates.date2num(time_POM_exp)
 depth = target_depth_POM_exp
 max_depth = -200
 min_var1 = 35.5
@@ -919,27 +1049,80 @@ nlevels = 19
 tini = tini
 tend = tend
  
-figure_transect(var1,min_var1,max_var1,nlevels,var2,var3,time,tini,tend,depth,max_depth)
+figure_transect(var1,min_var1,max_var1,nlevels,var2,var3,\
+                time,tini,tend,depth,max_depth,color_map)
 
 tDorian = np.tile(datetime(2019,8,28,18),len(np.arange(max_depth,0))) #ng665, ng666
 plt.plot(tDorian,np.arange(max_depth,0),'--k')
 plt.title('Along Track Salinity Profile HWRF-POM Experimental',fontsize=14)
-file = folder + ' ' + 'along_track_salt_top200_POM_exp_' + inst_id
+file = folder_fig + ' ' + 'along_track_salt_top200_POM_exp_' + inst_id
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 
-#%% Vertican profile sg665, GOFS 3.1, POM During Dorian
+#%% Top 200 m HYCOM exp salinity from 2019/08/28/00
+
+color_map = cmocean.cm.haline
+
+var1 = target_salt_HYCOM_exp
+var2 = -MLD_temp_crit_HYCOM_exp
+var3 = -MLD_dens_crit_HYCOM_exp
+time = mdates.date2num(time_HYCOM_exp)
+depth = -depth_HYCOM_exp
+max_depth = -200
+min_var1 = 35.5
+max_var1 = 37.3
+nlevels = 19
+tini = tini
+tend = tend
+ 
+figure_transect(var1,min_var1,max_var1,nlevels,var2,var3,\
+                time,tini,tend,depth,max_depth,color_map)
+
+tDorian = np.tile(datetime(2019,8,28,18),len(np.arange(max_depth,0))) #ng665, ng666
+plt.plot(tDorian,np.arange(max_depth,0),'--k')
+plt.title('Along Track Salinity Profile HWRF-HYCOM Experimental',fontsize=14)
+file = folder_fig + ' ' + 'along_track_salt_top200_HYCOM_exp_' + inst_id
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
+
+#%% Top 200 m HYCOM exp salinity from 2019/08/28/00
+
+color_map = cmocean.cm.haline
+
+var1 = target_salt_HYCOM_exp
+var2 = MLD_temp_crit_HYCOM_exp
+var3 = MLD_dens_crit_HYCOM_exp
+time = mdates.date2num(time_HYCOM_exp)
+depth = depth_HYCOM_exp
+max_depth = -200
+min_var1 = 35.5
+max_var1 = 37.3
+nlevels = 19
+tini = tini
+tend = tend
+ 
+figure_transect(var1,min_var1,max_var1,nlevels,var2,var3,\
+                time,tini,tend,depth,max_depth,color_map)
+
+tDorian = np.tile(datetime(2019,8,28,18),len(np.arange(max_depth,0))) #ng665, ng666
+plt.plot(tDorian,np.arange(max_depth,0),'--k')
+plt.title('Along Track Salinity Profile HWRF-HYCOM Experimental',fontsize=14)
+file = folder_fig + ' ' + 'along_track_salt_top200_POM_exp_' + inst_id
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
+
+#%% Vertican profile glider, GOFS 3.1, POM , HYCOM During Dorian
 
 tDorian = datetime(2019,8,28,18)
 okg = np.where(timeg < tDorian)[0][-1]
 okgofs = np.where(time_GOFS == tDorian )[0][0] #tdorian
-okpom_oper = np.where(timestamp_pom_oper == mdates.date2num(tDorian))[0][0] #tdorian
-okpom_exp = np.where(timestamp_pom_exp == mdates.date2num(tDorian))[0][0]
+okpom_oper = np.where(timestamp_POM_oper == mdates.date2num(tDorian))[0][0] #tdorian
+okpom_exp = np.where(timestamp_POM_exp == mdates.date2num(tDorian))[0][0]
+okhycom_exp = np.where(timestamp_HYCOM_exp == mdates.date2num(tDorian))[0][0]
     
 plt.figure(figsize=(4,7))
 plt.plot(tempg[:,okg],-depthg[:,okg],'-',color='royalblue',linewidth=4,label=inst_id.split('-')[0]) 
-plt.plot(target_temp_GOFS[:,okgofs],-depth_GOFS,'o-',color='indianred',linewidth=2,label='GOFS 3.1')
-plt.plot(target_temp_POM_oper[:,okpom_oper],target_depth_POM_oper[:,okpom_oper],'^-',color='mediumpurple',linewidth=2,label='POM Oper')
-plt.plot(target_temp_POM_exp[:,okpom_exp],target_depth_POM_exp[:,okpom_exp],'s-',color='teal',linewidth=2,label='POM Exp')
+plt.plot(target_temp_GOFS[:,okgofs],-depth_GOFS,'s-',color='indianred',linewidth=2,label='GOFS 3.1')
+plt.plot(target_temp_POM_oper[:,okpom_oper],target_depth_POM_oper[:,okpom_oper],'X-',color='mediumpurple',linewidth=2,label='POM Oper')
+plt.plot(target_temp_POM_exp[:,okpom_exp],target_depth_POM_exp[:,okpom_exp],'^-',color='teal',linewidth=2,label='POM Exp')
+plt.plot(target_temp_HYCOM_exp[:,okhycom_exp],-depth_HYCOM_exp,'H-',color='darkorange',linewidth=2,label='HYCOM Exp')
 plt.ylim([-200,0])
 plt.xlim([20,30])
 plt.title('Temperature on '+str(timeg[okg])[0:13],fontsize=16)
@@ -947,7 +1130,7 @@ plt.ylabel('Depth (m)')
 plt.xlabel('($^oC$)')
 plt.legend()
 
-file = folder + ' ' + 'temp_profile_glider_GOFS_POM_' + inst_id.split('-')[0]
+file = folder_fig + ' ' + 'temp_profile_glider_GOFS_POM_' + inst_id.split('-')[0]
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
 
 #%% OHC figure
@@ -955,15 +1138,15 @@ plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 oktimeg_gofs = np.round(np.interp(tstamp_model,tstamp_glider,np.arange(len(tstamp_glider)))).astype(int)
 #OHCg_to31 = OHCg[oktimeg_gofs]
 
-oktimeg_pom_oper = np.round(np.interp(timestamp_pom_oper,tstamp_glider,np.arange(len(tstamp_glider)))).astype(int)    
+oktimeg_pom_oper = np.round(np.interp(timestamp_POM_oper,tstamp_glider,np.arange(len(tstamp_glider)))).astype(int)    
 #OHCg_to_pom_oper = OHCg[oktimeg_pom_oper] 
 
 fig,ax = plt.subplots(figsize=(12, 2.8))
-plt.plot(timeg,OHC_glid,'-o',color='royalblue',label=inst_id.split('-')[0],linewidth=3)
-plt.plot(time_GOFS,OHC_GOFS,'--o',color='indianred',label='GOFS 3.1')
-plt.plot(timestamp_pom_oper,OHC_POM_oper,'-o',color='mediumpurple',label='POM Oper')
-plt.plot(timestamp_pom_exp,OHC_POM_exp,'-o',color='teal',label='POM Exp')
-#plt.plot(time31,OHCg_to31,'*-',color='lightblue')
+plt.plot(timeg,OHC_glid*10**-7,'-o',color='royalblue',label=inst_id.split('-')[0],linewidth=3)
+plt.plot(time_GOFS,OHC_GOFS*10**-7,'--s',color='indianred',label='GOFS 3.1')
+plt.plot(timestamp_POM_oper,OHC_POM_oper*10**-7,'-X',color='mediumpurple',label='POM Oper')
+plt.plot(timestamp_POM_exp,OHC_POM_exp*10**-7,'-^',color='teal',label='POM Exp')
+plt.plot(timestamp_HYCOM_exp,OHC_HYCOM_exp*10**-7,'-H',color='darkorange',label='HYCOM Exp')
 t0 = datetime(2019,8,25)
 deltat= timedelta(1)
 xticks = [t0+nday*deltat for nday in np.arange(15)]
@@ -971,15 +1154,15 @@ xticks = np.asarray(xticks)
 plt.xticks(xticks)
 xfmt = mdates.DateFormatter('%d-%b')
 ax.xaxis.set_major_formatter(xfmt)
-plt.xlim([time_pom[0],time_pom[-1]])
-plt.ylabel('($J/m^2$)',fontsize = 14)
-tDorian = np.tile(datetime(2019,8,28,18),len(np.arange(5,10)))# ng665,ng666
-plt.plot(tDorian,np.arange(5,10)*10**8,'--k')
+plt.xlim([time_POM_oper[0],time_POM_oper[-1]])
+plt.ylabel('($KJ/cm^2$)',fontsize = 14)
+tDorian = np.tile(datetime(2019,8,28,18),len(np.arange(55,90)))# ng665,ng666
+plt.plot(tDorian,np.arange(55,90),'--k')
 plt.title('Ocean Heat Content',fontsize=16)
 plt.grid(True)
 plt.legend(loc='upper left',bbox_to_anchor=(1,0.9))
 
-file = folder + ' ' + inst_id + '_OHC'
+file = folder_fig + ' ' + inst_id + '_OHC'
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)  
 
 #%% Salt ML
@@ -987,15 +1170,16 @@ plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 oktimeg_gofs = np.round(np.interp(tstamp_model,tstamp_glider,np.arange(len(tstamp_glider)))).astype(int)
 #OHCg_to31 = OHCg[oktimeg_gofs]
 
-oktimeg_pom_oper = np.round(np.interp(timestamp_pom_oper,tstamp_glider,np.arange(len(tstamp_glider)))).astype(int)    
+oktimeg_pom_oper = np.round(np.interp(timestamp_POM_oper,tstamp_glider,np.arange(len(tstamp_glider)))).astype(int)    
 #OHCg_to_pom_oper = OHCg[oktimeg_pom_oper] 
 
 fig,ax = plt.subplots(figsize=(12, 2.8))
 plt.plot(timeg,Smean_dens_crit_glid,'-o',color='royalblue',label=inst_id.split('-')[0],linewidth=3)
-plt.plot(time_GOFS,Smean_dens_crit_GOFS,'--o',color='indianred',label='GOFS 3.1')
-plt.plot(timestamp_pom_oper,Smean_dens_crit_POM_oper,'-o',color='mediumpurple',label='POM Oper')
-plt.plot(timestamp_pom_exp,Smean_dens_crit_POM_exp,'-o',color='teal',label='POM Exp')
-#plt.plot(time31,OHCg_to31,'*-',color='lightblue')
+plt.plot(time_GOFS,Smean_dens_crit_GOFS,'--s',color='indianred',label='GOFS 3.1')
+plt.plot(timestamp_POM_oper,Smean_dens_crit_POM_oper,'-X',color='mediumpurple',label='POM Oper')
+plt.plot(timestamp_POM_exp,Smean_dens_crit_POM_exp,'-^',color='teal',label='POM Exp')
+plt.plot(timestamp_HYCOM_exp,Smean_dens_crit_HYCOM_exp,'-H',color='darkorange',label='HYCOM Exp')
+
 t0 = datetime(2019,8,25)
 deltat= timedelta(1)
 xticks = [t0+nday*deltat for nday in np.arange(15)]
@@ -1003,15 +1187,15 @@ xticks = np.asarray(xticks)
 plt.xticks(xticks)
 xfmt = mdates.DateFormatter('%d-%b')
 ax.xaxis.set_major_formatter(xfmt)
-plt.xlim([time_pom[0],time_pom[-1]])
+plt.xlim([time_POM_oper[0],time_POM_oper[-1]])
 plt.ylabel('($^oC$)',fontsize = 14)
-tDorian = np.tile(datetime(2019,8,28,18),len(np.arange(36,37,0.2)))# ng665,ng666
-plt.plot(tDorian,np.arange(36,37,0.2),'--k')
+tDorian = np.tile(datetime(2019,8,28,18),len(np.arange(34.5,35.6,0.2)))# ng665,ng666
+plt.plot(tDorian,np.arange(34.5,35.6,0.2),'--k')
 plt.title('Mixed Layer Salinity',fontsize=16)
 plt.grid(True)
 plt.legend(loc='upper left',bbox_to_anchor=(1,0.9))
 
-file = folder + ' ' + inst_id + '_salt_ml'
+file = folder_fig + ' ' + inst_id + '_salt_ml'
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)  
 
 #%% Temp ML
@@ -1019,15 +1203,15 @@ plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 oktimeg_gofs = np.round(np.interp(tstamp_model,tstamp_glider,np.arange(len(tstamp_glider)))).astype(int)
 #OHCg_to31 = OHCg[oktimeg_gofs]
 
-oktimeg_pom_oper = np.round(np.interp(timestamp_pom_oper,tstamp_glider,np.arange(len(tstamp_glider)))).astype(int)    
+oktimeg_pom_oper = np.round(np.interp(timestamp_POM_oper,tstamp_glider,np.arange(len(tstamp_glider)))).astype(int)    
 #OHCg_to_pom_oper = OHCg[oktimeg_pom_oper] 
 
 fig,ax = plt.subplots(figsize=(12, 2.8))
 plt.plot(timeg,Tmean_dens_crit_glid,'-o',color='royalblue',label=inst_id.split('-')[0],linewidth=3)
-plt.plot(time_GOFS,Tmean_dens_crit_GOFS,'--o',color='indianred',label='GOFS 3.1')
-plt.plot(timestamp_pom_oper,Tmean_dens_crit_POM_oper,'-o',color='mediumpurple',label='POM Oper')
-plt.plot(timestamp_pom_exp,Tmean_dens_crit_POM_exp,'-o',color='teal',label='POM Exp')
-#plt.plot(time31,OHCg_to31,'*-',color='lightblue')
+plt.plot(time_GOFS,Tmean_dens_crit_GOFS,'--s',color='indianred',label='GOFS 3.1')
+plt.plot(timestamp_POM_oper,Tmean_dens_crit_POM_oper,'-X',color='mediumpurple',label='POM Oper')
+plt.plot(timestamp_POM_exp,Tmean_dens_crit_POM_exp,'-^',color='teal',label='POM Exp')
+plt.plot(timestamp_HYCOM_exp,Tmean_dens_crit_HYCOM_exp,'-^',color='darkorange',label='HYCOM Exp')
 t0 = datetime(2019,8,25)
 deltat= timedelta(1)
 xticks = [t0+nday*deltat for nday in np.arange(15)]
@@ -1035,15 +1219,15 @@ xticks = np.asarray(xticks)
 plt.xticks(xticks)
 xfmt = mdates.DateFormatter('%d-%b')
 ax.xaxis.set_major_formatter(xfmt)
-plt.xlim([time_pom[0],time_pom[-1]])
+plt.xlim([time_POM_oper[0],time_POM_oper[-1]])
 plt.ylabel('($^oC$)',fontsize = 14)
-tDorian = np.tile(datetime(2019,8,28,18),len(np.arange(28,29.4,0.2)))# ng665,ng666
-plt.plot(tDorian,np.arange(28,29.4,0.2),'--k')
+tDorian = np.tile(datetime(2019,8,28,18),len(np.arange(28,29.5,0.2)))# ng665,ng666
+plt.plot(tDorian,np.arange(28,29.5,0.2),'--k')
 plt.title('Mixed Layer Temperature',fontsize=16)
 plt.grid(True)
 plt.legend(loc='upper left',bbox_to_anchor=(1,0.9))
 
-file = folder + ' ' + inst_id + '_temp_ml'
+file = folder_fig + ' ' + inst_id + '_temp_ml'
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)  
 
 #%% T100
@@ -1051,15 +1235,15 @@ plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 oktimeg_gofs = np.round(np.interp(tstamp_model,tstamp_glider,np.arange(len(tstamp_glider)))).astype(int)
 #OHCg_to31 = OHCg[oktimeg_gofs]
 
-oktimeg_pom_oper = np.round(np.interp(timestamp_pom_oper,tstamp_glider,np.arange(len(tstamp_glider)))).astype(int)    
+oktimeg_pom_oper = np.round(np.interp(timestamp_POM_oper,tstamp_glider,np.arange(len(tstamp_glider)))).astype(int)    
 #OHCg_to_pom_oper = OHCg[oktimeg_pom_oper] 
 
 fig,ax = plt.subplots(figsize=(12, 2.8))
 plt.plot(timeg,T100_glid,'-o',color='royalblue',label=inst_id.split('-')[0],linewidth=3)
-plt.plot(time_GOFS,T100_GOFS,'--o',color='indianred',label='GOFS 3.1')
-plt.plot(timestamp_pom_oper,T100_POM_oper,'-o',color='mediumpurple',label='POM Oper')
-plt.plot(timestamp_pom_exp,T100_POM_exp,'-o',color='teal',label='POM Exp')
-#plt.plot(time31,OHCg_to31,'*-',color='lightblue')
+plt.plot(time_GOFS,T100_GOFS,'--s',color='indianred',label='GOFS 3.1')
+plt.plot(timestamp_POM_oper,T100_POM_oper,'-X',color='mediumpurple',label='POM Oper')
+plt.plot(timestamp_POM_exp,T100_POM_exp,'-^',color='teal',label='POM Exp')
+plt.plot(timestamp_HYCOM_exp,T100_HYCOM_exp,'-^',color='darkorange',label='HYCOM Exp')
 t0 = datetime(2019,8,25)
 deltat= timedelta(1)
 xticks = [t0+nday*deltat for nday in np.arange(15)]
@@ -1067,20 +1251,21 @@ xticks = np.asarray(xticks)
 plt.xticks(xticks)
 xfmt = mdates.DateFormatter('%d-%b')
 ax.xaxis.set_major_formatter(xfmt)
-plt.xlim([time_pom[0],time_pom[-1]])
+plt.xlim([time_POM_oper[0],time_POM_oper[-1]])
+plt.ylim([27.6,28.6])
 plt.ylabel('($^oC$)',fontsize = 14)
-tDorian = np.tile(datetime(2019,8,28,18),len(np.arange(27.6,28.6,0.1)))# ng665,ng666
-plt.plot(tDorian,np.arange(27.6,28.6,0.1),'--k')
+tDorian = np.tile(datetime(2019,8,28,18),len(np.arange(27.6,28.7,0.1)))# ng665,ng666
+plt.plot(tDorian,np.arange(27.6,28.7,0.1),'--k')
 plt.title('T100',fontsize=16)
 plt.grid(True)
 plt.legend(loc='upper left',bbox_to_anchor=(1,0.9))
 
-file = folder + ' ' + inst_id + '_T100'
+file = folder_fig + ' ' + inst_id + '_T100'
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)  
 
 
 #%% Vertical profile temperature before and after Dorian
-
+'''
 tdorian = datetime(2019,8,28,18)
 bef = timeg <= tdorian
 aft = np.logical_and(timeg > tdorian, timeg <= datetime(2019,8,29,18))
@@ -1088,41 +1273,265 @@ aft = np.logical_and(timeg > tdorian, timeg <= datetime(2019,8,29,18))
 plt.figure()
 plt.plot(np.nanmean(tempg_gridded[:,bef],1),-depthg_gridded,'.-',color='indianred',label='18 hours Before')
 plt.plot(np.nanmean(tempg_gridded[:,aft],1),-depthg_gridded,'.-',color='slateblue',label='1 day After')
-plt.plot(tempg_gridded[:,bef],-depthg_gridded,'-',color='indianred',alpha=0.1)
-plt.plot(tempg_gridded[:,aft],-depthg_gridded,'-',color='slateblue',alpha=0.1)
+plt.plot(tempg_gridded[:,bef],-depthg_gridded,'-',color='indianred',alpha=0.2)
+plt.plot(tempg_gridded[:,aft],-depthg_gridded,'-',color='slateblue',alpha=0.2)
 plt.legend()
 plt.ylim([-100,0])
 plt.xlim([26,30])
-plt.title('Temperature Profile before and after Dorian '+ inst_id.split('-')[0],size=16)
+plt.title('Profile before and after Dorian '+ inst_id.split('-')[0],size=16)
 plt.ylabel('Depth (m)',size=14)
-plt.xlabel('Temperature ($^oC$)')
+plt.xlabel('Temperature ($^oC$)',size=14)
+'''
 
-file = folder + ' ' + inst_id + 'Temp_prof_bef_after_Dorian'
+tdorian = datetime(2019,8,28,18)
+bef = timeg <= tdorian
+aft = np.where(np.logical_and(timeg > tdorian, timeg <= datetime(2019,8,29,16)))[0]
+
+plt.figure()
+plt.plot(tempg_gridded[:,0],-depthg_gridded,'.-',color='indianred',label='18 hours Before')
+plt.plot(tempg_gridded[:,aft[-1]],-depthg_gridded,'.-',color='slateblue',label='21 hour After')
+plt.plot(np.arange(26,30,0.1),np.tile(-MLD_dens_crit_glid[0],len(np.arange(26,30,0.1))),'--',color='indianred')
+plt.plot(np.arange(26,30,0.1),np.tile(-MLD_dens_crit_glid[aft[-1]],len(np.arange(26,30,0.1))),'--',color='slateblue')
+plt.plot(tempg_gridded[:,bef],-depthg_gridded,'-',color='indianred',alpha=0.2)
+plt.plot(tempg_gridded[:,aft],-depthg_gridded,'-',color='slateblue',alpha=0.2)
+plt.legend()
+plt.ylim([-100,0])
+plt.xlim([26,30])
+plt.title('Profile before and after Dorian '+ inst_id.split('-')[0],size=16)
+plt.ylabel('Depth (m)',size=14)
+plt.xlabel('Temperature ($^oC$)',size=14)
+
+file = folder_fig + ' ' + inst_id + 'Temp_prof_bef_after_Dorian'
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)  
+
+file = folder_fig + ' ' + inst_id + 'Temp_prof_bef_after_Dorian'
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)  
+
+#%% Vertical profile temperature GOFS before and after Dorian
+
+tdorian = datetime(2019,8,28,18)
+bef = time_GOFS <= tdorian
+aft = np.where(np.logical_and(time_GOFS > tdorian, time_GOFS <= datetime(2019,8,29,16)))[0]
+
+plt.figure()
+plt.plot(target_temp_GOFS[:,0],-depth_GOFS,'.-',color='indianred',label='18 hours Before')
+plt.plot(target_temp_GOFS[:,aft[-1]],-depth_GOFS,'.-',color='slateblue',label='21 hours After')
+plt.plot(np.arange(26,30,0.1),np.tile(-MLD_dens_crit_GOFS[0],len(np.arange(26,30,0.1))),'--',color='indianred')
+plt.plot(np.arange(26,30,0.1),np.tile(-MLD_dens_crit_GOFS[aft[-1]],len(np.arange(26,30,0.1))),'--',color='slateblue')
+plt.plot(target_temp_GOFS[:,bef],-depth_GOFS,'-',color='indianred',alpha=0.2)
+plt.plot(target_temp_GOFS[:,aft],-depth_GOFS,'-',color='slateblue',alpha=0.2)
+plt.legend()
+plt.ylim([-100,0])
+plt.xlim([26,30])
+plt.title('Profile before and after Dorian GOFS',size=16)
+plt.ylabel('Depth (m)',size=14)
+plt.xlabel('Temperature ($^oC$)',size=14)
+
+file = folder_fig + 'GOFS_Temp_prof_bef_after_Dorian'
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
+
+#%% Vertical profile temperature POM oper before and after Dorian
+
+tdorian = datetime(2019,8,28,18)
+bef = timestamp_POM_oper <= mdates.date2num(tdorian)
+aft = np.where(np.logical_and(timestamp_POM_oper > mdates.date2num(tdorian),\
+                     timestamp_POM_oper <= mdates.date2num(datetime(2019,8,29,16))))[0]
+
+plt.figure()
+plt.plot(target_temp_POM_oper[:,0],target_depth_POM_oper[:,0],'.-',color='indianred',label='18 hours Before')
+plt.plot(target_temp_POM_oper[:,aft[-1]],target_depth_POM_oper[:,aft[-1]],'.-',color='slateblue',label='21 hours After')
+plt.plot(np.arange(26,30,0.1),np.tile(MLD_dens_crit_POM_oper[0],len(np.arange(26,30,0.1))),'--',color='indianred')
+plt.plot(np.arange(26,30,0.1),np.tile(MLD_dens_crit_POM_oper[aft[-1]],len(np.arange(26,30,0.1))),'--',color='slateblue')
+plt.plot(target_temp_POM_oper[:,bef],target_depth_POM_oper[:,bef],'-',color='indianred',alpha=0.2)
+plt.plot(target_temp_POM_oper[:,aft],target_depth_POM_oper[:,bef],'-',color='slateblue',alpha=0.2)
+plt.legend()
+plt.ylim([-100,0])
+plt.xlim([26,30])
+plt.title('Profile before and after Dorian POM Oper',size=16)
+plt.ylabel('Depth (m)',size=14)
+plt.xlabel('Temperature ($^oC$)',size=14)
+
+file = folder_fig + 'POM_oper_Temp_prof_bef_after_Dorian'
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
+
+#%% Vertical profile temperature POM exp and after Dorian
+
+tdorian = datetime(2019,8,28,18)
+bef = timestamp_POM_exp <= mdates.date2num(tdorian)
+aft = np.where(np.logical_and(timestamp_POM_exp > mdates.date2num(tdorian),\
+                     timestamp_POM_exp <= mdates.date2num(datetime(2019,8,29,16))))[0]
+
+plt.figure()
+plt.plot(target_temp_POM_exp[:,0],target_depth_POM_exp[:,0],'.-',color='indianred',label='18 hours Before')
+plt.plot(target_temp_POM_exp[:,aft[-1]],target_depth_POM_exp[:,aft[-1]],'.-',color='slateblue',label='1 day After')
+plt.plot(np.arange(26,30,0.1),np.tile(MLD_dens_crit_POM_exp[0],len(np.arange(26,30,0.1))),'--',color='indianred')
+plt.plot(np.arange(26,30,0.1),np.tile(MLD_dens_crit_POM_exp[aft[-1]],len(np.arange(26,30,0.1))),'--',color='slateblue')
+plt.plot(target_temp_POM_exp[:,bef],target_depth_POM_exp[:,bef],'-',color='indianred',alpha=0.2)
+plt.plot(target_temp_POM_exp[:,aft],target_depth_POM_exp[:,bef],'-',color='slateblue',alpha=0.2)
+plt.legend()
+plt.ylim([-100,0])
+plt.xlim([26,30])
+plt.title('Profile before and after Dorian POM Exp',size=16)
+plt.ylabel('Depth (m)',size=14)
+plt.xlabel('Temperature ($^oC$)',size=14)
+
+file = folder_fig + 'POM_exp_Temp_prof_bef_after_Dorian'
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
+
+#%% Vertical profile temperature HYCOM exp before and after Dorian
+
+tdorian = datetime(2019,8,28,18)
+bef = timestamp_HYCOM_exp <= mdates.date2num(tdorian)
+aft = np.where(np.logical_and(timestamp_HYCOM_exp > mdates.date2num(tdorian),\
+                     timestamp_HYCOM_exp <= mdates.date2num(datetime(2019,8,29,16))))[0]
+
+plt.figure()
+plt.plot(target_temp_HYCOM_exp[:,0],-depth_HYCOM_exp,'.-',color='indianred',label='18 hours Before')
+plt.plot(target_temp_HYCOM_exp[:,aft[-1]],-depth_HYCOM_exp,'.-',color='slateblue',label='1 day After')
+plt.plot(np.arange(26,30,0.05),np.tile(-MLD_dens_crit_HYCOM_exp[0],len(np.arange(26,30,0.05))),'--',color='indianred')
+plt.plot(np.arange(26,30,0.05),np.tile(-MLD_dens_crit_HYCOM_exp[aft[-1]],len(np.arange(26,30,0.05))),'--',color='slateblue')
+plt.plot(target_temp_HYCOM_exp[:,bef],-depth_HYCOM_exp,'-',color='indianred',alpha=0.2)
+plt.plot(target_temp_HYCOM_exp[:,aft],-depth_HYCOM_exp,'-',color='slateblue',alpha=0.2)
+plt.legend()
+plt.ylim([-100,0])
+plt.xlim([26,30])
+plt.title('Profile before and after Dorian HYCOM Exp',size=16)
+plt.ylabel('Depth (m)',size=14)
+plt.xlabel('Temperature ($^oC$)',size=14)
+
+file = folder_fig + 'HYCOM_exp_temp_prof_bef_after_Dorian'
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)   
 
 #%% Vertical profile salinity before and after Dorian
 
 tdorian = datetime(2019,8,28,18)
 bef = timeg <= tdorian
-aft = np.logical_and(timeg > tdorian, timeg <= datetime(2019,8,29,18))
+aft = np.where(np.logical_and(timeg > tdorian, timeg <= datetime(2019,8,29,16)))[0]
 
 plt.figure()
-plt.plot(np.nanmean(saltg_gridded[:,bef],1),-depthg_gridded,'.-',color='indianred',label='18 hours Before')
-plt.plot(np.nanmean(saltg_gridded[:,aft],1),-depthg_gridded,'.-',color='slateblue',label='1 day After')
-plt.plot(saltg_gridded[:,bef],-depthg_gridded,'-',color='indianred',alpha=0.1)
-plt.plot(saltg_gridded[:,aft],-depthg_gridded,'-',color='slateblue',alpha=0.1)
+plt.plot(saltg_gridded[:,0],-depthg_gridded,'.-',color='indianred',label='18 hours Before')
+plt.plot(saltg_gridded[:,aft[-1]],-depthg_gridded,'.-',color='slateblue',label='21 hours After')
+plt.plot(np.arange(35,37,0.1),np.tile(-MLD_dens_crit_glid[0],len(np.arange(35,37,0.1))),'--',color='indianred')
+plt.plot(np.arange(35,37,0.1),np.tile(-MLD_dens_crit_glid[aft[-1]],len(np.arange(35,37,0.1))),'--',color='slateblue')
+plt.plot(saltg_gridded[:,bef],-depthg_gridded,'-',color='indianred',alpha=0.2)
+plt.plot(saltg_gridded[:,aft],-depthg_gridded,'-',color='slateblue',alpha=0.2)
 plt.legend()
 plt.ylim([-100,0])
-#plt.xlim([26,30])
-plt.title('Salinity Profile before and after Dorian '+ inst_id.split('-')[0],size=16)
+#plt.xlim([34.5,37.5])
+plt.xlim([35,37])
+#plt.xlim([34,37])
+plt.title('Profile before and after Dorian '+ inst_id.split('-')[0],size=16)
 plt.ylabel('Depth (m)',size=14)
-#plt.xlabel('Temperature ($^oC$)')
+plt.xlabel('Salinity',size=14)
 
-file = folder + ' ' + inst_id + 'Sal_prof_bef_after_Dorian'
+file = folder_fig + ' ' + inst_id + 'Sal_prof_bef_after_Dorian'
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)  
 
+#%% Vertical profile salinity GOFS before and after Dorian
 
-#%% Vertical profile salinity before and after Dorian
+tdorian = datetime(2019,8,28,18)
+bef = time_GOFS <= tdorian
+aft = np.where(np.logical_and(time_GOFS > tdorian, time_GOFS <= datetime(2019,8,29,18)))[0]
+
+plt.figure()
+plt.plot(target_salt_GOFS[:,0],-depth_GOFS,'.-',color='indianred',label='18 hours Before')
+plt.plot(target_salt_GOFS[:,aft[-1]],-depth_GOFS,'.-',color='slateblue',label='21 hours After')
+plt.plot(np.arange(35,37,0.05),np.tile(-MLD_dens_crit_GOFS[0],len(np.arange(35,37,0.05))),'--',color='indianred')
+plt.plot(np.arange(35,37,0.05),np.tile(-MLD_dens_crit_GOFS[aft[-1]],len(np.arange(35,37,0.05))),'--',color='slateblue')
+plt.plot(target_salt_GOFS[:,bef],-depth_GOFS,'-',color='indianred',alpha=0.2)
+plt.plot(target_salt_GOFS[:,aft],-depth_GOFS,'-',color='slateblue',alpha=0.2)
+plt.legend()
+plt.ylim([-100,0])
+#plt.xlim([34.5,37.5])
+plt.xlim([35,37])
+#plt.xlim([34,37])
+plt.title('Profile before and after Dorian GOFS',size=16)
+plt.ylabel('Depth (m)',size=14)
+plt.xlabel('Salinity',size=14)
+
+file = folder_fig + 'GOFS_Salt_prof_bef_after_Dorian'
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
+ 
+
+#%% Vertical profile salinity POM oper before and after Dorian
+
+tdorian = datetime(2019,8,28,18)
+bef = timestamp_POM_oper <= mdates.date2num(tdorian)
+aft = np.where(np.logical_and(timestamp_POM_oper > mdates.date2num(tdorian),\
+                     timestamp_POM_oper <= mdates.date2num(datetime(2019,8,29,16))))[0]
+
+plt.figure()
+plt.plot(target_salt_POM_oper[:,0],target_depth_POM_oper[:,0],'.-',color='indianred',label='18 hours Before')
+plt.plot(target_salt_POM_oper[:,aft[-1]],target_depth_POM_oper[:,aft[-1]],'.-',color='slateblue',label='21 hours After')
+plt.plot(np.arange(35,37,0.05),np.tile(MLD_dens_crit_POM_oper[0],len(np.arange(35,37,0.05))),'--',color='indianred')
+plt.plot(np.arange(35,37,0.05),np.tile(MLD_dens_crit_POM_oper[aft[-1]],len(np.arange(35,37,0.05))),'--',color='slateblue')
+plt.plot(target_salt_POM_oper[:,bef],target_depth_POM_oper[:,bef],'-',color='indianred',alpha=0.2)
+plt.plot(target_salt_POM_oper[:,aft],target_depth_POM_oper[:,bef],'-',color='slateblue',alpha=0.2)
+plt.legend()
+plt.ylim([-100,0])
+#plt.xlim([34.5,37.5])
+plt.xlim([35,37])
+#plt.xlim([34,37])
+plt.title('Profile before and after Dorian POM Oper',size=16)
+plt.ylabel('Depth (m)',size=14)
+plt.xlabel('Salinity',size=14)
+
+file = folder_fig + 'POM_oper_Salt_prof_bef_after_Dorian'
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)  
+
+#%% Vertical profile salinity POM exp before and after Dorian
+
+tdorian = datetime(2019,8,28,18)
+bef = timestamp_POM_exp <= mdates.date2num(tdorian)
+aft = np.where(np.logical_and(timestamp_POM_exp > mdates.date2num(tdorian),\
+                     timestamp_POM_exp <= mdates.date2num(datetime(2019,8,29,16))))[0]
+
+plt.figure()
+plt.plot(target_salt_POM_exp[:,0],target_depth_POM_exp[:,0],'.-',color='indianred',label='18 hours Before')
+plt.plot(target_salt_POM_exp[:,aft[-1]],target_depth_POM_exp[:,aft[-1]],'.-',color='slateblue',label='21 hours After')
+plt.plot(np.arange(35,37,0.05),np.tile(MLD_dens_crit_POM_exp[0],len(np.arange(35,37,0.05))),'--',color='indianred')
+plt.plot(np.arange(35,37,0.05),np.tile(MLD_dens_crit_POM_exp[aft[-1]],len(np.arange(35,37,0.05))),'--',color='slateblue')
+plt.plot(target_salt_POM_exp[:,bef],target_depth_POM_exp[:,bef],'-',color='indianred',alpha=0.2)
+plt.plot(target_salt_POM_exp[:,aft],target_depth_POM_exp[:,aft],'-',color='slateblue',alpha=0.2)
+plt.legend()
+plt.ylim([-100,0])
+#plt.xlim([34.5,37.5])
+plt.xlim([35,37])
+#plt.xlim([34,37])
+plt.title('Profile before and after Dorian POM Exp',size=16)
+plt.ylabel('Depth (m)',size=14)
+plt.xlabel('Salinity',size=14)
+
+file = folder_fig + 'POM_exp_Salt_prof_bef_after_Dorian'
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)  
+
+#%% Vertical profile salinity HYCOM exp before and after Dorian
+
+tdorian = datetime(2019,8,28,18)
+bef = timestamp_HYCOM_exp <= mdates.date2num(tdorian)
+aft = np.where(np.logical_and(timestamp_HYCOM_exp > mdates.date2num(tdorian),\
+                     timestamp_HYCOM_exp <= mdates.date2num(datetime(2019,8,29,16))))[0]
+
+plt.figure()
+plt.plot(target_salt_HYCOM_exp[:,0],-depth_HYCOM_exp,'.-',color='indianred',label='18 hours Before')
+plt.plot(target_salt_HYCOM_exp[:,aft[-1]],-depth_HYCOM_exp,'.-',color='slateblue',label='21 hours After')
+plt.plot(np.arange(35,37,0.05),np.tile(-MLD_dens_crit_HYCOM_exp[0],len(np.arange(35,37,0.05))),'--',color='indianred')
+plt.plot(np.arange(35,37,0.05),np.tile(-MLD_dens_crit_HYCOM_exp[aft[-1]],len(np.arange(35,37,0.05))),'--',color='slateblue')
+plt.plot(target_salt_HYCOM_exp[:,bef],-depth_HYCOM_exp,'-',color='indianred',alpha=0.2)
+plt.plot(target_salt_HYCOM_exp[:,aft],-depth_HYCOM_exp,'-',color='slateblue',alpha=0.2)
+plt.legend()
+plt.ylim([-100,0])
+#plt.xlim([34.5,37.5])
+plt.xlim([35,37])
+#plt.xlim([34,37])
+plt.title('Profile before and after Dorian HYCOM Exp',size=16)
+plt.ylabel('Depth (m)',size=14)
+plt.xlabel('Salinity',size=14)
+
+file = folder_fig + ' ' + '_Sal_prof_bef_after_Dorian_HYCOM_exp'
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
+
+#%% Vertical profile density before and after Dorian
 
 tdorian = datetime(2019,8,28,18)
 bef = timeg <= tdorian
@@ -1131,17 +1540,33 @@ aft = np.logical_and(timeg > tdorian, timeg <= datetime(2019,8,29,18))
 plt.figure()
 plt.plot(np.nanmean(densg_gridded[:,bef],1),-depthg_gridded,'.-',color='indianred',label='18 hours Before')
 plt.plot(np.nanmean(densg_gridded[:,aft],1),-depthg_gridded,'.-',color='slateblue',label='1 day After')
-plt.plot(densg_gridded[:,bef],-depthg_gridded,'-',color='indianred',alpha=0.1)
-plt.plot(densg_gridded[:,aft],-depthg_gridded,'-',color='slateblue',alpha=0.1)
+plt.plot(densg_gridded[:,bef],-depthg_gridded,'-',color='indianred',alpha=0.2)
+plt.plot(densg_gridded[:,aft],-depthg_gridded,'-',color='slateblue',alpha=0.2)
 plt.legend()
 plt.ylim([-100,0])
 #plt.xlim([26,30])
-plt.title('Density Profile before and after Dorian '+ inst_id.split('-')[0],size=16)
+plt.title('Profile before and after Dorian '+ inst_id.split('-')[0],size=16)
 plt.ylabel('Depth (m)',size=14)
 plt.xlabel('Density ($kg/m^3$)')
 
-file = folder + ' ' + inst_id + 'dens_prof_bef_after_Dorian'
-plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)  
+file = folder_fig + ' ' + inst_id + 'dens_prof_bef_after_Dorian'
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
+
+#%% Map  glider position
+
+lev = np.arange(-9000,9100,100)
+fig, ax = plt.subplots(figsize=(5, 5))
+plt.contourf(bath_lonsub,bath_latsub,bath_elevsub,lev,cmap=cmocean.cm.topo)  
+plt.plot(long,latg,'.-r')
+plt.axis('scaled')  
+#plt.yticks([])
+#plt.xticks([])
+plt.axis([-69,-64,16.5,21.5])
+plt.text(np.mean(long)+0.1,np.mean(latg)+0.1,inst_id.split('-')[0],weight='bold',
+                bbox=dict(facecolor='white',alpha=0.4,edgecolor='none'))
+
+file = folder_fig + ' ' + inst_id + 'map_location'
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
 
 #%%
 
@@ -1168,7 +1593,7 @@ plt.xlim([datetime(2019,8,28,0),datetime(2019,8,29,18)])
 xfmt = mdates.DateFormatter('%d \n %H')
 ax1.xaxis.set_major_formatter(xfmt)
 
-file = folder + ' ' + inst_id + '_MLD_Temp_salt_ML_Dorian'
+file = folder_fig + ' ' + inst_id + '_MLD_Temp_salt_ML_Dorian'
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)  
 
 #%%
@@ -1190,7 +1615,7 @@ plt.legend(loc='upper center')
 xfmt = mdates.DateFormatter('%d \n %b')
 ax2.xaxis.set_major_formatter(xfmt)
 
-file = folder + ' ' + inst_id + '_MLD_Temp_ML_Dorian'
+file = folder_fig + ' ' + inst_id + '_MLD_Temp_ML_Dorian'
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)  
 
 #%% Download wind speed and direction
@@ -1274,3 +1699,33 @@ plt.ylim([-20,20])
 xfmt = mdates.DateFormatter('%d \n %H')
 ax1.xaxis.set_major_formatter(xfmt)
 plt.ylabel('$dtheta/dt * 1/f$',color='darkblue')
+
+#%% Figure forecasted track POM operational, experiental and HYCOM exp
+
+#Time window
+date_ini = cycle[0:4]+'-'+cycle[4:6]+'-'+cycle[6:8]+' '+cycle[8:]+':00:00'
+tini = datetime.strptime(date_ini,'%Y-%m-%d %H:%M:%S')
+tend = tini + timedelta(hours=float(lead_time_pom_oper[-1]))
+date_end = str(tend)
+
+okt = np.logical_and(time_best_track >= tini,time_best_track <= tend)
+
+# time forecasted track_exp
+time_forec_track_pom_oper = np.asarray([tini + timedelta(hours = float(t)) for t in lead_time_pom_oper])
+oktt = [np.where(t == time_forec_track_pom_oper)[0][0] for t in time_best_track[okt]]
+    
+lev = np.arange(-9000,9100,100)   
+plt.figure()
+plt.contourf(bath_lonsub,bath_latsub,bath_elevsub,lev,cmap=cmocean.cm.topo)
+plt.plot(lon_forec_track_pom_oper[oktt], lat_forec_track_pom_oper[oktt],'X-',color='mediumorchid',\
+         markeredgecolor='k',markersize=7,label='POM Oper')
+plt.plot(lon_forec_track_pom_exp[oktt], lat_forec_track_pom_exp[oktt],'^-',color='teal',\
+         markeredgecolor='k',markersize=7,label='POM Exp')
+plt.plot(lon_forec_track_hycom_exp[oktt], lat_forec_track_hycom_exp[oktt],'H-',color='darkorange',\
+         markeredgecolor='k',markersize=7,label='HYCOM Exp')
+plt.plot(lon_best_track[okt], lat_best_track[okt],'o-',color='k',label='Best Track')   
+plt.legend()
+plt.title('Track Forecast Dorian '+ cycle,fontsize=18)
+
+file = folder_fig + 'best_track_vs_forec_track_POM_HYCOM_2019082800'
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 

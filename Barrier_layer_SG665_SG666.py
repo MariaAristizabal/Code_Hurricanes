@@ -637,6 +637,7 @@ file = folder + ' ' + 'temp_prof_bef_after_Dorian_sg665'
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)  
 
 #%%
+
 tdorian = datetime(2019,8,28,18)
 bef = timeg_sg666 <= tdorian
 aft = np.logical_and(timeg_sg666 > tdorian, timeg_sg666 <= datetime(2019,8,29,18))

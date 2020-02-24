@@ -13,12 +13,12 @@ lon_lim = [-110.0,-10.0]
 lat_lim = [15.0,45.0]
 
 # Time bounds
-#min_time = '2018-06-01T00:00:00Z'
-#max_time = '2018-11-30T00:00:00Z'
+min_time = '2018-06-01T00:00:00Z'
+max_time = '2018-11-30T00:00:00Z'
 
 # Time bounds
-min_time = '2019-06-01T00:00:00Z'
-max_time = '2019-09-26T00:00:00Z'
+#min_time = '2019-06-01T00:00:00Z'
+#max_time = '2019-09-26T00:00:00Z'
 
 # Bathymetry file
 bath_file = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/GEBCO_2014_2D_-100.0_0.0_-60.0_45.0.nc'
@@ -67,6 +67,8 @@ search = pd.read_csv(search_url)
 
 # Extract the IDs
 gliders = search['Dataset ID'].values
+# get rid off glos gliders (great lakes ocean observing)
+gliders = np.concatenate((gliders[0:6],gliders[8:])) 
 
 msg = 'Found {} Glider Datasets:\n\n{}'.format
 print(msg(len(gliders), '\n'.join(gliders)))
@@ -77,7 +79,7 @@ constraints = {
     'time>=': min_time,
     'time<=': max_time,
     'latitude>=': lat_lim[0],
-    'latitude<=': lat_im[-1],
+    'latitude<=': lat_lim[-1],
     'longitude>=': lon_lim[0],
     'longitude<=': lon_lim[-1],
 }
@@ -226,20 +228,24 @@ n_twr = len([i for i,list in enumerate(fund_agency) if list == 'TWR'])
 
 #%% Pie chart of number of gliders in each category
 
-labels = 'Navy', 'NOAA', 'NSF', 'NJ', 'FL', 'BIOS', 'TWR'
+labels = 'Navy - '+str(n_navy), 'NOAA - '+str(n_noaa), 'NSF -'+str(n_nsf),\
+    'NJ - '+str(n_nj), 'FL - '+str(n_fl), 'BIOS - '+str(n_bios),\
+        'TWR - '+str(n_twr)
 siz = [n_navy,n_noaa,n_nsf,n_nj,n_fl,n_bios,n_twr]
 sizes = np.ndarray.tolist(np.multiply(siz,1/np.sum(siz)))
-colors = ['goldenrod','royalblue','firebrick','forestgreen','darkorange','black','rebeccapurple'] 
+colors = ['goldenrod','royalblue','firebrick','forestgreen',\
+          'darkorange','black','rebeccapurple'] 
 #explode = (0, 0.1, 0, 0)  # only "explode" the 2nd slice (i.e. 'Hogs')
 
 plt.figure()
 patches, texts = plt.pie(sizes,startangle=90,colors=colors) #,autopct='%2d')
 plt.legend(patches,labels,loc='best',bbox_to_anchor=(0.85, 1))
 plt.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+plt.title('Total Number of Gliders = '+str(len(glider)),fontsize=16)
 
 plt.savefig("/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/pie_chart_number_gliders_hurica_season_2018.png"\
             ,bbox_inches = 'tight',pad_inches = 0.1)
-
+      
 #%% Plotting the deployment window of all glider in Hurricane season 2018 
       
 siz=12

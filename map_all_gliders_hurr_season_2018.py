@@ -23,22 +23,22 @@ bath_file = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/
 server = 'https://data.ioos.us/gliders/erddap'
 
 # Jun1 -Jul1
-Dir_Argo1 = '/Volumes/aristizabal/ARGO_data/DataSelection_20190501_195036_7920913'
+Dir_Argo1 = '/Volumes/aristizabal/ARGO_data/Hurric_season_2018/DataSelection_20190501_195036_7920913'
 
 # Jul1 - Aug1
-Dir_Argo2 = '/Volumes/aristizabal/ARGO_data/DataSelection_20190508_135838_7928110'
+Dir_Argo2 = '/Volumes/aristizabal/ARGO_data/Hurric_season_2018/DataSelection_20190508_135838_7928110'
 
 # Aug1 - Sep1
-Dir_Argo3 = '/Volumes/aristizabal/ARGO_data/DataSelection_20190508_141321_7928283'
+Dir_Argo3 = '/Volumes/aristizabal/ARGO_data/Hurric_season_2018/DataSelection_20190508_141321_7928283'
 
 # Sep1 - Oct1
-Dir_Argo4 = '/Volumes/aristizabal/ARGO_data/DataSelection_20190508_190253_7934529'
+Dir_Argo4 = '/Volumes/aristizabal/ARGO_data/Hurric_season_2018/DataSelection_20190508_190253_7934529'
 
 # Oct1 - Nov1
-Dir_Argo5 = '/Volumes/aristizabal/ARGO_data/DataSelection_20190508_143800_7929144'
+Dir_Argo5 = '/Volumes/aristizabal/ARGO_data/Hurric_season_2018/DataSelection_20190508_143800_7929144'
 
 # Nov1 - Nov30
-Dir_Argo6 = '/Volumes/aristizabal/ARGO_data/DataSelection_20190508_190433_7934559'
+Dir_Argo6 = '/Volumes/aristizabal/ARGO_data/Hurric_season_2018/DataSelection_20190508_190433_7934559'
 
 #%%
 
@@ -136,12 +136,12 @@ bath_elevsub = bath_elevs[:,oklonbath]
 
 #%% Reading Argo data
 
-argo_files1 = sorted(glob.glob(os.path.join(Dir_Argo1,'*.nc')))
-argo_files2 = sorted(glob.glob(os.path.join(Dir_Argo2,'*.nc')))
-argo_files3 = sorted(glob.glob(os.path.join(Dir_Argo3,'*.nc')))
-argo_files4 = sorted(glob.glob(os.path.join(Dir_Argo4,'*.nc')))
-argo_files5 = sorted(glob.glob(os.path.join(Dir_Argo5,'*.nc')))
-argo_files6 = sorted(glob.glob(os.path.join(Dir_Argo6,'*.nc')))
+argo_files1 = sorted(glob.glob(os.path.join(Dir_Argo1,'*profiles*.nc')))
+argo_files2 = sorted(glob.glob(os.path.join(Dir_Argo2,'*profiles*.nc')))
+argo_files3 = sorted(glob.glob(os.path.join(Dir_Argo3,'*profiles*.nc')))
+argo_files4 = sorted(glob.glob(os.path.join(Dir_Argo4,'*profiles*.nc')))
+argo_files5 = sorted(glob.glob(os.path.join(Dir_Argo5,'*profiles*.nc')))
+argo_files6 = sorted(glob.glob(os.path.join(Dir_Argo6,'*profiles*.nc')))
 
 ncargo = Dataset(argo_files1[-1])
 argo_id = ncargo.variables['PLATFORM_NUMBER'][:]
@@ -154,14 +154,39 @@ argo_time = netCDF4.num2date(argo_tim[:],argo_tim.units)
 #%% Plotting Argo time
 
 plt.figure()
-for l in argo_files6:
+for l in argo_files1:
     ncargo = Dataset(l)
-    argo_lat = ncargo.variables['LATITUDE'][:]
-    argo_lon = ncargo.variables['LONGITUDE'][:]
-    argo_tim = ncargo.variables['JULD']#[:]
-    argo_time = netCDF4.num2date(argo_tim[:],argo_tim.units) 
+    argo_lat = np.asarray(ncargo.variables['LATITUDE'][:])
+    argo_lon = np.asarray(ncargo.variables['LONGITUDE'][:])
+    argo_tim = ncargo.variables['JULD']
+    argo_time = np.asarray(netCDF4.num2date(argo_tim[:],argo_tim.units))
     plt.plot(argo_time,'*')
+    
+#%% Finding number of Argo profiles
 
+argo_files = argo_files1 + argo_files2 + argo_files3 + \
+             argo_files4 + argo_files5 + argo_files6
+
+Argo_time = np.empty((0))
+#Argo_lon = np.empty((0))
+#Argo_lat = np.empty((0))
+#Argo_temp = np.empty((0))
+
+for i,l in enumerate(argo_files):
+    print(len(argo_files),' ', i)
+    ncargo = Dataset(l)
+    #argo_lat = np.asarray(ncargo.variables['LATITUDE'][:])
+    #argo_lon = np.asarray(ncargo.variables['LONGITUDE'][:])
+    #argo_temp = np.asarray(ncargo.variables['TEMP'][:,0])
+    argo_tim = ncargo.variables['JULD']    
+    argo_time = np.asarray(netCDF4.num2date(argo_tim[:],argo_tim.units))
+    Argo_time = np.concatenate((Argo_time,argo_time))
+    #Argo_lon = np.concatenate((Argo_lon,argo_lon))
+    #Argo_lat = np.concatenate((Argo_lat,argo_lat))
+    #Argo_temp = np.concatenate((Argo_temp,argo_temp))
+
+Number_argo_profiles = Argo_time.shape
+    
 #%% Best Track Michael
 
 lonMc = np.array([-86.9,-86.7,-86.0,\
@@ -198,26 +223,26 @@ plt.axis([-100,-10,0,50])
 
 for l in argo_files1:
     ncargo = Dataset(l)
-    argo_lat = ncargo.variables['LATITUDE'][:]
-    argo_lon = ncargo.variables['LONGITUDE'][:]
+    argo_lat = np.asarray(ncargo.variables['LATITUDE'][:])
+    argo_lon = np.asarray(ncargo.variables['LONGITUDE'][:])
     ax.plot(argo_lon,argo_lat,'ok-',markersize = 4,markeredgecolor='g')
     
 for l in argo_files2:
     ncargo = Dataset(l)
-    argo_lat = ncargo.variables['LATITUDE'][:]
-    argo_lon = ncargo.variables['LONGITUDE'][:]
+    argo_lat = np.asarray(ncargo.variables['LATITUDE'][:])
+    argo_lon = np.asarray(ncargo.variables['LONGITUDE'][:])
     ax.plot(argo_lon,argo_lat,'ok-',markersize = 4,markeredgecolor='g')    
     
 for l in argo_files3:
     ncargo = Dataset(l)
-    argo_lat = ncargo.variables['LATITUDE'][:]
-    argo_lon = ncargo.variables['LONGITUDE'][:]
+    argo_lat = np.asarray(ncargo.variables['LATITUDE'][:])
+    argo_lon = np.asarray(ncargo.variables['LONGITUDE'][:])
     ax.plot(argo_lon,argo_lat,'ok-',markersize = 4,markeredgecolor='g')
     
 for l in argo_files4:
     ncargo = Dataset(l)
-    argo_lat = ncargo.variables['LATITUDE'][:]
-    argo_lon = ncargo.variables['LONGITUDE'][:]
+    argo_lat = np.asarray(ncargo.variables['LATITUDE'][:])
+    argo_lon = np.asarray(ncargo.variables['LONGITUDE'][:])
     ax.plot(argo_lon,argo_lat,'ok-',markersize = 4,markeredgecolor='g')
 
 for l in argo_files5:
@@ -228,46 +253,53 @@ for l in argo_files5:
 
 for l in argo_files6:
     ncargo = Dataset(l)
-    argo_lat = ncargo.variables['LATITUDE'][:]
-    argo_lon = ncargo.variables['LONGITUDE'][:]
+    argo_lat = np.asarray(ncargo.variables['LATITUDE'][:])
+    argo_lon = np.asarray(ncargo.variables['LONGITUDE'][:])
     ax.plot(argo_lon,argo_lat,'ok-',markersize = 4,markeredgecolor='g')        
 
-plt.savefig("/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/map_ARGOS_hurric_season_2018.png",\
+plt.savefig("/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/map_ARGOS_hurric_season_2018_v2.png",\
             bbox_inches = 'tight',pad_inches = 0.1)
 
 
-#%% Map with ARGO + glider durimh hurricane season 2018
+#%% Map with ARGO + glider during hurricane season 2018
 
+lev = np.arange(-9000,9100,100)
 fig, ax = plt.subplots(figsize=(10, 5))
-plt.contour(bath_lon,bath_lat,bath_elev,[0],colors='k')
-plt.contourf(bath_lon,bath_lat,bath_elev,cmap='Blues_r')
-plt.contourf(bath_lon,bath_lat,bath_elev,[0,10000],colors='seashell')
+plt.contourf(bath_lonsub,bath_latsub,bath_elevsub,lev,cmap=cmocean.cm.topo)    
 plt.yticks([])
 plt.xticks([])
-plt.axis([-100,-10,0,50])
+plt.axis([-100,-10,0,50])    
+    
+#fig, ax = plt.subplots(figsize=(10, 5))
+#plt.contour(bath_lon,bath_lat,bath_elev,[0],colors='k')
+#plt.contourf(bath_lon,bath_lat,bath_elev,cmap='Blues_r')
+#plt.contourf(bath_lon,bath_lat,bath_elev,[0,10000],colors='seashell')
+#plt.yticks([])
+#plt.xticks([])
+
 
 for l in argo_files1:
     ncargo = Dataset(l)
-    argo_lat = ncargo.variables['LATITUDE'][:]
-    argo_lon = ncargo.variables['LONGITUDE'][:]
+    argo_lat = np.asarray(ncargo.variables['LATITUDE'][:])
+    argo_lon = np.asarray(ncargo.variables['LONGITUDE'][:])
     ax.plot(argo_lon,argo_lat,'ok-',markersize = 4,markeredgecolor='g')
     
 for l in argo_files2:
     ncargo = Dataset(l)
-    argo_lat = ncargo.variables['LATITUDE'][:]
-    argo_lon = ncargo.variables['LONGITUDE'][:]
+    argo_lat = np.asarray(ncargo.variables['LATITUDE'][:])
+    argo_lon = np.asarray(ncargo.variables['LONGITUDE'][:])
     ax.plot(argo_lon,argo_lat,'ok-',markersize = 4,markeredgecolor='g')    
     
 for l in argo_files3:
     ncargo = Dataset(l)
-    argo_lat = ncargo.variables['LATITUDE'][:]
-    argo_lon = ncargo.variables['LONGITUDE'][:]
+    argo_lat = np.asarray(ncargo.variables['LATITUDE'][:])
+    argo_lon = np.asarray(ncargo.variables['LONGITUDE'][:])
     ax.plot(argo_lon,argo_lat,'ok-',markersize = 4,markeredgecolor='g')
     
 for l in argo_files4:
     ncargo = Dataset(l)
-    argo_lat = ncargo.variables['LATITUDE'][:]
-    argo_lon = ncargo.variables['LONGITUDE'][:]
+    argo_lat = np.asarray(ncargo.variables['LATITUDE'][:])
+    argo_lon = np.asarray(ncargo.variables['LONGITUDE'][:])
     ax.plot(argo_lon,argo_lat,'ok-',markersize = 4,markeredgecolor='g')
 
 for l in argo_files5:
@@ -278,12 +310,12 @@ for l in argo_files5:
 
 for l in argo_files6:
     ncargo = Dataset(l)
-    argo_lat = ncargo.variables['LATITUDE'][:]
-    argo_lon = ncargo.variables['LONGITUDE'][:]
-    ax.plot(argo_lon,argo_lat,'ok-',markersize = 4,markeredgecolor='g')   
+    argo_lat = np.asarray(ncargo.variables['LATITUDE'][:])
+    argo_lon = np.asarray(ncargo.variables['LONGITUDE'][:])
+    ax.plot(argo_lon,argo_lat,'ok-',markersize = 4,markeredgecolor='g')  
 
 for id in gliders:
-    if id[0:3] != 'all':
+    if id[0:4] != 'glos':
         #print(id)
         e.dataset_id = id
         e.constraints = constraints
@@ -297,17 +329,17 @@ for id in gliders:
                 df['latitude (degrees_north)'],'.',color='r',markersize=1)   
         #ax.text(np.mean(df['longitude']),np.mean(df['latitude']),id.split('-')[0])
     
-plt.savefig("/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/map_ARGOS_gliders_hurric_season_2018.png",\
+plt.savefig("/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/map_ARGOS_gliders_hurric_season_2018_v2.png",\
             bbox_inches = 'tight',pad_inches = 0.1)
 
 #%% Map all gliders durimg hurricane season 2018
 
 lev = np.arange(-9000,9100,100)
-fig, ax = plt.subplots(figsize=(10, 5))
+fig, ax = plt.subplots(figsize=(10, 10))
 plt.contourf(bath_lonsub,bath_latsub,bath_elevsub,lev,cmap=cmocean.cm.topo)    
 plt.yticks([])
 plt.xticks([])
-plt.title('Glider Tracks Hurricane Season 2018',fontsize=20)
+plt.title('Glider Tracks Hurricane Season 2018',fontsize=30)
 
 for id in gliders:
     if id[0:4] != 'glos':
