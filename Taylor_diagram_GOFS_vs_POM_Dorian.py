@@ -37,13 +37,14 @@ kmz_file_Dorian = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/KMZ
 folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'
 
 # folder nc files POM
-folder_pom =  '/Volumes/aristizabal/POM_Dorian/'
+folder_pom19 =  '/Volumes/aristizabal/HWRF2019_POM_Dorian/'
+folder_pom20 =  '/Volumes/aristizabal/HWRF2020_POM_Dorian/'
 
 ###################
 # folder nc files POM
-folder_pom_oper = folder_pom + 'POM_Dorian_' + cycle + '_nc_files_oper/'
-folder_pom_exp = folder_pom + 'POM_Dorian_' + cycle + '_nc_files_exp/'
-prefix = 'dorian05l.' + cycle + '.pom.00'
+folder_pom_oper = folder_pom19 + 'HWRF2019_POM_dorian05l.' + cycle + '_pom_files_oper/'
+folder_pom_exp = folder_pom20 + 'HWRF2020_POM_dorian05l.'  + cycle + '_pom_files_exp/'
+prefix_pom = 'dorian05l.' + cycle + '.pom.00'
 
 pom_grid_oper = folder_pom_oper + 'dorian05l.' + cycle + '.pom.grid.nc'
 pom_grid_exp = folder_pom_exp + 'dorian05l.' + cycle + '.pom.grid.nc'
@@ -534,7 +535,7 @@ lat_band = lat_bnd.ravel()
 #N = 1
 temp_POM_band_oper , salt_POM_band_oper, dens_POM_band_oper,\
 zmatrix_POM_band_oper, time_POM = \
-get_profiles_from_POM(Nini,folder_pom_oper,prefix,lon_band,lat_band,\
+get_profiles_from_POM(Nini,folder_pom_oper,prefix_pom,lon_band,lat_band,\
                                           lon_pom_oper,lat_pom_oper,zlev_pom_oper,zmatrix_pom_oper)    
     
 #%% Reading POM experimental temperature and salinity for firts time step in forecast cycle 2018082800
@@ -543,7 +544,7 @@ get_profiles_from_POM(Nini,folder_pom_oper,prefix,lon_band,lat_band,\
 #N = 1
 temp_POM_band_exp , salt_POM_band_exp, dens_POM_band_exp, \
 zmatrix_POM_band_exp, time_POM = \
-get_profiles_from_POM(Nini,folder_pom_exp,prefix,lon_band,lat_band,\
+get_profiles_from_POM(Nini,folder_pom_exp,prefix_pom,lon_band,lat_band,\
                                           lon_pom_exp,lat_pom_exp,zlev_pom_exp,zmatrix_pom_exp)
 
 #%% Reading GOFS temperature and salinity for firts time step in forecast cycle 2018082800

@@ -39,35 +39,30 @@ url_GOFS = 'http://tds.hycom.org/thredds/dodsC/GLBv0.08/expt_93.0/ts3z'
 folder_fig = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'
 
 # folder nc files POM
-folder_pom =  '/Volumes/aristizabal/POM_Dorian/'
+folder_pom19 =  '/Volumes/aristizabal/HWRF2019_POM_Dorian/'
+folder_pom20 =  '/Volumes/aristizabal/HWRF2020_POM_Dorian/'
 
-'''
-folder_pom = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/POM_Dorian_npz_files/'    
-folder_pom_grid = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/'
-pom_grid_oper = folder_pom_grid + 'dorian05l.2019082800.pom.grid.oper.nc'
-pom_grid_exp = folder_pom_grid + 'dorian05l.2019082800.pom.grid.exp.nc'
-'''
-# folde HWRF2010_HYCOM
-folder_hycom = '/Volumes/aristizabal/HWRF2020_HYCOM_Dorian/'
+# folde HWRF2020_HYCOM
+folder_hycom20 = '/Volumes/aristizabal/HWRF2020_HYCOM_Dorian/'
 
 ###################
 
 # folder nc files POM
-folder_pom_oper = folder_pom + 'POM_Dorian_' + cycle + '_nc_files_oper/'
-folder_pom_exp = folder_pom + 'HWRF2020_POM_Dorian/' + 'HWRF2020_POM_Dorian_' + cycle + '_nc_files_exp/'
+folder_pom_oper = folder_pom19 + 'HWRF2019_POM_dorian05l.' + cycle + '_pom_files_oper/'
+folder_pom_exp = folder_pom20 + 'HWRF2020_POM_dorian05l.'  + cycle + '_pom_files_exp/'
 prefix_pom = 'dorian05l.' + cycle + '.pom.00'
 
 pom_grid_oper = folder_pom_oper + 'dorian05l.' + cycle + '.pom.grid.nc'
 pom_grid_exp = folder_pom_exp + 'dorian05l.' + cycle + '.pom.grid.nc'
 
 # Dorian track files
-track_oper = folder_pom_oper + 'dorian05l.' + cycle + '.trak.hwrf.atcfunix'
-track_exp = folder_pom_exp + 'dorian05l.' + cycle + '.trak.hwrf.atcfunix'
+hwrf_pom_track_oper = folder_pom_oper + 'dorian05l.' + cycle + '.trak.hwrf.atcfunix'
+hwrf_pom_track_exp = folder_pom_exp + 'dorian05l.' + cycle + '.trak.hwrf.atcfunix'
 
 
 ##################
 # folder ab files HYCOM
-folder_hycom_exp = folder_hycom + 'HWRF2020_HYCOM_Dorian_' + cycle + '_ab_files_exp/'
+folder_hycom_exp = folder_hycom20 + 'HWRF2020_HYCOM_dorian05l.' + cycle + '_hycom_files_exp/'
 prefix_hycom = 'dorian05l.' + cycle + '.hwrf_rtofs_hat10_3z'
 
 #Dir_HMON_HYCOM = '/Volumes/aristizabal/ncep_model/HMON-HYCOM_Michael/'
@@ -76,7 +71,7 @@ Dir_HMON_HYCOM = '/Volumes/aristizabal/ncep_model/HWRF-Hycom-WW3_exp_Michael/'
 hycom_grid_exp = Dir_HMON_HYCOM + 'hwrf_rtofs_hat10.basin.regional.grid'
 
 # Dorian track files
-hycom_track_exp = folder_hycom_exp + 'dorian05l.' + cycle + '.trak.hwrf.atcfunix'
+hwrf_hycom_track_exp = folder_hycom_exp + 'dorian05l.' + cycle + '.trak.hwrf.atcfunix'
 
 #%%
 import pandas as pd
@@ -190,7 +185,7 @@ def GOFS_coor_to_glider_coord(lon_GOFS,lat_GOFS):
 
 #%% Function Getting glider transect from GOFS
     
-def get_glider_transect_from_GOFS(depth_GOFS,oktime_GOFS):
+def get_glider_transect_from_GOFS(depth_GOFS,oktime_GOFS,oklat_GOFS,oklon_GOFS):
     
     print('Getting glider transect from GOFS')
     target_temp_GOFS = np.empty((len(depth_GOFS),len(oktime_GOFS[0])))
@@ -246,29 +241,6 @@ def get_glider_transect_from_POM(folder_pom,prefix,zlev,zmatrix_pom,lon_pom,lat_
     target_dens_POM[target_dens_POM==1000.0] = np.nan
             
     return time_POM, target_temp_POM, target_salt_POM, target_dens_POM, target_depth_POM
-
-'''
-def get_glider_transect_from_POM(temp_pom,salt_pom,rho_pom,zlev_pom,timestamp_pom,\
-                                  oklat_pom,oklon_pom,zmatrix_pom):
-    
-    target_temp_POM = np.empty((len(zlev_pom),len(timestamp_pom)))
-    target_temp_POM[:] = np.nan
-    target_salt_POM = np.empty((len(zlev_pom),len(timestamp_pom)))
-    target_salt_POM[:] = np.nan
-    target_rho_POM = np.empty((len(zlev_pom),len(timestamp_pom)))
-    target_rho_POM[:] = np.nan
-    for i in range(len(timestamp_pom)):
-        print(len(timestamp_pom),' ',i)
-        target_temp_POM[:,i] = temp_pom[i,:,oklat_pom[i],oklon_pom[i]]
-        target_salt_POM[:,i] = salt_pom[i,:,oklat_pom[i],oklon_pom[i]]
-        target_rho_POM[:,i] = rho_pom[i,:,oklat_pom[i],oklon_pom[i]]
-        
-    target_dens_POM = target_rho_POM * 1000 + 1000 
-    target_dens_POM[target_dens_POM == 1000.0] = np.nan   
-    target_depth_POM = zmatrix_pom[oklat_pom,oklon_pom,:].T
-
-    return target_temp_POM, target_salt_POM, target_dens_POM, target_depth_POM
-'''
 
 #%%
     
@@ -691,26 +663,6 @@ def taylor_normalized(scores,colors,angle_lim):
         c1 = ax1.contour(ts, rs, rms,[crmse],colors=colors[i])
         plt.clabel(c1, inline=1, fontsize=10,fmt='%1.2f')
 
-#%% POM Operational and Experimental
-'''
-# Operational
-POM_Dorian_2019082800_oper = np.load(folder_pom + 'pom_oper_Doria_2019082800.npz')
-POM_Dorian_2019082800_oper.files
-
-timestamp_pom_oper = POM_Dorian_2019082800_oper['timestamp_pom_oper']
-temp_pom_oper = POM_Dorian_2019082800_oper['temp_pom_oper']
-salt_pom_oper = POM_Dorian_2019082800_oper['salt_pom_oper']
-rho_pom_oper = POM_Dorian_2019082800_oper['rho_pom_oper']
-
-# Experimental
-POM_Dorian_2019082800_exp = np.load(folder_pom + 'pom_exp_Doria_2019082800.npz')
-POM_Dorian_2019082800_exp.files
-
-timestamp_pom_exp = POM_Dorian_2019082800_exp['timestamp_pom_exp']
-temp_pom_exp = POM_Dorian_2019082800_exp['temp_pom_exp']
-salt_pom_exp = POM_Dorian_2019082800_exp['salt_pom_exp']
-rho_pom_exp = POM_Dorian_2019082800_exp['rho_pom_exp']
-'''
 #%% Read POM grid
 
 print('Retrieving coordinates from POM')
@@ -852,7 +804,7 @@ for f,file in enumerate(gdata):
     sublat_GOFS = np.interp(tstamp_model,tstamp_glider,target_lat)
     
     # Conversion from GOFS convention to glider longitude and latitude
-    sublon_GOFSg,sublat_GOFSg = GOFS_coor_to_glider_coord(sublon_GOFS,sublat_GOFS)
+    sublon_GOFSg,sublat_GOFSg = GOFS_coor_to_glider_coord(sublon_GOFS,sublat_GOFS,oklat_GOFS,oklon_GOFS)
     
     # getting the model grid positions for sublonm and sublatm
     oklon_GOFS = np.round(np.interp(sublon_GOFS,lon_G,np.arange(len(lon_G)))).astype(int)
@@ -860,7 +812,7 @@ for f,file in enumerate(gdata):
         
     # Getting glider transect from model
     target_temp_GOFS, target_salt_GOFS = \
-                              get_glider_transect_from_GOFS(depth_GOFS,oktime_GOFS)
+                              get_glider_transect_from_GOFS(depth_GOFS,oktime_GOFS,oklat_GOFS,oklon_GOFS)
     
     #%% Calculate density for GOFS
     
@@ -886,21 +838,6 @@ for f,file in enumerate(gdata):
                                      tstamp_glider,long,latg)
             
     timestamp_POM_oper = mdates.date2num(time_POM_oper)
-    
-    '''
-    # interpolating glider lon and lat to lat and lon on model time
-    sublon_pom = np.interp(timestamp_pom_oper,tstamp_glider,long)
-    sublat_pom = np.interp(timestamp_pom_oper,tstamp_glider,latg)
-    
-    # getting the model grid positions for sublonm and sublatm
-    oklon_pom = np.round(np.interp(sublon_pom,lon_pom_oper[0,:],np.arange(len(lon_pom_oper[0,:])))).astype(int)
-    oklat_pom = np.round(np.interp(sublat_pom,lat_pom_oper[:,0],np.arange(len(lat_pom_oper[:,0])))).astype(int)
-    
-    target_temp_POM_oper, target_salt_POM_oper, target_dens_POM_oper,\
-    target_depth_POM_oper = \
-    get_glider_transect_from_POM(temp_pom_oper,salt_pom_oper,rho_pom_oper,zlev_pom_oper,\
-                                 timestamp_pom_oper,oklat_pom,oklon_pom,zmatrix_pom_oper)
-    ''' 
         
     #%% Retrieve glider transect from POM experimental
 
@@ -922,23 +859,6 @@ for f,file in enumerate(gdata):
                                      tstamp_glider,long,latg)
     timestamp_POM_exp = mdates.date2num(time_POM_exp)
             
-    '''    
-        # Changing times to timestamp
-        tstamp_glider = [mdates.date2num(timeg[i]) for i in np.arange(len(timeg))]
-        
-        # interpolating glider lon and lat to lat and lon on model time
-        sublon_pom = np.interp(timestamp_pom_exp,tstamp_glider,long)
-        sublat_pom = np.interp(timestamp_pom_exp,tstamp_glider,latg)
-        
-        # getting the model grid positions for sublonm and sublatm
-        oklon_pom = np.round(np.interp(sublon_pom,lon_pom_exp[0,:],np.arange(len(lon_pom_exp[0,:])))).astype(int)
-        oklat_pom = np.round(np.interp(sublat_pom,lat_pom_exp[:,0],np.arange(len(lat_pom_exp[:,0])))).astype(int)
-        
-        target_temp_POM_exp, target_salt_POM_exp, target_dens_POM_exp,\
-        target_depth_POM_exp = \
-        get_glider_transect_from_POM(temp_pom_exp,salt_pom_exp,rho_pom_exp,zlev_pom_exp,\
-                                     timestamp_pom_exp,oklat_pom,oklon_pom,zmatrix_pom_exp)
-    '''    
     #%% Get glider transect from HYCOM
     
     folder_hycom = folder_hycom_exp
