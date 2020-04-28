@@ -32,7 +32,7 @@ gdata_sg664 = url_aoml+'SG664-20190716T1218/SG664-20190716T1218.nc3.nc'
 gdata_sg663 = url_aoml+'SG663-20190716T1159/SG663-20190716T1159.nc3.nc'
 gdata_sg667 = url_aoml+'SG667-20190815T1247/SG667-20190815T1247.nc3.nc'
 
-gdata = gdata_sg665
+gdata = gdata_sg666
 
 # forecasting cycle to be used
 cycle = '2019082800'
@@ -233,7 +233,7 @@ def get_glider_transect_from_POM(folder,prefix,zlev,zmatrix_pom,lon_pom,lat_pom,
     for x,file in enumerate(ncfiles):
         print(x)
         pom = xr.open_dataset(file)
-        
+       
         tpom = pom['time'][:]
         timestamp_pom = mdates.date2num(tpom)[0]
         time_POM.append(mdates.num2date(timestamp_pom))
@@ -249,13 +249,13 @@ def get_glider_transect_from_POM(folder,prefix,zlev,zmatrix_pom,lon_pom,lat_pom,
         target_rho_pom = np.asarray(pom['rho'][0,:,oklatpom,oklonpom])
         target_dens_POM[:,x] = target_rho_pom * 1000 + 1000
         target_depth_POM[:,x] = zmatrix_pom[oklatpom,oklonpom,:].T
-        
+    
     target_temp_POM[target_temp_POM==0] = np.nan
     target_salt_POM[target_salt_POM==0] = np.nan
     target_dens_POM[target_dens_POM==1000.0] = np.nan
             
     return time_POM, target_temp_POM, target_salt_POM, target_dens_POM, target_depth_POM
-    
+
 #%%
     
 def get_glider_transect_from_HYCOM(folder_hycom,prefix,nz,lon_hycom,lat_hycom,var,timestamp_glider,lon_glider,lat_glider):
@@ -492,6 +492,62 @@ def read_kmz_file_storm_best_track(kmz_file):
     
     return lon_best_track, lat_best_track, time_best_track, wind_int_mph, wind_int_kt, cat 
 
+#%% Calculate time series of potential Energy Anomaly over the top 100 m
+
+def Potential_Energy_Anomaly(time,depth,density):
+    g = 9.8 #m/s
+    PEA = np.empty((len(time)))
+    PEA[:] = np.nan
+    for t,tstamp in enumerate(time):   
+        print(t)
+        if np.ndim(depth) == 2:
+            dindex = np.fliplr(np.where(np.asarray(np.abs(depth[:,t])) <= 100))[0]
+        else:
+            dindex = np.fliplr(np.where(np.asarray(np.abs(depth)) <= 100))[0]
+        if len(dindex) == 0:
+            PEA[t] = np.nan
+        else:
+            if np.ndim(depth) == 2: 
+                zz = np.asarray(np.abs(depth[dindex,t]))
+            else:
+                zz = np.asarray(np.abs(depth[dindex]))
+            denss = np.asarray(density[dindex,t])
+            ok = np.isfinite(denss)
+            z = zz[ok]
+            dens = denss[ok]
+            if len(z)==0 or len(dens)==0 or np.min(zz) > 10:
+                PEA[t] = np.nan
+            else:
+                if z[-1] - z[0] > 0:
+                    # So PEA is < 0
+                    #sign = -1
+                    # Adding 0 to sigma integral is normalized
+                    z = np.append(0,z)
+                else:
+                    # So PEA is < 0
+                    #sign = 1
+                    # Adding 0 to sigma integral is normalized
+                    z = np.flipud(z)
+                    z = np.append(0,z)
+                    dens = np.flipud(dens)
+    
+                # adding density at depth = 0
+                densit = np.interp(z,z[1:],dens)
+                densit = np.flipud(densit)
+                
+                # defining sigma
+                max_depth = np.nanmax(zz[ok])  
+                sigma = -1*z/max_depth
+                sigma = np.flipud(sigma)
+                
+                rhomean = np.trapz(densit,sigma,axis=0)
+                drho = rhomean-densit
+                torque = drho * sigma
+                PEA[t] = g* max_depth * np.trapz(torque,sigma,axis=0) 
+                #print(max_depth, ' ',PEA[t]) 
+                
+    return PEA
+
 #%% Read POM grid
 
 print('Retrieving coordinates from POM')
@@ -516,7 +572,8 @@ zmatrix_pom_exp = zmatrix.reshape(hpom_exp.shape[0],hpom_exp.shape[1],zlev_pom_e
 #Time window
 date_ini = cycle[0:4]+'/'+cycle[4:6]+'/'+cycle[6:8]+'/'+cycle[8:]+'/00/00'
 tini = datetime.strptime(date_ini,'%Y/%m/%d/%H/%M/%S')
-tend = tini + timedelta(hours=120)
+#tend = tini + timedelta(hours=120)
+tend = tini + timedelta(hours=126)
 date_end = tend.strftime('%Y/%m/%d/%H/%M/%S')
 
 print('Retrieving coordinates from GOFS')
@@ -588,6 +645,12 @@ bath_elevs = bath_elev[oklatbath,:]
 bath_elevsub = bath_elevs[:,oklonbath]
 
 #%% Reading glider data
+
+#Time window
+date_ini = cycle[0:4]+'/'+cycle[4:6]+'/'+cycle[6:8]+'/'+cycle[8:]+'/00/00'
+tini = datetime.strptime(date_ini,'%Y/%m/%d/%H/%M/%S')
+tend = tini + timedelta(hours=120)
+date_end = tend.strftime('%Y/%m/%d/%H/%M/%S')
     
 url_glider = gdata
 
@@ -791,6 +854,18 @@ lon_forec_track_hycom_exp, lat_forec_track_hycom_exp, lead_time_hycom_exp = get_
 lon_best_track, lat_best_track, time_best_track, _, _, _ = \
 read_kmz_file_storm_best_track(kmz_file_Dorian)
 
+#%% Calculate time series of potential Energy Anomaly over the top 100 m
+
+PEA_glider = Potential_Energy_Anomaly(timeg,depthg,densg)
+
+PEA_GOFS = Potential_Energy_Anomaly(time_GOFS,depth_GOFS,target_dens_GOFS)
+
+PEA_POM_oper = Potential_Energy_Anomaly(time_POM_oper,target_depth_POM_oper,target_dens_POM_oper)
+
+PEA_POM_exp = Potential_Energy_Anomaly(time_POM_exp,target_depth_POM_exp,target_dens_POM_exp)
+
+PEA_HYCOM_exp = Potential_Energy_Anomaly(time_HYCOM_exp,depth_HYCOM_exp,target_dens_HYCOM_exp)
+
 #%% Figure transets
 
 def figure_transect(var1,min_var1,max_var1,nlevels,var2,var3,\
@@ -823,6 +898,21 @@ def figure_transect(var1,min_var1,max_var1,nlevels,var2,var3,\
     ax.xaxis.set_major_formatter(xfmt)
     plt.legend()  
     ax.set_xlim(tini,tend)
+
+#%% Figure Potential energy anomaly
+fig,ax = plt.subplots(figsize=(7,5))
+plt.plot(timeg,PEA_glider,'.-',color='royalblue',label=inst_id.split('-')[0])
+plt.plot(time_GOFS,PEA_GOFS,'.-',color='indianred',label='GOFS')
+plt.plot(time_POM_oper,PEA_POM_oper,'.-',color='mediumorchid',label='POM Oper')
+plt.plot(time_POM_exp,PEA_POM_exp,'.-',color='teal',label='POM Exp')
+plt.plot(time_HYCOM_exp,PEA_HYCOM_exp,'.-',color='orange',label='HYCOM Exp')
+plt.ylabel('($W/m^3$)',fontsize = 14)
+xfmt = mdates.DateFormatter('%H:%Mh\n%d-%b')
+ax.xaxis.set_major_formatter(xfmt)
+plt.title('Potantial Energy Anomaly',fontsize=14)
+#plt.plot(np.tile(datetime(2019,8,29,0),len(np.arange(120,220))),np.arange(120,220),'--k')
+plt.plot(np.tile(datetime(2019,8,29,6),len(np.arange(120,220))),np.arange(120,220),'--k')
+plt.legend(loc='lower right',bbox_to_anchor=(1.1,0))
 
 #%% Top 200 m glider temperature from 2019/08/28/00
 
@@ -1222,6 +1312,62 @@ plt.legend(loc='upper left',bbox_to_anchor=(1,0.9))
 
 file = folder_fig + ' ' + inst_id + '_temp_ml'
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)  
+
+#%% Temp ML
+    
+oktimeg_gofs = np.round(np.interp(tstamp_model,tstamp_glider,np.arange(len(tstamp_glider)))).astype(int)
+#OHCg_to31 = OHCg[oktimeg_gofs]
+
+oktimeg_pom_oper = np.round(np.interp(timestamp_POM_oper,tstamp_glider,np.arange(len(tstamp_glider)))).astype(int)    
+#OHCg_to_pom_oper = OHCg[oktimeg_pom_oper] 
+
+fig,ax = plt.subplots(figsize=(10, 5))
+plt.plot(timeg,Tmean_dens_crit_glid,'-o',color='royalblue',label=inst_id.split('-')[0],linewidth=3)
+plt.plot(time_GOFS,Tmean_dens_crit_GOFS,'--s',color='indianred',label='GOFS 3.1')
+plt.plot(timestamp_POM_oper,Tmean_dens_crit_POM_oper,'-X',color='mediumpurple',label='HWRF2019-POM Oper')
+plt.plot(timestamp_POM_exp,Tmean_dens_crit_POM_exp,'-^',color='teal',label='HWRF2020-POM Exp')
+plt.plot(timestamp_HYCOM_exp,Tmean_dens_crit_HYCOM_exp,'-^',color='darkorange',label='HWRF2020-HYCOM Exp')
+t0 = datetime(2019,8,25)
+deltat= timedelta(1)
+xticks = [t0+nday*deltat for nday in np.arange(15)]
+xticks = np.asarray(xticks)
+plt.xticks(xticks)
+xfmt = mdates.DateFormatter('%d-%b')
+ax.xaxis.set_major_formatter(xfmt)
+plt.xlim([time_POM_oper[0],time_HYCOM_exp[-1]])
+plt.ylabel('($^oC$)',fontsize = 14)
+tDorian = np.tile(datetime(2019,8,29,00),len(np.arange(28,29.5,0.2)))# ng665,ng666
+plt.plot(tDorian,np.arange(28,29.5,0.2),'--k')
+plt.title('Mixed Layer Temperature',fontsize=16)
+plt.grid(True)
+#plt.legend()
+plt.legend(loc='lower right',bbox_to_anchor=(1.1,-0.1))
+
+#%% Temp ML
+
+from matplotlib.ticker import (MultipleLocator, FormatStrFormatter)
+
+lead_time_glider = (mdates.date2num(timeg)-mdates.date2num(timeg[0]))*24
+lead_time_GOFS = (timestamp_GOFS-timestamp_GOFS[0])*24      
+
+
+fig,ax = plt.subplots(figsize=(10, 5))
+plt.plot(lead_time_glider,Tmean_dens_crit_glid,'-o',color='royalblue',label=inst_id.split('-')[0],linewidth=3)
+plt.plot(lead_time_GOFS,Tmean_dens_crit_GOFS,'--s',color='indianred',label='GOFS 3.1')
+plt.plot(lead_time_pom_oper[::2][0:-1],Tmean_dens_crit_POM_oper,'-X',color='mediumpurple',label='HWRF2019-POM Oper')
+plt.plot(lead_time_pom_exp[::2][0:-1],Tmean_dens_crit_POM_exp,'-^',color='teal',label='HWRF2020-POM Exp')
+plt.plot(lead_time_hycom_exp[::2],Tmean_dens_crit_HYCOM_exp,'-^',color='darkorange',label='HWRF2020-HYCOM Exp')
+plt.xlim([0,126])
+ax.xaxis.set_major_locator(MultipleLocator(12))
+ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+ax.xaxis.set_minor_locator(MultipleLocator(3))
+plt.xlabel('Forecast Lead Time (Hr)',fontsize=14)
+plt.ylabel('($^oC$)',fontsize = 14)
+tDorian = np.tile(datetime(2019,8,28,18),len(np.arange(28,29.5,0.2)))# ng665,ng666
+plt.plot(tDorian,np.arange(28,29.5,0.2),'--k')
+plt.title('Mixed Layer Temperature',fontsize=16)
+plt.grid(True)
+plt.legend(loc='lower right',bbox_to_anchor=(1.1,-0.1))
 
 #%% T100
     

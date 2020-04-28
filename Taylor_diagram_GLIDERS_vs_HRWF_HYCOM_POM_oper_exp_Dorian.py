@@ -804,7 +804,8 @@ for f,file in enumerate(gdata):
     sublat_GOFS = np.interp(tstamp_model,tstamp_glider,target_lat)
     
     # Conversion from GOFS convention to glider longitude and latitude
-    sublon_GOFSg,sublat_GOFSg = GOFS_coor_to_glider_coord(sublon_GOFS,sublat_GOFS,oklat_GOFS,oklon_GOFS)
+    #sublon_GOFSg,sublat_GOFSg = GOFS_coor_to_glider_coord(sublon_GOFS,sublat_GOFS,oklat_GOFS,oklon_GOFS)
+    sublon_GOFSg,sublat_GOFSg = GOFS_coor_to_glider_coord(sublon_GOFS,sublat_GOFS)
     
     # getting the model grid positions for sublonm and sublatm
     oklon_GOFS = np.round(np.interp(sublon_GOFS,lon_G,np.arange(len(lon_G)))).astype(int)

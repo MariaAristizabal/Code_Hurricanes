@@ -83,14 +83,14 @@ id_list = char({'aoml/SG630-20180716T1220/SG630-20180716T1220.nc3.nc',...
                 });
 %}
 
-%{
+
 %SAB:
 lon_lim = [-81 -70];
 lat_lim = [25 35];
 id_list = char({'secoora/bass-20180808T0000/bass-20180808T0000.nc3.nc',...
                 'secoora/pelagia-20180910T0000/pelagia-20180910T0000.nc3.nc',...
                 });
-%}
+
             
 %'drudnick/sp022-20180912T1553/p022-20180912T1553.nc3.nc',...
 

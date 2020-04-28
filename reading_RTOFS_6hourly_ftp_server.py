@@ -192,9 +192,9 @@ timestampRTOFS = mdates.date2num(timeRT)
 
 #%% load RTOFS a/b files
 
-#for t in np.arange(len(prefix_ab)):
+for t in np.arange(len(prefix_ab)):
 #for t in np.arange(2):
-    t=1
+    #t=1
     file = nc_files_RTOFS[t]
 
     # Login to ftp file
@@ -261,8 +261,8 @@ tRTOFS = np.asarray(tRTOFS)
            
 #%% Loop through gliders
     
-#for id in gliders:
-    id = gliders[0]
+for id in gliders:
+    #id = gliders[0]
     print('Reading ' + id)
     e.dataset_id = id
     e.constraints = constraints

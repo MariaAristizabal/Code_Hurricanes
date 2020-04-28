@@ -11,7 +11,8 @@ Created on Mon Jan 13 11:06:24 2020
 lon_lim = [-98.5,-60.0]
 lat_lim = [10.0,45.0]
 
-cycle = '2019083018'
+cycle = '2019090118'
+#cycle = '2019083018'
 #cycle = '2019082800'
 #cycle = '2019082918'
 
@@ -110,7 +111,7 @@ plt.rc('ytick',labelsize=14)
 plt.rc('legend',fontsize=14)
 
 #%%
-def MLD_temp_and_dens_criteria(dt,drho,depth,temp,salt,dens):
+def MLD_temp_and_dens_criteria(dt,drho,time,depth,temp,salt,dens):
 
     MLD_temp_crit = np.empty(temp.shape[1]) 
     MLD_temp_crit[:] = np.nan
@@ -587,7 +588,7 @@ zlev_pom_exp = np.asarray(POM_grid_exp['zz'][:])
 hpom_exp = np.asarray(POM_grid_exp['h'][:])
 zmatrix = np.dot(hpom_exp.reshape(-1,1),zlev_pom_exp.reshape(1,-1))
 zmatrix_pom_exp = zmatrix.reshape(hpom_exp.shape[0],hpom_exp.shape[1],zlev_pom_exp.shape[0])
-
+        
 #%% Reading HYCOM grid
 
 # Reading lat and lon
@@ -746,25 +747,26 @@ drho = 0.125
 
 # for GOFS 3.1 output 
 MLD_temp_crit_GOFS, _, _, _, MLD_dens_crit_GOFS, Tmean_dens_crit_GOFS, Smean_dens_crit_GOFS, _ = \
-MLD_temp_and_dens_criteria(dt,drho,depth_GOFS,temp_GOFS_band,salt_GOFS_band,dens_GOFS_band)          
+MLD_temp_and_dens_criteria(dt,drho,target_time,depth_GOFS,temp_GOFS_band,salt_GOFS_band,dens_GOFS_band)          
 
 # for POM operational
 MLD_temp_crit_POM_oper, _, _, _, MLD_dens_crit_POM_oper, Tmean_dens_crit_POM_oper, \
 Smean_dens_crit_POM_oper, _ = \
-MLD_temp_and_dens_criteria(dt,drho,zmatrix_POM_band_oper,temp_POM_band_oper,\
+MLD_temp_and_dens_criteria(dt,drho,time_POM,zmatrix_POM_band_oper,temp_POM_band_oper,\
                            salt_POM_band_oper,dens_POM_band_oper)
 
 # for POM experimental
 MLD_temp_crit_POM_exp, _, _, _, MLD_dens_crit_POM_exp, Tmean_dens_crit_POM_exp, \
 Smean_dens_crit_POM_exp, _ = \
-MLD_temp_and_dens_criteria(dt,drho,zmatrix_POM_band_exp,temp_POM_band_exp,\
+MLD_temp_and_dens_criteria(dt,drho,time_POM,zmatrix_POM_band_exp,temp_POM_band_exp,\
                            salt_POM_band_exp,dens_POM_band_exp)
     
 # for HYCOM experimental 
 depth=depth_HYCOM_exp
 temp=np.asarray(temp_HYCOM_band_exp)
 salt=np.asarray(salt_HYCOM_band_exp)
-dens=np.asarray(dens_HYCOM_band_exp) 
+dens=np.asarray(dens_HYCOM_band_exp)
+time = time_HYCOM 
 temp[temp>100]=np.nan
 salt[salt>100]=np.nan
 dens[dens<1000]=np.nan
@@ -801,7 +803,7 @@ T100_POM_exp = depth_aver_top_100(zmatrix_POM_band_exp,temp_POM_band_exp)
 T100_HYCOM_exp = depth_aver_top_100(depth_HYCOM_exp,temp_HYCOM_band_exp)    
 
 #%% Figure forecasted track models vs best track
-'''
+
 #Time window
 date_ini = cycle[0:4]+'-'+cycle[4:6]+'-'+cycle[6:8]+' '+cycle[8:]+':00:00'
 tini = datetime.strptime(date_ini,'%Y-%m-%d %H:%M:%S')
@@ -883,12 +885,12 @@ plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 
 #%% Figure forecasted intensity models vs best intensity
 
-fig,ax1 = plt.subplots(figsize=(6, 4))
+fig,ax1 = plt.subplots(figsize=(10, 5))
 plt.ion()
 plt.plot(time_best_track,wind_int_kt,'o-k',label='Best')
-plt.plot(time_hwrf,max_wind_10m_hwrf_pom19_oper,'X-',color='mediumorchid',label='POM Oper',markeredgecolor='k',markersize=7)
-plt.plot(time_hwrf,max_wind_10m_hwrf_pom20_exp,'^-',color='teal',label='POM Exp',markeredgecolor='k',markersize=7)
-plt.plot(time_hwrf,max_wind_10m_hwrf_hycom20_exp,'H-',color='darkorange',label='HYCOM Exp',markeredgecolor='k',markersize=7)
+plt.plot(time_hwrf,max_wind_10m_hwrf_pom19_oper,'X-',color='mediumorchid',label='HWRF2010-POM Oper',markeredgecolor='k',markersize=7)
+plt.plot(time_hwrf,max_wind_10m_hwrf_pom20_exp,'^-',color='teal',label='HWRF2020-POM Exp',markeredgecolor='k',markersize=7)
+plt.plot(time_hwrf,max_wind_10m_hwrf_hycom20_exp,'H-',color='darkorange',label='HWRF2020-HYCOM Exp',markeredgecolor='k',markersize=7)
 plt.legend(loc='lower right')
 #plt.legend()
 plt.xlim([time_hwrf[0],time_hwrf[-1]])
@@ -906,6 +908,58 @@ plt.grid(True)
 
 file = folder_fig + 'best_intensity_vs_forec_intensity_' + cycle 
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
+
+#%% Figure forecasted intensity models vs best intensity
+
+from matplotlib.ticker import (MultipleLocator, FormatStrFormatter)
+
+fig,ax1 = plt.subplots(figsize=(10, 5))
+plt.ion()
+plt.plot(lead_time_pom_oper[::2],wind_int_kt[okt],'o-k',label='Best')
+plt.plot(lead_time_pom_oper,max_wind_10m_hwrf_pom19_oper,'X-',color='mediumorchid',label='HWRF2010-POM Oper',markeredgecolor='k',markersize=7)
+plt.plot(lead_time_pom_exp,max_wind_10m_hwrf_pom20_exp,'^-',color='teal',label='HWRF2020-POM Exp',markeredgecolor='k',markersize=7)
+plt.plot(lead_time_hycom_exp,max_wind_10m_hwrf_hycom20_exp,'H-',color='darkorange',label='HWRF2020-HYCOM Exp',markeredgecolor='k',markersize=7)
+plt.legend(loc='lower right')
+plt.ylim([20,165])
+plt.xlim([0,126])
+plt.title('Intensity Forecast Dorian '+ cycle,fontsize=18)
+plt.ylabel('Max 10m Wind (kt)',fontsize=14)
+plt.xlabel('Forecast Lead Time (Hr)',fontsize=14)
+ax1.xaxis.set_major_locator(MultipleLocator(12))
+ax1.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+ax1.xaxis.set_minor_locator(MultipleLocator(3))
+
+ax2 = ax1.twinx()
+plt.ylim([20,165])
+yticks = [64,83,96,113,137]
+plt.yticks(yticks,['Cat 1','Cat 2','Cat 3','Cat 4','Cat 5'])
+plt.grid(True)
+
+file = folder_fig + 'best_intensity_vs_forec_intensity_' + cycle 
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
+
+#%% Intensity error
+
+from matplotlib.ticker import (MultipleLocator, FormatStrFormatter)
+
+int_err_hwrf19_pom_oper = (wind_int_kt[okt] - max_wind_10m_hwrf_pom19_oper[::2]) #*100/wind_int_kt[okt]
+int_err_hwrf20_pom_exp = (wind_int_kt[okt] - max_wind_10m_hwrf_pom20_exp[::2]) #*100/wind_int_kt[okt]
+int_err_hwrf20_hycom_exp = (wind_int_kt[okt] - max_wind_10m_hwrf_hycom20_exp[::2]) #*100/wind_int_kt[okt]
+
+fig,ax1 = plt.subplots(figsize=(10, 5))
+plt.ion()
+plt.plot(lead_time_pom_oper[::2],int_err_hwrf19_pom_oper,'X-',color='mediumorchid',label='HWRF2019-POM Oper',markeredgecolor='k',markersize=7)
+plt.plot(lead_time_pom_exp[::2],int_err_hwrf20_pom_exp,'^-',color='teal',label='HRWF2020-POM Exp',markeredgecolor='k',markersize=7)
+plt.plot(lead_time_hycom_exp[::2],int_err_hwrf20_hycom_exp,'H-',color='darkorange',label='HWRF2020-HYCOM Exp',markeredgecolor='k',markersize=7)
+plt.plot(lead_time_pom_oper[::2],np.tile(0,len(lead_time_pom_oper[::2])),'--k')
+plt.xlim([0,126])
+ax1.xaxis.set_major_locator(MultipleLocator(12))
+ax1.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+ax1.xaxis.set_minor_locator(MultipleLocator(3))
+plt.title('Intensity Forecast Error Dorian '+ cycle,fontsize=18)
+plt.ylabel('Forecast Error (Kt)',fontsize=14)
+plt.xlabel('Forecast Lead Time (Hr)',fontsize=14)
+plt.legend()
 
 #%% Top 200 m GOFS 3.1 temperature along forecasted Dorian track
 
@@ -1029,7 +1083,7 @@ plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 
 fig,ax = plt.subplots(figsize=(12, 2))
 plt.plot(dist_along_track,Tmean_dens_crit_GOFS,'--o',color='indianred',label='GOFS 3.1')
-plt.plot(dist_along_track,Tmean_dens_crit_POM_oper,'-X',color='mediumpurple',label='POM Oper')
+plt.plot(dist_along_track,Tmean_dens_crit_POM_oper,'-X',color='mediumorchid',label='POM Oper')
 plt.plot(dist_along_track,Tmean_dens_crit_POM_exp,'-^',color='teal',label='POM Exp')
 plt.plot(dist_along_track,Tmean_dens_crit_HYCOM_exp,'-H',color='orange',label='HYCOM Exp')
 plt.ylabel('($^oC$)',fontsize = 14)
@@ -1082,14 +1136,15 @@ lat_G = np.asarray(GOFS.lat[:])
 lon_G = np.asarray(GOFS.lon[:]) 
 oklon = np.round(np.interp(lon_forec_track_pom_oper+360,DF.lon,np.arange(len(DF.lon)))).astype(int)
 oklat = np.round(np.interp(lat_forec_track_pom_oper,DF.lat,np.arange(len(DF.lat)))).astype(int)
-temp_GOFS = np.asarray(GOFS.water_temp[0,0,oklat,oklon])
+oktime = np.where(mdates.date2num(t_G) == mdates.date2num(time_POM))[0][0]
+temp_GOFS = np.asarray(GOFS.water_temp[oktime,0,oklat,oklon])
 #temp_gofs = temp_GOFS
 #temp_gofs[temp_gofs<27] = 27
 #temp_gofs[temp_gofs>32] = 
 
-#kw = dict(levels = np.linspace(26,32,17))
+kw = dict(levels = np.linspace(26,32,17))
 plt.figure()
-plt.contourf(lon_G[oklon]-360,lat_G[oklat],temp_GOFS,cmap=color_map) #,**kw)
+plt.contourf(lon_G[oklon]-360,lat_G[oklat],temp_GOFS,cmap=color_map,**kw)
 plt.colorbar()
 
 #%% 100 m temperature GOFS 3.1
@@ -1100,12 +1155,13 @@ lat_G = np.asarray(GOFS.lat[:])
 lon_G = np.asarray(GOFS.lon[:]) 
 oklon = np.round(np.interp(lon_forec_track_pom_oper+360,DF.lon,np.arange(len(DF.lon)))).astype(int)
 oklat = np.round(np.interp(lat_forec_track_pom_oper,DF.lat,np.arange(len(DF.lat)))).astype(int)
-okd = np.where(depth_GOFS == 100)[0][0]
-temp_GOFS = np.asarray(GOFS.water_temp[0,okd,oklat,oklon])
+oktime = np.where(mdates.date2num(t_G) == mdates.date2num(time_POM))[0][0]
+okd = np.where(depth_GOFS == 150)[0][0]
+temp_GOFS = np.asarray(GOFS.water_temp[oktime,okd,oklat,oklon])
 
-#kw = dict(levels = np.linspace(26,32,17))
+kw = dict(levels = np.linspace(26,32,17))
 plt.figure()
-plt.contourf(lon_G[oklon]-360,lat_G[oklat],temp_GOFS,cmap=color_map) #,**kw)
+plt.contourf(lon_G[oklon]-360,lat_G[oklat],temp_GOFS,cmap=color_map,**kw)
 plt.colorbar()
 
 #%% Surface temperature POM operational
@@ -1114,7 +1170,6 @@ folder_pom =folder_pom_oper
 #folder_pom =folder_pom_exp
 prefix = prefix_pom
 N = Nini
-N=1
 
 pom_ncfiles = sorted(glob.glob(os.path.join(folder_pom,prefix+'*.nc')))   
 file = pom_ncfiles[N]
@@ -1128,9 +1183,93 @@ kw = dict(levels = np.linspace(16,32,17))
 #kw = dict(levels = np.linspace(26,32,17))
 plt.figure()
 plt.contourf(lon_pom_oper[0,:],lat_pom_oper[:,0],temp_POM,cmap=color_map,**kw)
-#plt.xlim([np.min(lon_forec_track_pom_oper)-0.5,np.max(lon_forec_track_pom_oper)+0.5])
-#plt.ylim([np.min(lat_forec_track_pom_oper)-0.5,np.max(lat_forec_track_pom_oper)+0.5])
+plt.xlim([np.min(lon_forec_track_pom_oper)-0.5,np.max(lon_forec_track_pom_oper)+0.5])
+plt.ylim([np.min(lat_forec_track_pom_oper)-0.5,np.max(lat_forec_track_pom_oper)+0.5])
 plt.colorbar()
+
+
+#%% Temperature 140m to 160m POM operational
+
+pom_ncfiles = sorted(glob.glob(os.path.join(folder_pom,prefix+'*.nc')))
+file = pom_ncfiles[N]
+pom = xr.open_dataset(file)
+tpom = pom['time'][:]
+timestamp_pom = mdates.date2num(tpom)[0]
+time_POM = mdates.num2date(timestamp_pom)
+
+temp_pom = np.asarray(pom['t'][0,:,:,:])
+temp_pom[temp_pom==0] = np.nan
+temp_p = temp_pom.reshape(temp_pom.shape[0],temp_pom.shape[1]*temp_pom.shape[2])
+temp_pp = temp_p.reshape(temp_pom.shape[0]*temp_pom.shape[1]*temp_pom.shape[2],order='F')
+
+zmatrix_p = zmatrix_pom_oper.reshape(temp_pom.shape[1]*temp_pom.shape[2],temp_pom.shape[0])
+zmatrix_pp = zmatrix_p.reshape(temp_pom.shape[1]*temp_pom.shape[2]*temp_pom.shape[0],order='C')
+
+okdepth = np.logical_and(zmatrix_pp < -140,zmatrix_pp > -170)
+zmatrix_pp[okdepth]
+temp_pp[okdepth]
+
+temp_pom_140m = np.empty((zmatrix_pom_oper.shape[0]*zmatrix_pom_oper.shape[1]))
+temp_pom_140m[:] = np.nan
+
+okd = np.where((np.logical_and(zmatrix_p<-140,zmatrix_p>-170)))[0]
+temp_pom_140m[okd] = temp_pp[okdepth]
+temp_POM_140m = temp_pom_140m.reshape(zmatrix_pom_oper.shape[0],zmatrix_pom_oper.shape[1])
+
+kw = dict(levels = np.linspace(16.5,27,7))
+fig,ax = plt.subplots()
+plt.contourf(lon_pom_oper[0,:],lat_pom_oper[:,0],temp_POM_140m,cmap=color_map,**kw)
+plt.colorbar()
+plt.xlim([np.min(lon_forec_track_pom_oper[oktt])-0.5,np.max(lon_forec_track_pom_oper[oktt])+0.5])
+plt.ylim([np.min(lat_forec_track_pom_oper[oktt])-0.5,np.max(lat_forec_track_pom_oper[oktt])+0.5])
+plt.plot(lon_forec_track_pom_oper[oktt], lat_forec_track_pom_oper[oktt],'X-',color='mediumorchid',\
+         markeredgecolor='k',label='POM Oper',markersize=7)
+plt.title('POM oper Temp at 124-160 m on ' + str(time_POM)[0:13])
+
+for i,t in enumerate(dist_along_track[oktt][::2]):
+    ax.text(lon_forec_track_pom_oper[oktt][::2][i]+0.2,lat_forec_track_pom_oper[oktt][::2][i],np.round(dist_along_track[oktt][::2][i]))
+
+#%% Temperature 140m to 160m POM experimental
+N = 10
+pom_ncfiles = sorted(glob.glob(os.path.join(folder_pom_exp,prefix_pom+'*.nc')))
+file = pom_ncfiles[N]
+pom = xr.open_dataset(file)
+tpom = pom['time'][:]
+timestamp_pom = mdates.date2num(tpom)[0]
+time_POM = mdates.num2date(timestamp_pom)
+
+temp_pom = np.asarray(pom['t'][0,:,:,:])
+temp_pom[temp_pom==0] = np.nan
+temp_p = temp_pom.reshape(temp_pom.shape[0],temp_pom.shape[1]*temp_pom.shape[2])
+temp_pp = temp_p.reshape(temp_pom.shape[0]*temp_pom.shape[1]*temp_pom.shape[2],order='F')
+
+zmatrix_p = zmatrix_pom_oper.reshape(temp_pom.shape[1]*temp_pom.shape[2],temp_pom.shape[0])
+zmatrix_pp = zmatrix_p.reshape(temp_pom.shape[1]*temp_pom.shape[2]*temp_pom.shape[0],order='C')
+
+okdepth = np.logical_and(zmatrix_pp < -140,zmatrix_pp > -170)
+zmatrix_pp[okdepth]
+temp_pp[okdepth]
+
+temp_pom_140m = np.empty((zmatrix_pom_oper.shape[0]*zmatrix_pom_oper.shape[1]))
+temp_pom_140m[:] = np.nan
+
+okd = np.where((np.logical_and(zmatrix_p<-140,zmatrix_p>-170)))[0]
+temp_pom_140m[okd] = temp_pp[okdepth]
+temp_POM_140m = temp_pom_140m.reshape(zmatrix_pom_oper.shape[0],zmatrix_pom_oper.shape[1])
+temp_pom_140m[temp_pom_140m > 27.0] = 27.0
+
+kw = dict(levels = np.linspace(16.5,27,7))
+fig,ax = plt.subplots()
+plt.contourf(lon_pom_oper[0,:],lat_pom_oper[:,0],temp_POM_140m,cmap=color_map,**kw)
+plt.colorbar()
+plt.plot(lon_forec_track_pom_oper[oktt], lat_forec_track_pom_oper[oktt],'X-',color='mediumorchid',\
+         markeredgecolor='k',label='POM Oper',markersize=7)
+plt.xlim([np.min(lon_forec_track_pom_oper[oktt])-0.5,np.max(lon_forec_track_pom_oper[oktt])+0.5])
+plt.ylim([np.min(lat_forec_track_pom_oper[oktt])-0.5,np.max(lat_forec_track_pom_oper[oktt])+0.5])
+plt.title('POM exp Temp at 140-160 m on ' + str(time_POM)[0:13])
+
+for i,t in enumerate(dist_along_track[oktt][::2]):
+    ax.text(lon_forec_track_pom_oper[oktt][::2][i]+0.2,lat_forec_track_pom_oper[oktt][::2][i],np.round(dist_along_track[oktt][::2][i]))
 
 #%% Surface temperature HYCOM experimental
 
@@ -1212,5 +1351,3 @@ plt.title('HYCOM Temp at '+ str(depth_HYCOM_exp[okd]) + ' m on ' + str(time_hyco
 
 for i,t in enumerate(dist_along_track[oktt][::2]):
     ax.text(lon_forec_track_pom_oper[oktt][::2][i]+0.2,lat_forec_track_pom_oper[oktt][::2][i],np.round(dist_along_track[oktt][::2][i]))
-
-'''
