@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Mon Dec 16 11:18:51 2019
+Created on Thu Apr 16 15:22:59 2020
 
 @author: root
 """
 
 #%% User input
+
+home_folder = '/home/'
+#home_folder = 'Volumes/'
 
 lon_lim = [-80.0,-60.0]
 lat_lim = [15.0,35.0]
@@ -36,14 +39,15 @@ cycle = '2019082800'
 url_GOFS = 'http://tds.hycom.org/thredds/dodsC/GLBv0.08/expt_93.0/ts3z'
 
 # figures
-folder_fig = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'
+#folder_fig = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'
+folder_fig = '/home/aristizabal/Figures/'
 
 # folder nc files POM
-folder_pom19 =  '/Volumes/aristizabal/HWRF2019_POM_Dorian/'
-folder_pom20 =  '/Volumes/aristizabal/HWRF2020_POM_Dorian/'
+folder_pom19 =  home_folder+'aristizabal/HWRF2019_POM_Dorian/'
+folder_pom20 =  home_folder+'aristizabal/HWRF2020_POM_Dorian/'
 
 # folde HWRF2020_HYCOM
-folder_hycom20 = '/Volumes/aristizabal/HWRF2020_HYCOM_Dorian/'
+folder_hycom20 = home_folder+'aristizabal/HWRF2020_HYCOM_Dorian/'
 
 ###################
 
@@ -66,7 +70,7 @@ folder_hycom_exp = folder_hycom20 + 'HWRF2020_HYCOM_dorian05l.' + cycle + '_hyco
 prefix_hycom = 'dorian05l.' + cycle + '.hwrf_rtofs_hat10_3z'
 
 #Dir_HMON_HYCOM = '/Volumes/aristizabal/ncep_model/HMON-HYCOM_Michael/'
-Dir_HMON_HYCOM = '/Volumes/aristizabal/ncep_model/HWRF-Hycom-WW3_exp_Michael/'
+Dir_HMON_HYCOM = home_folder+'aristizabal/ncep_model/HWRF-Hycom-WW3_exp_Michael/'
 # RTOFS grid file name
 hycom_grid_exp = Dir_HMON_HYCOM + 'hwrf_rtofs_hat10.basin.regional.grid'
 
@@ -77,10 +81,7 @@ hwrf_hycom_track_exp = folder_hycom_exp + 'dorian05l.' + cycle + '.trak.hwrf.atc
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import mpl_toolkits.axisartist.floating_axes as floating_axes
-from matplotlib.projections import PolarAxes
-from mpl_toolkits.axisartist.grid_finder import (FixedLocator,
-                                                 DictFormatter)
+
 import xarray as xr
 import netCDF4
 from datetime import datetime, timedelta
@@ -260,7 +261,7 @@ def get_glider_transect_from_HYCOM(folder_hycom,prefix,nz,lon_hycom,lat_hycom,va
         month = int(file.split('.')[1][4:6])
         day = int(file.split('.')[1][6:8])
         hour = int(file.split('.')[1][8:10])
-        dt = int(file.split('.')[3][1:])
+        dt = int(file.split('.')[-2][1:])
         timestamp_hycom = mdates.date2num(datetime(year,month,day,hour)) + dt/24
         time_hycom.append(mdates.num2date(timestamp_hycom))
         
@@ -444,6 +445,11 @@ def depth_aver_temp_from_100_to_base_mixed_layer(dt,drho,time,depth,temp,salt,de
 #%% Taylor Diagram
 
 def taylor_template(angle_lim,std_lim):
+    
+    import mpl_toolkits.axisartist.floating_axes as floating_axes
+    from matplotlib.projections import PolarAxes
+    from mpl_toolkits.axisartist.grid_finder import (FixedLocator,
+                                                 DictFormatter)
 
     fig = plt.figure()
     tr = PolarAxes.PolarTransform()
@@ -495,6 +501,11 @@ def taylor_template(angle_lim,std_lim):
 #%% Create a plotting function for Taylor diagrams.
 
 def taylor(scores,colors,units,angle_lim):
+    
+    import mpl_toolkits.axisartist.floating_axes as floating_axes
+    from matplotlib.projections import PolarAxes
+    from mpl_toolkits.axisartist.grid_finder import (FixedLocator,
+                                                 DictFormatter)
 
     fig = plt.figure()
     tr = PolarAxes.PolarTransform()
@@ -590,6 +601,11 @@ def taylor(scores,colors,units,angle_lim):
 #%% Create a plotting function for normalized Taylor diagrams.
 
 def taylor_normalized(scores,colors,angle_lim):
+    
+    import mpl_toolkits.axisartist.floating_axes as floating_axes
+    from matplotlib.projections import PolarAxes
+    from mpl_toolkits.axisartist.grid_finder import (FixedLocator,
+                                                 DictFormatter)
 
     fig = plt.figure()
     tr = PolarAxes.PolarTransform()
@@ -1643,137 +1659,6 @@ T100_to_ml_skillscores = pd.DataFrame(tskill,
                         index=['GOFS','POM_oper','POM_exp','HYCOM_exp'],
                         columns=cols)
 print(T100_to_ml_skillscores)
-    
-#%%    
-    
-fig, ax1 = taylor(temp_skillscores,colors,'$^oC$',np.pi/2)
-plt.title('Temperature \n cycle 2019082800',fontsize=16)
-
-file = folder_fig + 'Taylor_temperature_2019082800'
-plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
-
-#%%    
-    
-taylor(salt_skillscores,colors,'psu',np.pi/2)
-plt.title('Salinity \n cycle 2019082800',fontsize=16)
-
-file = folder_fig + 'Taylor_salinity_2019082800'
-plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
-
-
-#%%    
-    
-taylor(Tmean_mld_skillscores,colors,'$^oC$',np.pi/2)
-plt.title('Temperature MLD \n cycle 2019082800',fontsize=16)
-
-file = folder_fig + 'Taylor_temp_mld_2019082800'
-plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
-
-#%%    
-    
-taylor(Smean_mld_skillscores,colors,'psu',np.pi/2)
-plt.title('Salinity MLD \n cycle 2019082800',fontsize=16)
-
-file = folder_fig + 'Taylor_salt_mld_2019082800'
-plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
-
-#%%    
-    
-taylor_normalized(OHC_skillscores,colors,np.pi/2)
-plt.title('OHC \n cycle 2019082800',fontsize=16)
-
-file = folder_fig + 'Taylor_ohc_2019082800'
-plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
-
-#%%    
-    
-taylor(T100_skillscores,colors,'$^oC$',np.pi/2)
-plt.title('T100 \n cycle 2019082800',fontsize=16)
-
-file = folder_fig + 'Taylor_T100_2019082800'
-plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
-
-#%%    
-    
-taylor(T100_to_ml_skillscores,colors,'$^oC$',np.pi/2)
-plt.title('Temp Mean from 100 m to Base Mixed Layer  \n cycle 2019082800',fontsize=16)
-
-file = folder_fig + 'Taylor_T100_to_ml_2019082800'
-plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
-
-#%% Combine all metrics into one normalized Taylor diagram 
-
-angle_lim = np.pi/2
-std_lim = 1.5
-fig,ax1 = taylor_template(angle_lim,std_lim)
-markers = ['s','X','^','H']
-  
-scores = temp_skillscores  
-for i,r in enumerate(scores.iterrows()):
-    theta=np.arccos(r[1].CORRELATION)
-    rr=r[1].MSTD/r[1].OSTD
-    ax1.plot(theta,rr,markers[i],color = 'darkorange',markersize=8)
-ax1.plot(theta,rr,markers[i],label='Temp',color = 'darkorange',markersize=8)
-      
-scores = salt_skillscores  
-for i,r in enumerate(scores.iterrows()):
-    theta=np.arccos(r[1].CORRELATION)            
-    rr=r[1].MSTD/r[1].OSTD
-    ax1.plot(theta,rr,markers[i],color = 'seagreen',markersize=8)
-ax1.plot(theta,rr,markers[i],label='Salt',color = 'seagreen',markersize=8)
-        
-scores = Tmean_mld_skillscores  
-for i,r in enumerate(scores.iterrows()):
-    theta=np.arccos(r[1].CORRELATION)            
-    rr=r[1].MSTD/r[1].OSTD
-    ax1.plot(theta,rr,markers[i],color = 'darkorchid',markersize=8)
-ax1.plot(theta,rr,markers[i],label='Temp ML',color = 'darkorchid',markersize=8)
-
-scores = Smean_mld_skillscores  
-for i,r in enumerate(scores.iterrows()):
-    theta=np.arccos(r[1].CORRELATION)            
-    rr=r[1].MSTD/r[1].OSTD
-    ax1.plot(theta,rr,markers[i],color = 'y',markersize=8)
-ax1.plot(theta,rr,markers[i],label='Salt ML',color = 'y',markersize=8) 
-       
-scores = OHC_skillscores  
-for i,r in enumerate(scores.iterrows()):
-    theta=np.arccos(r[1].CORRELATION)            
-    rr=r[1].MSTD/r[1].OSTD
-    ax1.plot(theta,rr,markers[i],color = 'indianred',markersize=8) 
-ax1.plot(theta,rr,markers[i],label='OHC',color = 'indianred',markersize=8) 
-
-scores = T100_skillscores  
-for i,r in enumerate(scores.iterrows()):
-    theta=np.arccos(r[1].CORRELATION)            
-    rr=r[1].MSTD/r[1].OSTD
-    ax1.plot(theta,rr,markers[i],color = 'royalblue',markersize=8) 
-ax1.plot(theta,rr,markers[i],label='T100',color = 'royalblue',markersize=8) 
-'''
-scores = T100_to_ml_skillscores  
-for i,r in enumerate(scores.iterrows()):
-    theta=np.arccos(r[1].CORRELATION)            
-    rr=r[1].MSTD/r[1].OSTD
-    ax1.plot(theta,rr,markers[i],color = 'darkblue',markersize=8) 
-ax1.plot(theta,rr,markers[i],label='T100',color = 'darkblue',markersize=8) 
-'''        
-ax1.plot(0,1,'o',label='Obs',markersize=8) 
-ax1.plot(0,0,'sk',label='GOFS',markersize=8)
-ax1.plot(0,0,'Xk',label='POM Oper',markersize=8)
-ax1.plot(0,0,'^k',label='POM Exp',markersize=8)
-ax1.plot(0,0,'Hk',label='HYCOM Exp',markersize=8)
-     
-plt.legend(loc='upper right',bbox_to_anchor=[1.55,1.2])    
-
-rs,ts = np.meshgrid(np.linspace(0,std_lim),np.linspace(0,angle_lim))
-rms = np.sqrt(1 + rs**2 - 2*rs*np.cos(ts))
-    
-contours = ax1.contour(ts, rs, rms,3,colors='0.5')
-plt.clabel(contours, inline=1, fontsize=10)
-plt.grid(linestyle=':',alpha=0.5)
-
-file = folder_fig + 'Taylor_norm_2019082800_v2'
-plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
 
 #%% Combine all metrics into one normalized Taylor diagram 
 
@@ -1812,12 +1697,12 @@ for i,r in enumerate(scores.iterrows()):
 ax1.plot(theta,rr,markers[i],label='T100_ml',color = 'darkblue',markersize=8) 
         
 ax1.plot(0,1,'o',label='Obs',markersize=8) 
-ax1.plot(0,0,'sk',label='GOFS',markersize=8)
-ax1.plot(0,0,'Xk',label='POM Oper',markersize=8)
-ax1.plot(0,0,'^k',label='POM Exp',markersize=8)
-ax1.plot(0,0,'Hk',label='HYCOM Exp',markersize=8)  
+ax1.plot(0,0,'sk',label='GOFS 3.1',markersize=8)
+ax1.plot(0,0,'Xk',label='HWRF2019-POM (IC clim.)',markersize=8)
+ax1.plot(0,0,'^k',label='HWRF2020-POM (IC RTOFS)',markersize=8)
+ax1.plot(0,0,'Hk',label='HWRF2020-HYCOM (IC RTOFS)',markersize=8)
    
-plt.legend(loc='upper right',bbox_to_anchor=[1.5,1.2])    
+plt.legend(loc='upper right',bbox_to_anchor=[2.1,1.5])    
 
 rs,ts = np.meshgrid(np.linspace(0,std_lim),np.linspace(0,angle_lim))
 rms = np.sqrt(1 + rs**2 - 2*rs*np.cos(ts))
@@ -1827,36 +1712,4 @@ plt.clabel(contours, inline=1, fontsize=10)
 plt.grid(linestyle=':',alpha=0.5)
 
 file = folder_fig + 'Taylor_norm_2019082800_v3'
-plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
-
-#%% Sketch normalized example
-angle_lim = np.pi/2
-std_lim = 2.0
-fig,ax1 = taylor_template(angle_lim,std_lim)
-      
-scores = OHC_skillscores 
-
-max_std = 2.0
-rs,ts = np.meshgrid(np.linspace(0,std_lim),np.linspace(0,angle_lim))
-rms = np.sqrt(1 + rs**2 - 2*rs*np.cos(ts))
-
-
-#rs,ts = np.meshgrid(np.linspace(0,np.round(max_std+0.1,2)),np.linspace(0,angle_lim))   
-#rms = np.sqrt(scores.OSTD[0]**2 + rs**2 - 2*rs*scores.OSTD[0]*np.cos(ts))
- 
-for i,r in enumerate(scores.iterrows()):
-    if i==0:
-        theta=np.arccos(r[1].CORRELATION)            
-        rr=r[1].MSTD/r[1].OSTD
-        ax1.plot(theta,rr,'o',color = 'indianred',markersize=8,label='Model')
-        
-        crmse = np.sqrt(1 + (r[1].MSTD/scores.OSTD[i])**2 \
-                   - 2*(r[1].MSTD/scores.OSTD[i])*r[1].CORRELATION) 
-        c1 = ax1.contour(ts, rs, rms,[crmse],colors=colors[i])
-        plt.clabel(c1, inline=1, fontsize=10,fmt='%1.2f')
-        
-ax1.plot(0,1,'o',label='Obs',markersize=8)
-plt.legend(loc='upper right',bbox_to_anchor=[1.1,1.1]) 
-        
-file = folder_fig + 'Taylor_norm_example'
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 

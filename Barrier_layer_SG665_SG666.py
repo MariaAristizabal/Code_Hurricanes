@@ -19,6 +19,8 @@ server = 'https://data.ioos.us/gliders/erddap'
 
 #gliders sg666, sg665, sg668, silbo
 gdata_sg665 = 'http://gliders.ioos.us/thredds/dodsC/deployments/aoml/SG665-20190718T1155/SG665-20190718T1155.nc3.nc'
+               http://gliders.ioos.us/thredds/dodsC/deployments/aoml/SG665-20190718T1155/SG665-20190718T1155.nc3.nc
+
 gdata_sg666 = 'http://gliders.ioos.us/thredds/dodsC/deployments/aoml/SG666-20190718T1206/SG666-20190718T1206.nc3.nc'
 #gdata_sg668 = 'http://gliders.ioos.us/thredds/dodsC/deployments/aoml/SG668-20190819T1217/SG668-20190819T1217.nc3.nc'
 #gdata_silbo ='http://gliders.ioos.us/thredds/dodsC/deployments/rutgers/silbo-20190717T1917/silbo-20190717T1917.nc3.nc'
@@ -41,7 +43,7 @@ bath_file = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/
 # KMZ file
 kmz_file = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/KMZ_files/al052019_best_track-5.kmz'
 
-# url for GOFS 
+# url for GOFS
 url_GOFS = 'http://tds.hycom.org/thredds/dodsC/GLBv0.08/expt_93.0/ts3z'
 
 # Folder where to save figure
@@ -52,13 +54,13 @@ folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Mode
 Dir_Argo = '/Volumes/aristizabal/ARGO_data/DataSelection_20191014_193816_8936308'
 
 # POM output
-folder_pom = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/POM_Dorian_npz_files/'    
+folder_pom = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/POM_Dorian_npz_files/'
 folder_pom_grid = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/'
 pom_grid_oper = folder_pom_grid + 'dorian05l.2019082800.pom.grid.oper.nc'
 pom_grid_exp = folder_pom_grid + 'dorian05l.2019082800.pom.grid.exp.nc'
 
 # folder nc files POM
-#folder_pom =  '/Volumes/aristizabal/POM_Dorian/'   
+#folder_pom =  '/Volumes/aristizabal/POM_Dorian/'
 
 #%%
 
@@ -68,7 +70,7 @@ import cmocean
 from datetime import datetime, timedelta
 import matplotlib.dates as mdates
 import sys
-import xarra as xr
+import xarray as xr
 import netCDF4
 import seawater as sw
 
@@ -85,7 +87,7 @@ plt.rc('legend',fontsize=14)
 #%% Function Grid glider variables according to depth
 
 def varsg_gridded(depth,time,temp,salt,dens,delta_z):
-             
+
     depthg_gridded = np.arange(0,np.nanmax(depth),delta_z)
     tempg_gridded = np.empty((len(depthg_gridded),len(time)))
     tempg_gridded[:] = np.nan
@@ -104,7 +106,7 @@ def varsg_gridded(depth,time,temp,salt,dens,delta_z):
         tempf = tempu[okdd]
         saltf = saltu[okdd]
         densf = densu[okdd]
- 
+
         okt = np.isfinite(tempf)
         if np.sum(okt) < 3:
             temp[:,t] = np.nan
@@ -112,7 +114,7 @@ def varsg_gridded(depth,time,temp,salt,dens,delta_z):
             okd = np.logical_and(depthg_gridded >= np.min(depthf[okt]),\
                                  depthg_gridded < np.max(depthf[okt]))
             tempg_gridded[okd,t] = np.interp(depthg_gridded[okd],depthf[okt],tempf[okt])
-            
+
         oks = np.isfinite(saltf)
         if np.sum(oks) < 3:
             saltg_gridded[:,t] = np.nan
@@ -120,7 +122,7 @@ def varsg_gridded(depth,time,temp,salt,dens,delta_z):
             okd = np.logical_and(depthg_gridded >= np.min(depthf[okt]),\
                         depthg_gridded < np.max(depthf[okt]))
             saltg_gridded[okd,t] = np.interp(depthg_gridded[okd],depthf[oks],saltf[oks])
-    
+
         okdd = np.isfinite(densf)
         if np.sum(okdd) < 3:
             densg_gridded[:,t] = np.nan
@@ -128,59 +130,59 @@ def varsg_gridded(depth,time,temp,salt,dens,delta_z):
             okd = np.logical_and(depthg_gridded >= np.min(depthf[okdd]),\
                         depthg_gridded < np.max(depthf[okdd]))
             densg_gridded[okd,t] = np.interp(depthg_gridded[okd],depthf[okdd],densf[okdd])
-        
+
     return depthg_gridded, tempg_gridded, saltg_gridded, densg_gridded
 
 #%% Function Conversion from glider longitude and latitude to GOFS convention
 
 def glider_coor_to_GOFS_coord(long,latg):
-    
+
     target_lon = np.empty((len(long),))
     target_lon[:] = np.nan
     for i,ii in enumerate(long):
-        if ii < 0: 
+        if ii < 0:
             target_lon[i] = 360 + ii
         else:
             target_lon[i] = ii
     target_lat = latg
-    
+
     return target_lon, target_lat
 
 #%%  Function Conversion from GOFS convention to glider longitude and latitude
-    
+
 def GOFS_coor_to_glider_coord(lon_GOFS,lat_GOFS):
-    
+
     lon_GOFSg = np.empty((len(lon_GOFS),))
     lon_GOFSg[:] = np.nan
     for i in range(len(lon_GOFS)):
-        if lon_GOFS[i] > 180: 
-            lon_GOFSg[i] = lon_GOFS[i] - 360 
+        if lon_GOFS[i] > 180:
+            lon_GOFSg[i] = lon_GOFS[i] - 360
         else:
             lon_GOFSg[i] = lon_GOFS[i]
     lat_GOFSg = lat_GOFS
-    
+
     return lon_GOFSg, lat_GOFSg
 
-#%%  Calculation of mixed layer depth based on dt, Tmean: mean temp within the 
-# mixed layer and td: temp at 1 meter below the mixed layer          
+#%%  Calculation of mixed layer depth based on dt, Tmean: mean temp within the
+# mixed layer and td: temp at 1 meter below the mixed layer
 
 def MLD_temp_and_dens_criteria(dt,drho,time,depth,temp,salt,dens):
 
-    MLD_temp_crit = np.empty(len(time)) 
+    MLD_temp_crit = np.empty(len(time))
     MLD_temp_crit[:] = np.nan
-    Tmean_temp_crit = np.empty(len(time)) 
+    Tmean_temp_crit = np.empty(len(time))
     Tmean_temp_crit[:] = np.nan
-    Smean_temp_crit = np.empty(len(time)) 
+    Smean_temp_crit = np.empty(len(time))
     Smean_temp_crit[:] = np.nan
-    Td_temp_crit = np.empty(len(time)) 
+    Td_temp_crit = np.empty(len(time))
     Td_temp_crit[:] = np.nan
-    MLD_dens_crit = np.empty(len(time)) 
+    MLD_dens_crit = np.empty(len(time))
     MLD_dens_crit[:] = np.nan
-    Tmean_dens_crit = np.empty(len(time)) 
+    Tmean_dens_crit = np.empty(len(time))
     Tmean_dens_crit[:] = np.nan
-    Smean_dens_crit = np.empty(len(time)) 
+    Smean_dens_crit = np.empty(len(time))
     Smean_dens_crit[:] = np.nan
-    Td_dens_crit = np.empty(len(time)) 
+    Td_dens_crit = np.empty(len(time))
     Td_dens_crit[:] = np.nan
     for t,tt in enumerate(time):
         if depth.ndim == 1:
@@ -188,51 +190,51 @@ def MLD_temp_and_dens_criteria(dt,drho,time,depth,temp,salt,dens):
         if depth.ndim == 2:
             d10 = np.where(depth[:,t] >= -10)[0][-1]
         T10 = temp[d10,t]
-        delta_T = T10 - temp[:,t] 
+        delta_T = T10 - temp[:,t]
         ok_mld_temp = np.where(delta_T <= dt)[0]
         rho10 = dens[d10,t]
         delta_rho = -(rho10 - dens[:,t])
         ok_mld_rho = np.where(delta_rho <= drho)[0]
-        
+
         if ok_mld_temp.size == 0:
             MLD_temp_crit[t] = np.nan
             Td_temp_crit[t] = np.nan
             Tmean_temp_crit[t] = np.nan
-            Smean_temp_crit[t] = np.nan            
-        else:                             
+            Smean_temp_crit[t] = np.nan
+        else:
             if depth.ndim == 1:
                 MLD_temp_crit[t] = depth[ok_mld_temp[-1]]
-                ok_mld_plus1m = np.where(depth >= depth[ok_mld_temp[-1]] + 1)[0][0]                 
+                ok_mld_plus1m = np.where(depth >= depth[ok_mld_temp[-1]] + 1)[0][0]
             if depth.ndim == 2:
                 MLD_temp_crit[t] = depth[ok_mld_temp[-1],t]
                 ok_mld_plus1m = np.where(depth >= depth[ok_mld_temp[-1],t] + 1)[0][0]
             Td_temp_crit[t] = temp[ok_mld_plus1m,t]
             Tmean_temp_crit[t] = np.nanmean(temp[ok_mld_temp,t])
             Smean_temp_crit[t] = np.nanmean(salt[ok_mld_temp,t])
-                
+
         if ok_mld_rho.size == 0:
             MLD_dens_crit[t] = np.nan
             Td_dens_crit[t] = np.nan
             Tmean_dens_crit[t] = np.nan
-            Smean_dens_crit[t] = np.nan           
+            Smean_dens_crit[t] = np.nan
         else:
             if depth.ndim == 1:
                 MLD_dens_crit[t] = depth[ok_mld_rho[-1]]
-                ok_mld_plus1m = np.where(depth >= depth[ok_mld_rho[-1]] + 1)[0][0] 
+                ok_mld_plus1m = np.where(depth >= depth[ok_mld_rho[-1]] + 1)[0][0]
             if depth.ndim == 2:
                 MLD_dens_crit[t] = depth[ok_mld_rho[-1],t]
-                ok_mld_plus1m = np.where(depth >= depth[ok_mld_rho[-1],t] + 1)[0][0] 
-            Td_dens_crit[t] = temp[ok_mld_plus1m,t]        
+                ok_mld_plus1m = np.where(depth >= depth[ok_mld_rho[-1],t] + 1)[0][0]
+            Td_dens_crit[t] = temp[ok_mld_plus1m,t]
             Tmean_dens_crit[t] = np.nanmean(temp[ok_mld_rho,t])
-            Smean_dens_crit[t] = np.nanmean(salt[ok_mld_rho,t]) 
+            Smean_dens_crit[t] = np.nanmean(salt[ok_mld_rho,t])
 
     return MLD_temp_crit,Tmean_temp_crit,Smean_temp_crit,Td_temp_crit,\
            MLD_dens_crit,Tmean_dens_crit,Smean_dens_crit,Td_dens_crit,Td_dens_crit
 
 #%% Function Getting glider transect from GOFS
-    
+
 def get_glider_transect_from_GOFS(depth_GOFS,oktime_GOFS):
-    
+
     print('Getting glider transect from GOFS')
     target_temp_GOFS = np.empty((len(depth_GOFS),len(oktime_GOFS[0])))
     target_temp_GOFS[:] = np.nan
@@ -249,7 +251,7 @@ def get_glider_transect_from_GOFS(depth_GOFS,oktime_GOFS):
 
 def get_glider_transect_from_POM(temp_pom,salt_pom,rho_pom,zlev_pom,timestamp_pom,\
                                   oklat_pom,oklon_pom,zmatrix_pom):
-    
+
     target_temp_POM = np.empty((len(zlev_pom),len(timestamp_pom)))
     target_temp_POM[:] = np.nan
     target_salt_POM = np.empty((len(zlev_pom),len(timestamp_pom)))
@@ -261,9 +263,9 @@ def get_glider_transect_from_POM(temp_pom,salt_pom,rho_pom,zlev_pom,timestamp_po
         target_temp_POM[:,i] = temp_pom[i,:,oklat_pom[i],oklon_pom[i]]
         target_salt_POM[:,i] = salt_pom[i,:,oklat_pom[i],oklon_pom[i]]
         target_rho_POM[:,i] = rho_pom[i,:,oklat_pom[i],oklon_pom[i]]
-        
-    target_dens_POM = target_rho_POM * 1000 + 1000 
-    target_dens_POM[target_dens_POM == 1000.0] = np.nan   
+
+    target_dens_POM = target_rho_POM * 1000 + 1000
+    target_dens_POM[target_dens_POM == 1000.0] = np.nan
     target_depth_POM = zmatrix_pom[oklat_pom,oklon_pom,:].T
 
     return target_temp_POM, target_salt_POM, target_dens_POM, target_depth_POM
@@ -276,20 +278,20 @@ def figure_transect(var1,min_var1,max_var1,nlevels,var2,var3,time,tini,tend,dept
         time_matrix = time
     else:
         time_matrix = np.tile(time,(depth.shape[0],1))
-    
+
     kw = dict(levels = np.linspace(min_var1,max_var1,nlevels))
-     
+
     # plot
-    fig, ax = plt.subplots(figsize=(12, 2))      
+    fig, ax = plt.subplots(figsize=(12, 2))
     cs = plt.contourf(time_matrix,depth,var1,cmap=color_map,**kw)
     plt.contour(time_matrix,depth,var1,[26],colors='k')
     plt.plot(time,var2,'-',label='MLD dt',color='indianred',linewidth=2 )
     plt.plot(time,var3,'-',label='MLD drho',color='darkgreen',marker='.',\
              markeredgecolor='k',linewidth=2 )
-    
-    cs = fig.colorbar(cs, orientation='vertical') 
+
+    cs = fig.colorbar(cs, orientation='vertical')
     cs.ax.set_ylabel('($^oC$)',fontsize=14,labelpad=15)
-            
+
     ax.set_ylim(-200, 0)
     ax.set_ylabel('Depth (m)',fontsize=14)
     xticks = [tini+nday*timedelta(1) for nday in np.arange(14)]
@@ -297,61 +299,61 @@ def figure_transect(var1,min_var1,max_var1,nlevels,var2,var3,time,tini,tend,dept
     plt.xticks(xticks)
     xfmt = mdates.DateFormatter('%d \n %b')
     ax.xaxis.set_major_formatter(xfmt)
-    plt.legend()  
+    plt.legend()
     ax.set_xlim(tini,tend)
 
-           
+
 #%% Reading glider data
-    
+
 url_glider = gdata_sg665
 
-var = 'temperature'
+var_name = 'temperature'
 scatter_plot = 'no'
 kwargs = dict(date_ini=date_ini[0:-3],date_end=date_end[0:-3])
 
-varg, latg, long, depthg, timeg_sg665, inst_id = \
-             read_glider_data_thredds_server(url_glider,var,scatter_plot,**kwargs)
-             
-tempg_sg665 = varg  
+varg, timeg, latg, long, depthg, dataset_id = \
+             read_glider_data_thredds_server(url_glider,var_name,scatter_plot,**kwargs)
 
-var = 'salinity'  
-varg, latg, long, depthg, timeg, inst_id = \
-             read_glider_data_thredds_server(url_glider,var,scatter_plot,**kwargs)
-            
+tempg_sg665 = varg
+
+var_name = 'salinity'
+varg, timeg, latg, long, depthg, dataset_id = \
+             read_glider_data_thredds_server(url_glider,var_name,scatter_plot,**kwargs)
+
 saltg_sg665 = varg
- 
-var = 'density'  
-varg, latg, long, depthg, timeg, inst_id = \
-             read_glider_data_thredds_server(url_glider,var,scatter_plot,**kwargs)
-             
+
+var_name = 'density'
+varg, timeg, latg, long, depthg, dataset_id = \
+             read_glider_data_thredds_server(url_glider,var_name,scatter_plot,**kwargs)
+
 densg_sg665 = varg
-depthg_sg665 = depthg 
+depthg_sg665 = depthg
 
 #%% Reading glider data
-    
+
 url_glider = gdata_sg666
 
-var = 'temperature'
+var_name = 'temperature'
 scatter_plot = 'no'
 kwargs = dict(date_ini=date_ini[0:-3],date_end=date_end[0:-3])
 
-varg, latg, long, depthg, timeg_sg666, inst_id = \
-             read_glider_data_thredds_server(url_glider,var,scatter_plot,**kwargs)
-             
-tempg_sg666 = varg  
+varg, timeg, latg, long, depthg, dataset_id = \
+             read_glider_data_thredds_server(url_glider,var_name,scatter_plot,**kwargs)
 
-var = 'salinity'  
-varg, latg, long, depthg, timeg, inst_id = \
-             read_glider_data_thredds_server(url_glider,var,scatter_plot,**kwargs)
-            
+tempg_sg666 = varg
+
+var_name = 'salinity'
+varg, timeg, latg, long, depthg, dataset_id = \
+             read_glider_data_thredds_server(url_glider,var_name,scatter_plot,**kwargs)
+
 saltg_sg666 = varg
- 
-var = 'density'  
-varg, latg, long, depthg, timeg, inst_id = \
-             read_glider_data_thredds_server(url_glider,var,scatter_plot,**kwargs)
-             
+
+var_name = 'density'
+varg, timeg, latg, long, depthg, dataset_id = \
+             read_glider_data_thredds_server(url_glider,var_name,scatter_plot,**kwargs)
+
 densg_sg666 = varg
-depthg_sg666 = depthg 
+depthg_sg666 = depthg
 
 #%% Read GOFS 3.1 grid
 
@@ -362,14 +364,14 @@ tend = tini + timedelta(hours=120)
 date_end = tend.strftime('%Y/%m/%d/%H/%M/%S')
 
 print('Retrieving coordinates from GOFS')
-GOFS = xr.open_dataset(url_GOFS,decode_times=False) 
+GOFS = xr.open_dataset(url_GOFS,decode_times=False)
 
 tt_G = GOFS.time
-t_G = netCDF4.num2date(tt_G[:],tt_G.units) 
+t_G = netCDF4.num2date(tt_G[:],tt_G.units)
 
 tmin = datetime.strptime(date_ini[0:-6],'%Y/%m/%d/%H')
 tmax = datetime.strptime(date_end[0:-6],'%Y/%m/%d/%H')
-oktime_GOFS = np.where(np.logical_and(t_G >= tmin, t_G <= tmax)) 
+oktime_GOFS = np.where(np.logical_and(t_G >= tmin, t_G <= tmax))
 time_GOFS = np.asarray(t_G[oktime_GOFS])
 timestamp_GOFS = mdates.date2num(time_GOFS)
 
@@ -379,8 +381,8 @@ lon_G = np.asarray(GOFS.lon[:])
 # Conversion from glider longitude and latitude to GOFS convention
 lon_limG, lat_limG = glider_coor_to_GOFS_coord(lon_lim,lat_lim)
 
-oklat_GOFS = np.where(np.logical_and(lat_G >= lat_limG[0], lat_G <= lat_limG[1])) 
-oklon_GOFS = np.where(np.logical_and(lon_G >= lon_limG[0], lon_G <= lon_limG[1])) 
+oklat_GOFS = np.where(np.logical_and(lat_G >= lat_limG[0], lat_G <= lat_limG[1]))
+oklon_GOFS = np.where(np.logical_and(lon_G >= lon_limG[0], lon_G <= lon_limG[1]))
 
 lat_GOFS = lat_G[oklat_GOFS]
 lon_GOFS = lon_G[oklon_GOFS]
@@ -409,14 +411,14 @@ sublon_GOFSg,sublat_GOFSg = GOFS_coor_to_glider_coord(sublon_GOFS,sublat_GOFS)
 # getting the model grid positions for sublonm and sublatm
 oklon_GOFS = np.round(np.interp(sublon_GOFS,lon_G,np.arange(len(lon_G)))).astype(int)
 oklat_GOFS = np.round(np.interp(sublat_GOFS,lat_G,np.arange(len(lat_G)))).astype(int)
-    
+
 # Getting glider transect from model
 target_temp_GOFS, target_salt_GOFS = \
-                          get_glider_transect_from_GOFS(depth_GOFS,oktime_GOFS) 
-                          
+                          get_glider_transect_from_GOFS(depth_GOFS,oktime_GOFS)
+
 #%% Calculate density for GOFS
 
-target_dens_GOFS = sw.dens(target_salt_GOFS,target_temp_GOFS,np.tile(depth_GOFS,(len(time_GOFS),1)).T) 
+target_dens_GOFS = sw.dens(target_salt_GOFS,target_temp_GOFS,np.tile(depth_GOFS,(len(time_GOFS),1)).T)
 
 #%% Grid glider variables according to depth
 
@@ -426,8 +428,8 @@ depthg_gridded_sg665,tempg_gridded_sg665,saltg_gridded_sg665,densg_gridded_sg665
 varsg_gridded(depthg_sg665,timeg_sg665,tempg_sg665,saltg_sg665,densg_sg665,delta_z)
 
 depthg_gridded_sg666,tempg_gridded_sg666,saltg_gridded_sg666,densg_gridded_sg666 = \
-varsg_gridded(depthg_sg666,timeg_sg666,tempg_sg666,saltg_sg666,densg_sg666,delta_z) 
-    
+varsg_gridded(depthg_sg666,timeg_sg666,tempg_sg666,saltg_sg666,densg_sg666,delta_z)
+
 #%% POM Operational and Experimental
 
 # Operational
@@ -449,7 +451,7 @@ salt_pom_exp = POM_Dorian_2019082800_exp['salt_pom_exp']
 rho_pom_exp = POM_Dorian_2019082800_exp['rho_pom_exp']
 
 # time POM
-time_pom = [tini + timedelta(hours=int(hrs)) for hrs in np.arange(0,126,6)]   
+time_pom = [tini + timedelta(hours=int(hrs)) for hrs in np.arange(0,126,6)]
 
 #%% Read POM grid
 
@@ -487,7 +489,7 @@ target_temp_POM_oper, target_salt_POM_oper, target_dens_POM_oper,\
 target_depth_POM_oper = \
 get_glider_transect_from_POM(temp_pom_oper,salt_pom_oper,rho_pom_oper,zlev_pom_oper,\
                              timestamp_pom_oper,oklat_pom,oklon_pom,zmatrix_pom_oper)
-   
+
 #%% Retrieve glider transect from POM experimental
 
 # Changing times to timestamp
@@ -507,8 +509,8 @@ get_glider_transect_from_POM(temp_pom_exp,salt_pom_exp,rho_pom_exp,zlev_pom_exp,
                              timestamp_pom_exp,oklat_pom,oklon_pom,zmatrix_pom_exp)
 
 #%% Calculation of mixed layer depth based on temperature and density critria
-# Tmean: mean temp within the mixed layer and 
-# td: temp at 1 meter below the mixed layer            
+# Tmean: mean temp within the mixed layer and
+# td: temp at 1 meter below the mixed layer
 
 dt = 0.2
 drho = 0.125
@@ -546,7 +548,7 @@ xfmt = mdates.DateFormatter('%d \n %b')
 ax1.xaxis.set_major_formatter(xfmt)
 
 file = folder + ' ' + 'MLD_dens_crit_sg665_sg666'
-plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)  
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 
 #%%
 
@@ -560,7 +562,7 @@ xfmt = mdates.DateFormatter('%d \n %b')
 ax1.xaxis.set_major_formatter(xfmt)
 
 file = folder + ' ' + 'Tmean_dens_crit_sg665_sg666'
-plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)  
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 
 #%%
 
@@ -574,7 +576,7 @@ xfmt = mdates.DateFormatter('%d \n %b')
 ax1.xaxis.set_major_formatter(xfmt)
 
 file = folder + ' ' + 'Smean_dens_crit_sg665_sg666'
-plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 
 
 #%%
@@ -600,7 +602,7 @@ xfmt = mdates.DateFormatter('%d \n %b')
 ax1.xaxis.set_major_formatter(xfmt)
 
 file = folder + ' ' + 'Tmean_Td_dens_crit_sg665'
-plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 
 #%%
 
@@ -614,7 +616,7 @@ xfmt = mdates.DateFormatter('%d \n %b')
 ax1.xaxis.set_major_formatter(xfmt)
 
 file = folder + ' ' + 'Tmean_Td_dens_crit_sg666'
-plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 
 #%%
 tdorian = datetime(2019,8,28,18)
@@ -634,7 +636,7 @@ plt.ylabel('Depth (m)',size=14)
 #plt.xlabel('Density ($kg/m^3$)')
 
 file = folder + ' ' + 'temp_prof_bef_after_Dorian_sg665'
-plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)  
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 
 #%%
 
@@ -655,7 +657,7 @@ plt.ylabel('Depth (m)',size=14)
 #plt.xlabel('Density ($kg/m^3$)')
 
 file = folder + ' ' + 'temp_prof_bef_after_Dorian_sg666'
-plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)  
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 
 #%% Top 200 m glider salinity from 2019/08/28/00
 
@@ -672,7 +674,7 @@ max_var1 = 37.3
 nlevels = 19 #np.round((max_var1 - min_var1)*10+1)
 tini = datetime.strptime(date_ini,'%Y/%m/%d/%H/%M')
 tend = datetime.strptime(date_end,'%Y/%m/%d/%H/%M')
- 
+
 figure_transect(var1,min_var1,max_var1,nlevels,var2,var3,time,tini,tend,depth,max_depth,color_map)
 
 tDorian = np.tile(datetime(2019,8,28,18),len(np.arange(max_depth,0))) #ng665, ng666

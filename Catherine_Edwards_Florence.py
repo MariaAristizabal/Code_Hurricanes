@@ -79,7 +79,7 @@ print(dataset_id)
 kwargs = dict(date_ini=date_ini,date_end=date_end)
 
 tempg, saltg, timeg, latg, long, depthg = read_glider_data_erddap_server(url_erddap,dataset_id,\
-                                   lat_lim,lon_lim,scatter_plot,**kwargs)
+                                   lat_lim,lon_lim,scatter_plot) #,**kwargs)
     
 tempg_gridded, timegg, depthg_gridded = \
                     grid_glider_data(var_name_glider,dataset_id,tempg,timeg,latg,long,depthg,delta_z,contour_plot)

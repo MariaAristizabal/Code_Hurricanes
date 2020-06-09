@@ -8,12 +8,14 @@ Created on Mon Jan 13 11:06:24 2020
 
 #%% User input
 
+home_folder = '/home/'
+
 lon_lim = [-98.5,-60.0]
 lat_lim = [10.0,45.0]
 
-cycle = '2019090118'
+#cycle = '2019090118'
 #cycle = '2019083018'
-#cycle = '2019082800'
+cycle = '2019082800'
 #cycle = '2019082918'
 
 delta_lon = 0 # delta longitude around hurricane track to calculate
@@ -30,23 +32,23 @@ Nend = 22 # indicates how far in the hurricabe track you want
 #Nend = 13
 
 # Bathymetry file
-bath_file = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/GEBCO_2014_2D_-100.0_0.0_-10.0_50.0.nc' 
+bath_file = home_folder+'aristizabal/bathymetry_files/GEBCO_2014_2D_-100.0_0.0_-10.0_50.0.nc'
 
-# KMZ file best track Dorian
-kmz_file_Dorian = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/KMZ_files/al052019_best_track-5.kmz'  
+# KMZ file
+kmz_file_Dorian = home_folder+'aristizabal/KMZ_files/al052019_best_track-5.kmz'
 
-# url for GOFS 3.1
+# url for GOFS 
 url_GOFS = 'http://tds.hycom.org/thredds/dodsC/GLBv0.08/expt_93.0/ts3z'
 
-# figures
-folder_fig = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp2/'
+# Folder where to save figure
+folder_fig = home_folder+'aristizabal/Figures/'
 
 # folder nc files POM
-folder_pom19 =  '/Volumes/aristizabal/HWRF2019_POM_Dorian/'
-folder_pom20 =  '/Volumes/aristizabal/HWRF2020_POM_Dorian/'
+folder_pom19 =  home_folder+'aristizabal/HWRF2019_POM_Dorian/'
+folder_pom20 =  home_folder+'aristizabal/HWRF2020_POM_Dorian/'
 
 # folde HWRF2020_HYCOM
-folder_hycom20 = '/Volumes/aristizabal/HWRF2020_HYCOM_Dorian/'
+folder_hycom20 = home_folder+'aristizabal/HWRF2020_HYCOM_Dorian/'
 
 ###################
 
@@ -72,7 +74,7 @@ folder_hycom_exp = folder_hycom20 + 'HWRF2020_HYCOM_dorian05l.' + cycle + '_hyco
 prefix_hycom = 'dorian05l.' + cycle + '.hwrf_rtofs_hat10_3z'
 
 #Dir_HMON_HYCOM = '/Volumes/aristizabal/ncep_model/HMON-HYCOM_Michael/'
-Dir_HMON_HYCOM = '/Volumes/aristizabal/ncep_model/HWRF-Hycom-WW3_exp_Michael/'
+Dir_HMON_HYCOM = home_folder + 'aristizabal/ncep_model/HWRF-Hycom-WW3_exp_Michael/'
 # RTOFS grid file name
 hycom_grid_exp = Dir_HMON_HYCOM + 'hwrf_rtofs_hat10.basin.regional.grid'
 
@@ -85,10 +87,7 @@ folder_hwrf_hycom20_exp = folder_hycom20 + 'HWRF2020_HYCOM_dorian05l.' + cycle +
 #%%
 import numpy as np
 import matplotlib.pyplot as plt
-import mpl_toolkits.axisartist.floating_axes as floating_axes
-from matplotlib.projections import PolarAxes
-from mpl_toolkits.axisartist.grid_finder import (FixedLocator,
-                                                 DictFormatter)
+
 import xarray as xr
 import netCDF4
 from datetime import datetime, timedelta
@@ -427,133 +426,6 @@ def depth_aver_top_100(depth,var):
                 varmean100[t] = np.nan
     
     return varmean100  
-
-#%% Taylor Diagram
-
-def taylor_template(angle_lim,std_lim):
-
-    fig = plt.figure()
-    tr = PolarAxes.PolarTransform()
-    
-    min_corr = np.round(np.cos(angle_lim),1)
-    CCgrid= np.concatenate((np.arange(min_corr*10,10,2.0)/10.,[0.9,0.95,0.99]))
-    CCpolar=np.arccos(CCgrid)
-    gf=FixedLocator(CCpolar)
-    tf=DictFormatter(dict(zip(CCpolar, map(str,CCgrid))))
-    
-    STDgrid=np.arange(0,std_lim,.5)
-    gfs=FixedLocator(STDgrid)
-    tfs=DictFormatter(dict(zip(STDgrid, map(str,STDgrid))))
-    
-    ra0, ra1 =0, angle_lim
-    cz0, cz1 = 0, std_lim
-    grid_helper = floating_axes.GridHelperCurveLinear(
-        tr, extremes=(ra0, ra1, cz0, cz1),
-        grid_locator1=gf,
-        tick_formatter1=tf,
-        grid_locator2=gfs,
-        tick_formatter2=tfs)
-    
-    ax1 = floating_axes.FloatingSubplot(fig, 111, grid_helper=grid_helper)
-    fig.add_subplot(ax1)
-    
-    ax1.axis["top"].set_axis_direction("bottom")  
-    ax1.axis["top"].toggle(ticklabels=True, label=True)
-    ax1.axis["top"].major_ticklabels.set_axis_direction("top")
-    ax1.axis["top"].label.set_axis_direction("top")
-    ax1.axis["top"].label.set_text("Correlation")
-    ax1.axis['top'].label.set_size(14)
-       
-    ax1.axis["left"].set_axis_direction("bottom") 
-    ax1.axis["left"].label.set_text("Normalized Standard Deviation")
-    ax1.axis['left'].label.set_size(14)
-
-    ax1.axis["right"].set_axis_direction("top")  
-    ax1.axis["right"].toggle(ticklabels=True)
-    ax1.axis["right"].major_ticklabels.set_axis_direction("left")
-    
-    ax1.axis["bottom"].set_visible(False) 
-    ax1 = ax1.get_aux_axes(tr)
-    
-    plt.grid(linestyle=':',alpha=0.5)
-    
-    return fig,ax1
-        
-#%% Create a plotting function for normalized Taylor diagrams.
-
-def taylor_normalized(scores,colors,angle_lim):
-
-    fig = plt.figure()
-    tr = PolarAxes.PolarTransform()
-    
-    min_corr = np.round(np.cos(angle_lim),1)
-    CCgrid= np.concatenate((np.arange(min_corr*10,10,2.0)/10.,[0.9,0.95,0.99]))
-    CCpolar=np.arccos(CCgrid)
-    gf=FixedLocator(CCpolar)
-    tf=DictFormatter(dict(zip(CCpolar, map(str,CCgrid))))
-    
-    STDgrid=np.arange(0,2.0,.5)
-    gfs=FixedLocator(STDgrid)
-    tfs=DictFormatter(dict(zip(STDgrid, map(str,STDgrid))))
-    
-    ra0, ra1 =0, angle_lim
-    cz0, cz1 = 0, 2
-    grid_helper = floating_axes.GridHelperCurveLinear(
-        tr, extremes=(ra0, ra1, cz0, cz1),
-        grid_locator1=gf,
-        tick_formatter1=tf,
-        grid_locator2=gfs,
-        tick_formatter2=tfs)
-    
-    ax1 = floating_axes.FloatingSubplot(fig, 111, grid_helper=grid_helper)
-    fig.add_subplot(ax1)
-    
-    ax1.axis["top"].set_axis_direction("bottom")  
-    ax1.axis["top"].toggle(ticklabels=True, label=True)
-    ax1.axis["top"].major_ticklabels.set_axis_direction("top")
-    ax1.axis["top"].label.set_axis_direction("top")
-    ax1.axis["top"].label.set_text("Correlation")
-    ax1.axis['top'].label.set_size(14)
-       
-    ax1.axis["left"].set_axis_direction("bottom") 
-    ax1.axis["left"].label.set_text("Normalized Standard Deviation")
-    ax1.axis['left'].label.set_size(14)
-
-    ax1.axis["right"].set_axis_direction("top")  
-    ax1.axis["right"].toggle(ticklabels=True)
-    ax1.axis["right"].major_ticklabels.set_axis_direction("left")
-    
-    ax1.axis["bottom"].set_visible(False) 
-    ax1 = ax1.get_aux_axes(tr)
-    
-    plt.grid(linestyle=':',alpha=0.5)
-   
-    for i,r in enumerate(scores.iterrows()):
-        theta=np.arccos(r[1].CORRELATION)            
-        rr=r[1].MSTD/r[1].OSTD
-        print(rr)
-        print(theta)
-        
-        ax1.plot(theta,rr,'o',label=r[0],color = colors[i])
-    
-    #ax1.plot(0,1,'o',label='Obs')    
-    plt.legend(loc='upper right',bbox_to_anchor=[1.3,1.15])    
-    plt.show()
-   
-    rs,ts = np.meshgrid(np.linspace(0,2),np.linspace(0,angle_lim))
-    rms = np.sqrt(1 + rs**2 - 2*rs*np.cos(ts))
-    
-    ax1.contour(ts, rs, rms,3,colors='0.5')
-    #contours = ax1.contour(ts, rs, rms,3,colors='0.5')
-    #plt.clabel(contours, inline=1, fontsize=10)
-    plt.grid(linestyle=':',alpha=0.5)
-    
-    for i,r in enumerate(scores.iterrows()):
-        crmse = np.sqrt(1 + (r[1].MSTD/scores.OSTD[i])**2 \
-                   - 2*(r[1].MSTD/scores.OSTD[i])*r[1].CORRELATION) 
-        print(crmse)
-        c1 = ax1.contour(ts, rs, rms,[crmse],colors=colors[i])
-        plt.clabel(c1, inline=1, fontsize=10,fmt='%1.2f')
         
 #%% Reading bathymetry data
 
@@ -712,32 +584,6 @@ get_profiles_from_GOFS(DF,target_time,lon_band,lat_band)
 nx = temp_GOFS_band.shape[1]
 dens_GOFS_band = sw.dens(salt_GOFS_band,temp_GOFS_band,np.tile(depth_GOFS,(nx,1)).T)
     
-#%% Interpolate GOFS into POM operational 
-# Why? because POM vertical grid has more levels in top 2000 meters
-
-temp_orig = temp_GOFS_band
-salt_orig = salt_GOFS_band
-depth_orig = depth_GOFS
-nz = len(zlev_pom_oper)
-nx = temp_GOFS_band.shape[1]
-depth_target = -zmatrix_POM_band_oper
-
-temp_GOFS_band_to_pom_oper, salt_GOFS_band_to_pom_oper = \
-interp_datasets_in_z(temp_orig,salt_orig,depth_orig,depth_target,nz,nx)
-
-#%% Interpolate GOFS into POM experimental 
-# Why? because POM vertical grid has more levels in top 2000 meters
-
-temp_orig = temp_GOFS_band
-salt_orig = salt_GOFS_band
-depth_orig = depth_GOFS
-nz = len(zlev_pom_exp)
-nx = temp_GOFS_band.shape[1]
-depth_target = -zmatrix_POM_band_exp
-
-temp_GOFS_band_to_pom_exp, salt_GOFS_band_to_pom_exp = \
-interp_datasets_in_z(temp_orig,salt_orig,depth_orig,depth_target,nz,nx)
-
 #%% Calculation of mixed layer depth based on temperature and density critria
 # Tmean: mean temp within the mixed layer and 
 # td: temp at 1 meter below the mixed layer            
@@ -762,18 +608,18 @@ MLD_temp_and_dens_criteria(dt,drho,time_POM,zmatrix_POM_band_exp,temp_POM_band_e
                            salt_POM_band_exp,dens_POM_band_exp)
     
 # for HYCOM experimental 
-depth=depth_HYCOM_exp
-temp=np.asarray(temp_HYCOM_band_exp)
-salt=np.asarray(salt_HYCOM_band_exp)
-dens=np.asarray(dens_HYCOM_band_exp)
+depth = depth_HYCOM_exp
+temp = np.asarray(temp_HYCOM_band_exp)
+salt = np.asarray(salt_HYCOM_band_exp)
+dens = np.asarray(dens_HYCOM_band_exp)
 time = time_HYCOM 
-temp[temp>100]=np.nan
-salt[salt>100]=np.nan
-dens[dens<1000]=np.nan
+temp[temp>100] = np.nan
+salt[salt>100] = np.nan
+dens[dens<1000] = np.nan
 
 MLD_temp_crit_HYCOM_exp, _, _, _, MLD_dens_crit_HYCOM_exp, Tmean_dens_crit_HYCOM_exp, \
 Smean_dens_crit_HYCOM_exp, _ = \
-MLD_temp_and_dens_criteria(dt,drho,depth,temp,salt,dens) 
+MLD_temp_and_dens_criteria(dt,drho,time,depth,temp,salt,dens) 
     
 #%% Surface Ocean Heat Content
 
@@ -837,7 +683,8 @@ plt.xlim([np.min(lon_forec_track_pom_oper[oktt])-0.5,np.max(lon_forec_track_pom_
 plt.ylim([np.min(lat_forec_track_pom_oper[oktt])-0.5,np.max(lat_forec_track_pom_oper[oktt])+0.5])
 
 for i,t in enumerate(str_time[::2]):
-    ax.text(lon_forec_track_pom_oper[oktt][::2][i]+0.2,lat_forec_track_pom_oper[oktt][::2][i],str_time[::2][i])
+    ax.text(lon_forec_track_pom_oper[oktt][::2][i]+0.2,lat_forec_track_pom_oper[oktt][::2][i],str_time[::2][i],\
+            weight='bold',bbox=dict(facecolor='white',alpha=0.4,edgecolor='none'))
 
 file = folder_fig + 'best_track_vs_forec_track_' + cycle 
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
@@ -878,7 +725,8 @@ plt.xlim([np.min(lon_forec_track_pom_oper[oktt])-0.5,np.max(lon_forec_track_pom_
 plt.ylim([np.min(lat_forec_track_pom_oper[oktt])-0.5,np.max(lat_forec_track_pom_oper[oktt])+0.5])
 
 for i,t in enumerate(dist_along_track[oktt][::2]):
-    ax.text(lon_forec_track_pom_oper[oktt][::2][i]+0.2,lat_forec_track_pom_oper[oktt][::2][i],np.round(dist_along_track[oktt][::2][i]))
+    ax.text(lon_forec_track_pom_oper[oktt][::2][i]+0.2,lat_forec_track_pom_oper[oktt][::2][i],np.round(dist_along_track[oktt][::2][i]),\
+            weight='bold',bbox=dict(facecolor='white',alpha=0.6,edgecolor='none'))
 
 file = folder_fig + 'best_track_vs_forec_track_alog_track_dist' + cycle 
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
@@ -909,6 +757,37 @@ plt.grid(True)
 file = folder_fig + 'best_intensity_vs_forec_intensity_' + cycle 
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
 
+#%% Figure forecasted intensity models vs best intensity for Scott
+
+fig,ax1 = plt.subplots(figsize=(10, 5))
+plt.ion()
+plt.plot(time_best_track,wind_int_kt,'o-k',label='Best')
+plt.plot(time_hwrf,max_wind_10m_hwrf_hycom20_exp,'H-',color='darkorange',label='Experimental',markeredgecolor='k',markersize=7)
+#plt.plot(time_hwrf,max_wind_10m_hwrf_pom20_exp,'^-',color='teal',label='HWRF2020-POM (IC RTOFS)',markeredgecolor='k',markersize=7)
+plt.plot(time_hwrf,max_wind_10m_hwrf_pom19_oper,'X-',color='mediumorchid',label='Operational',markeredgecolor='k',markersize=7)
+
+
+plt.legend(loc='lower right',fontsize = 12)
+#plt.legend()
+#plt.xlim([time_hwrf[0],time_hwrf[-1]])
+plt.xlim([time_hwrf[0],datetime(2019,9,1,0)])
+plt.xticks([datetime(2019,8,28),datetime(2019,8,29),datetime(2019,8,30),\
+            datetime(2019,8,31),datetime(2019,9,1)])
+xfmt = mdates.DateFormatter('%d \n %b')
+ax1.xaxis.set_major_formatter(xfmt)
+plt.ylim([20,165])
+plt.title('Intensity Forecast Dorian '+ cycle,fontsize=18)
+plt.ylabel('Max 10m Wind (knots)',fontsize=14)
+
+ax2 = ax1.twinx()
+plt.ylim([20,165])
+yticks = [64,83,96,113,137]
+plt.yticks(yticks,['Cat 1','Cat 2','Cat 3','Cat 4','Cat 5'])
+plt.grid(True)
+
+file = folder_fig + 'best_intensity_vs_forec_intensity_2_' + cycle 
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
+
 #%% Figure forecasted intensity models vs best intensity
 
 from matplotlib.ticker import (MultipleLocator, FormatStrFormatter)
@@ -922,6 +801,7 @@ plt.plot(lead_time_hycom_exp,max_wind_10m_hwrf_hycom20_exp,'H-',color='darkorang
 plt.legend(loc='lower right')
 plt.ylim([20,165])
 plt.xlim([0,126])
+plt.xticks(np.arange(0,126,12))
 plt.title('Intensity Forecast Dorian '+ cycle,fontsize=18)
 plt.ylabel('Max 10m Wind (kt)',fontsize=14)
 plt.xlabel('Forecast Lead Time (Hr)',fontsize=14)
