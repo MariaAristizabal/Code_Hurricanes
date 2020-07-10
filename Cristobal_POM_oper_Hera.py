@@ -9,6 +9,10 @@ Created on Fri Jun  5 16:15:36 2020
 #%% User input
 cycle ='2020060406'
 
+# GoMex
+lon_lim = [-98,80]
+lat_lim = [15,32.5]
+
 folder_pom19 = '/scratch2/NOS/nosofs/Maria.Aristizabal/HWRF2019_POM_Cristobal/HWRF2019_POM_Cristobal_' + cycle + '_oper/'
 
 # POM grid file name
@@ -26,10 +30,7 @@ folder_fig = '/home/aristizabal/Cristobal_2020/Figures/'
 from matplotlib import pyplot as plt
 import numpy as np
 import xarray as xr
-import netCDF4
-from datetime import datetime,timedelta
 from matplotlib.dates import date2num, num2date
-import matplotlib.dates as mdates
 import os
 import os.path
 import glob
@@ -64,7 +65,7 @@ time_POM = np.asarray(time_pom)
 timestamp_POM = date2num(time_POM)
 
 #%%
-POM = xr.open_dataset(ncfiles[0])
+pom = xr.open_dataset(ncfiles[0])
 temp_POM = np.asarray(pom['t'][0,0,:,:])
 temp_POM[temp_POM==0] = np.nan
 u_POM = np.asarray(pom['u'][0,0,:,:])

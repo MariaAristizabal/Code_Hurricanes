@@ -101,7 +101,8 @@ import seawater as sw
 import cmocean
 
 import sys
-sys.path.append('/Users/aristizabal/Desktop/MARACOOS_project/NCEP_scripts')
+#sys.path.append('/Users/aristizabal/Desktop/MARACOOS_project/NCEP_scripts')
+sys.path.append('/home/aristizabal/NCEP_scripts')
 from utils4HYCOM import readBinz, readgrids
 
 # Increase fontsize of labels globally
@@ -759,7 +760,8 @@ plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 
 #%% Figure forecasted intensity models vs best intensity for Scott
 
-fig,ax1 = plt.subplots(figsize=(10, 5))
+#fig,ax1 = plt.subplots(figsize=(10, 5))
+fig,ax1 = plt.subplots(figsize=(5, 5))
 plt.ion()
 plt.plot(time_best_track,wind_int_kt,'o-k',label='Best')
 plt.plot(time_hwrf,max_wind_10m_hwrf_hycom20_exp,'H-',color='darkorange',label='Experimental',markeredgecolor='k',markersize=7)

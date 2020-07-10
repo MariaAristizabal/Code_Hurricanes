@@ -111,8 +111,8 @@ print(msg(len(gliders), '\n'.join(gliders)))
 
 # Setting constraints
 constraints = {
-        'time>=': tini,
-        'time<=': tend,
+        'time>=': str(tini),
+        'time<=': str(tend),
         'latitude>=': lat_lim[0],
         'latitude<=': lat_lim[1],
         'longitude>=': lon_lim[0],

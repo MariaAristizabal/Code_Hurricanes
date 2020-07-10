@@ -9,7 +9,7 @@ Created on Wed Apr  3 14:22:03 2019
 #%% User input
 
 # Directories where RTOFS files reside 
-Dir= '/Volumes/aristizabal/ncep_model//HMON-HYCOM_Michael/'
+Dir= '/Volumes/aristizabal/ncep_model/HMON-HYCOM_Michael/'
 Dir_graph = '/Users/aristizabal/Desktop/MARACOOS_project/NCEP_scripts/Figures/'
 
 # RTOFS grid file name

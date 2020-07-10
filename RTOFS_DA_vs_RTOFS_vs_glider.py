@@ -107,8 +107,8 @@ print(msg(len(gliders), '\n'.join(gliders)))
 
 # Setting constraints
 constraints = {
-        'time>=': tini,
-        'time<=': tend,
+        'time>=': str(tini),
+        'time<=': str(tend),
         'latitude>=': lat_lim[0],
         'latitude<=': lat_lim[1],
         'longitude>=': lon_lim[0],
@@ -133,13 +133,13 @@ e = ERDDAP(
 #%% Read RTOFS grid and time
 print('Retrieving coordinates from RTOFS')
 
-if tend.month < 10:
-    if tend.day < 10:
+if tini.month < 10:
+    if tini.day < 10:
         fol = 'rtofs.' + str(tini.year) + '0' + str(tini.month) + '0' + str(tini.day)
     else:
         fol = 'rtofs.' + str(tini.year) + '0' + str(tini.month) + str(tini.day)
 else:
-    if tend.day < 10:
+    if tini.day < 10:
         fol = 'rtofs.' + str(tini.year) + str(tini.month) + '0' + str(tini.day)
     else:
         fol = 'rtofs.' + str(tini.year) + str(tini.month) + str(tini.day)
@@ -168,7 +168,7 @@ depth_RTOFS_DA = np.asarray(readdepth(RTOFS_DA_depth,'depth'))
 
 #%% Looping through all gliders found
 for id in gliders[1:]:    
-    #id=gliders[0]
+    #id=gliders[1]
     print('Reading ' + id )
     e.dataset_id = id
     e.constraints = constraints
@@ -334,8 +334,8 @@ for id in gliders[1:]:
         oklonRTOFS_DA.append(oklonRTOFS_da)
         oklatRTOFS_DA.append(oklatRTOFS_da)
         
-        ztmp=readVar(file[:-2],'archive','srfhgt',[0])*0.01 # converts [cm] to [m]
-        target_srfhgt = ztmp[oklatRTOFS_DA,oklonRTOFS_DA]  
+        #ztmp=readVar(file[:-2],'archive','srfhgt',[0])*0.01 # converts [cm] to [m]
+        #target_srfhgt = ztmp[oklatRTOFS_DA,oklonRTOFS_DA]  
         target_ztmp = [0]
         for lyr in tuple(layers):
             print(lyr)

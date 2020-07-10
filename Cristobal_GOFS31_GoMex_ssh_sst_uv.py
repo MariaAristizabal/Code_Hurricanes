@@ -22,13 +22,11 @@ bath_file = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/
 # Bathymetry file
 #bath_file = '/home/aristizabal/bathymetry_files/GEBCO_2014_2D_-100.0_0.0_-10.0_50.0.nc'
 
-# Gulf Mexico
-lon_lim = [-100,-75]
-lat_lim = [14,33]
+# GoMex
+lon_lim = [-98,80]
+lat_lim = [15,32.5]
 
 # Jun1 -Jul1
-#Dir_Argo = '/Users/Aristizabal/Desktop/DataSelection_20200604_190743_9994922/'
-#Argo_nc = '/Users/Aristizabal/Desktop/ArgoFloats_48b0_9f3e_31b2.nc'
 Argo_nc = '/Users/Aristizabal/Desktop/ArgoFloats_eb1e_1977_1b02.nc'
 
 folder_fig = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'

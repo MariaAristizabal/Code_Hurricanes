@@ -201,8 +201,8 @@ track_files = sorted(glob.glob(os.path.join(track_folder+year+'/','*'+basin+'*km
 lev = np.arange(-9000,9100,100)
 fig, ax = plt.subplots(figsize=(10, 10))
 plt.contourf(bath_lonsub,bath_latsub,bath_elevsub,lev,cmap=cmocean.cm.topo) 
-plt.contourf(bath_lon,bath_lat,bath_elev,[0,10000],colors='seashell') 
-plt.contour(bath_lon,bath_lat,bath_elev,[0],colors='k')   
+#plt.contourf(bath_lon,bath_lat,bath_elev,[0,10000],colors='seashell') 
+#plt.contour(bath_lon,bath_lat,bath_elev,[0],colors='k')   
 plt.yticks([])
 plt.xticks([])
 plt.title('Glider Tracks and Storm Tracks \n Hurricane Season 2019',fontsize=30)
@@ -256,11 +256,14 @@ for id in gliders:
         ax.plot(df['longitude (degrees_east)'],\
                 df['latitude (degrees_north)'],'.',color='darkorange',markersize=1)   
   
-plt.legend(loc='upper left',bbox_to_anchor=[-0.22,1.0])     
+plt.legend(loc='upper left',bbox_to_anchor=[-0.32,1.0])     
 plt.axis('scaled') 
 #plt.axis([-100,-50,10,50])
-plt.axis([-100,-10,10,60])
-plt.savefig("/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/map_gliders_hurric_track_season_2019.png",\
+plt.axis([-100,-57,10,50])
+#plt.axis([-100,-10,10,60])
+#plt.savefig("/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/map_gliders_hurric_track_season_2019.png",\
+#            bbox_inches = 'tight',pad_inches = 0.1)
+plt.savefig("/Users/aristizabal/Desktop/map_gliders_hurric_track_season_2019.png",\
             bbox_inches = 'tight',pad_inches = 0.1)
     
 #%% Map all gliders during hurricane season 2019

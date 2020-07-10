@@ -282,8 +282,3 @@ plt.legend(loc='upper center',bbox_to_anchor=(1.05,1))
 folder = '/www/web/rucool/hurricane/Hurricane_season_2019/' + ti.strftime('%b-%d') + '/'
 file = folder + 'Daily_map_North_Atlantic_gliders_in_DAC_' + str(tini).split()[0] + '_' + str(tend).split()[0] + '.png'
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
-
-#%%
-os.system('rm -rf *best_track*')
-os.system('rm -rf *TRACK_latest*')
-os.system('rm -rf *CONE_latest*')
