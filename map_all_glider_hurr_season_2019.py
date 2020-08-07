@@ -9,36 +9,47 @@ Created on Tue Jan 21 10:16:57 2020
 #%% User input
 
 # lat and lon bounds
+#lon_lim = [-100.0,-10.0]
+#lat_lim = [0.0,60.0]
+
+# lat and lon bounds
 lon_lim = [-100.0,-10.0]
-lat_lim = [0.0,60.0]
+lat_lim = [0.0,50.0]
 
 # Time bounds
 min_time = '2019-06-01T00:00:00Z'
 max_time = '2019-11-30T00:00:00Z'
 
 # Bathymetry file
-bath_file = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/GEBCO_2014_2D_-100.0_0.0_-10.0_70.0.nc'
+#bath_file = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/gebco_2020_n50.0_s0.0_w-100.0_e0.0.nc'
+bath_file = '/home/aristizabal/bathymetry_files/GEBCO_2014_2D_-100.0_0.0_-10.0_70.0.nc'
 
 # Server url 
 server = 'https://data.ioos.us/gliders/erddap'
 
 # Jun1 -Jun30
-Dir_Argo1 = '/Volumes/aristizabal/ARGO_data/Hurric_season_2019/DataSelection_20200131_211606_9547943'
+#Dir_Argo1 = '/Volumes/aristizabal/ARGO_data/Hurric_season_2019/DataSelection_20200131_211606_9547943/'
+Dir_Argo1 = '/home/aristizabal/ARGO_data/Hurric_season_2019/DataSelection_20200131_211606_9547943/'
 
 # Jul1 - Jul31
-Dir_Argo2 = '/Volumes/aristizabal/ARGO_data/Hurric_season_2019/DataSelection_20200131_211715_9547947'
+#Dir_Argo2 = '/Volumes/aristizabal/ARGO_data/Hurric_season_2019/DataSelection_20200131_211715_9547947/'
+Dir_Argo2 = '/home/aristizabal/ARGO_data/Hurric_season_2019/DataSelection_20200131_211715_9547947/'
 
 # Aug1 - Aug30
-Dir_Argo3 = '/Volumes/aristizabal/ARGO_data/Hurric_season_2019/DataSelection_20200131_211807_9547965'
+#Dir_Argo3 = '/Volumes/aristizabal/ARGO_data/Hurric_season_2019/DataSelection_20200131_211807_9547965/'
+Dir_Argo3 = '/home/aristizabal/ARGO_data/Hurric_season_2019/DataSelection_20200131_211807_9547965/'
 
 # Sep1 - Sep31
-Dir_Argo4 = '/Volumes/aristizabal/ARGO_data/Hurric_season_2019/DataSelection_20200131_211910_9547986'
+#Dir_Argo4 = '/Volumes/aristizabal/ARGO_data/Hurric_season_2019/DataSelection_20200131_211910_9547986/'
+Dir_Argo4 = '/home/aristizabal/ARGO_data/Hurric_season_2019/DataSelection_20200131_211910_9547986/'
 
 # Oct1 - Oct31
-Dir_Argo5 = '/Volumes/aristizabal/ARGO_data/Hurric_season_2019/DataSelection_20200131_212020_9548037'
+#Dir_Argo5 = '/Volumes/aristizabal/ARGO_data/Hurric_season_2019/DataSelection_20200131_212020_9548037/'
+Dir_Argo5 = '/home/aristizabal/ARGO_data/Hurric_season_2019/DataSelection_20200131_212020_9548037/'
 
 # Nov1 - Nov30
-Dir_Argo6 = '/Volumes/aristizabal/ARGO_data/Hurric_season_2019/DataSelection_20200131_212231_9548139'
+#Dir_Argo6 = '/Volumes/aristizabal/ARGO_data/Hurric_season_2019/DataSelection_20200131_212231_9548139/'
+Dir_Argo6 = '/home/aristizabal/ARGO_data/Hurric_season_2019/DataSelection_20200131_212231_9548139/'
 
 # storm track files
 track_folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/KMZ_files/'
@@ -60,6 +71,8 @@ from netCDF4 import Dataset
 import netCDF4 
 from bs4 import BeautifulSoup
 from zipfile import ZipFile
+import cartopy
+import cartopy.feature as cfeature
 #from datetime import datetime
 
 #%% Look for datasets 
@@ -119,9 +132,7 @@ for id in gliders:
     e.variables = variables
     
     df = e.to_pandas(
-    parse_dates=True,
-    skiprows=(1,)  # units information can be dropped.
-).dropna()
+    parse_dates=True)
     
     print(id,df.index[-1])
 
@@ -297,16 +308,21 @@ plt.savefig("/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/M
             bbox_inches = 'tight',pad_inches = 0.1)
 
 #%% Map with ARGO + glider during hurricane season 2019
-
-'''    
+ 
 lev = np.arange(-9000,9100,100)
-fig, ax = plt.subplots(figsize=(10, 5))
-plt.contourf(bath_lonsub,bath_latsub,bath_elevsub,lev,cmap=cmocean.cm.topo)    
+#fig, ax = plt.subplots(figsize=(10, 5))
+fig, ax = plt.subplots(figsize=(10, 5),subplot_kw=dict(projection=cartopy.crs.PlateCarree()))
+plt.contourf(bath_lonsub,bath_latsub,bath_elevsub,lev,cmap=cmocean.cm.topo) 
+plt.contour(bath_lonsub,bath_latsub,bath_elevsub,[0],colors='k')   
 plt.yticks([])
 plt.xticks([])
-plt.axis([-100,-10,0,50])    
-'''
-    
+plt.axis([-100,-10,10,50])  
+
+coast = cfeature.NaturalEarthFeature('physical', 'coastline', '10m')
+ax.add_feature(coast, edgecolor='black', facecolor='none')
+ax.add_feature(cfeature.BORDERS)  # adds country borders  
+
+'''    
 fig, ax = plt.subplots(figsize=(10, 5))
 plt.contour(bath_lon,bath_lat,bath_elev,[0],colors='k')
 plt.contourf(bath_lon,bath_lat,bath_elev,cmap='Blues_r')
@@ -314,7 +330,7 @@ plt.contourf(bath_lon,bath_lat,bath_elev,[0,10000],colors='seashell')
 plt.yticks([])
 plt.xticks([])
 plt.axis([-100,-10,0,50])
-
+'''
 for l in argo_files1:
     ncargo = Dataset(l)
     argo_lat = np.asarray(ncargo.variables['LATITUDE'][:])
@@ -362,10 +378,13 @@ for id in gliders:
         parse_dates=True,
         skiprows=(1,)  # units information can be dropped.
             ).dropna()
-        ax.plot(df['longitude (degrees_east)'],\
-                df['latitude (degrees_north)'],'.',color='r',markersize=1)   
-        #ax.text(np.mean(df['longitude']),np.mean(df['latitude']),id.split('-')[0])
+        if np.mean(df['latitude (degrees_north)']) <= 45:
+            ax.plot(df['longitude (degrees_east)'],\
+                    df['latitude (degrees_north)'],'.',color='r',markersize=1)   
+            #ax.text(np.mean(df['longitude']),np.mean(df['latitude']),id.split('-')[0])
     
-plt.savefig("/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/map_ARGOS_gliders_hurric_season_2019.png",\
-            bbox_inches = 'tight',pad_inches = 0.1)
+#plt.savefig("/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/map_ARGOS_gliders_hurric_season_2019.png",\
+#            bbox_inches = 'tight',pad_inches = 0.1)
+plt.savefig("/home/aristizabal/Figures/map_ARGOS_gliders_hurric_season_2019.png",\
+            bbox_inches = 'tight',pad_inches = 0.1,dpi=300)
     

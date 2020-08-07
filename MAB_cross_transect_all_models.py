@@ -12,19 +12,20 @@ lon_lim = [-75,-70]
 lat_lim = [36,42]
 
 # Folder where to save figure
-folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/';
+folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'
 
 #Time window
 #date_ini = '2019-08-26T00:00:00Z'
 #date_end = '2019-08-27T00:00:00Z'
 
 # Bathymetry file
-bath_file = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/GEBCO_2014_2D_-100.0_0.0_-10.0_70.0.nc';
+bath_file = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/GEBCO_2014_2D_-100.0_0.0_-10.0_70.0.nc'
 
 # url for GOFS 3.1
 #url_GOFS = 'http://tds.hycom.org/thredds/dodsC/GLBv0.08/expt_93.0/ts3z'
 #'https://tds.hycom.org/thredds/dodsC/GLBy0.08/latest'
 url_GOFS = 'https://tds.hycom.org/thredds/dodsC/GLBy0.08/expt_93.0/ts3z'
+url_GOFS_uv = 'https://tds.hycom.org/thredds/dodsC/GLBy0.08/expt_93.0/uv3z'
 
 # url Doppio
 url_doppio = 'http://tds.marine.rutgers.edu/thredds/dodsC/roms/doppio/2017_da/his/History_Best'
@@ -73,13 +74,17 @@ tini = datetime(ti.year,ti.month,ti.day)
 '''
 
 #%% Get time bounds for current day
-
+'''
 te = datetime.today() + timedelta(1)
 tend = datetime(te.year,te.month,te.day)
 
 #ti = datetime.today() - timedelta(1)
 ti = datetime.today() 
 tini = datetime(ti.year,ti.month,ti.day)
+'''
+
+tini = datetime(2020, 7, 7)
+tend = datetime(2020, 7, 8)
 
 #%% Reading bathymetry data
 
@@ -306,7 +311,7 @@ plt.contourf(bath_lonsub,bath_latsub,bath_elevsub,levels=[0,10000],colors='papay
 #ax.contourf(bath_lonsub,bath_latsub,bath_elevsub,levels=[-10000,0],colors='lightskyblue',alpha=0.5)
 ax.plot(X,Y,'-k')
 ax.plot(x1,y1,'s',color='cyan',label='0 km')
-ax.plot(x2,y2,'s',color='blue',label=str(np.round(dist[-1]))+' km')
+ax.plot(X[-1],Y[-1],'s',color='blue',label=str(np.round(dist[-1]))+' km')
 ax.axis('scaled')
 ax.legend(fontsize=14)
 plt.title('Transect',fontsize=20)
@@ -368,6 +373,59 @@ for t,tind in enumerate(oktimeGOFS[0]):
     file = folder + 'MAB_passage_transect_salt_GOFS'+ \
                         tGOFS[tind].strftime("%Y-%m-%d-%H")
     plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
+    
+#%% Surface velocity vectors GOFS
+    
+GOFS_uv = xr.open_dataset(url_GOFS_uv,decode_times=False)
+
+latGOFS = np.asarray(GOFS['lat'][:])
+lonGOFS = np.asarray(GOFS['lon'][:])
+depthGOFS = np.asarray(GOFS['depth'][:])
+ttGOFS= GOFS['time']
+tGOFS = netCDF4.num2date(ttGOFS[:],ttGOFS.units) 
+
+oktimeGOFS = np.where(np.logical_and(tGOFS >= tini, tGOFS <= tend))[0]
+timeGOFS = tGOFS[oktimeGOFS]
+
+# Conversion from glider longitude and latitude to GOFS convention
+lon_limGOFS = np.empty((len(lon_lim),))
+lon_limGOFS[:] = np.nan
+for i,ii in enumerate(lon_lim):
+    if ii < 0: 
+        lon_limGOFS[i] = 360 + ii
+    else:
+        lon_limGOFS[i] = ii
+lat_limGOFS = lat_lim
+
+oklonGOFS = np.where(np.logical_and(lonGOFS >= lon_limGOFS[0],lonGOFS <= lon_limGOFS[1]))[0]
+oklatGOFS = np.where(np.logical_and(latGOFS >= lat_limGOFS[0],latGOFS <= lat_limGOFS[1]))[0]
+    
+su_GOFS = GOFS_uv.variables['water_u'][oktimeGOFS[4],0,oklatGOFS,oklonGOFS]
+sv_GOFS = GOFS_uv.variables['water_v'][oktimeGOFS[4],0,oklatGOFS,oklonGOFS]
+vel_magn = np.sqrt(su_GOFS**2 + sv_GOFS**2)  
+
+okdist = np.where(dist <= 200)[0][-1]
+  
+kw = dict(levels = np.arange(-0.56,0,0.05))
+fig, ax = plt.subplots(figsize=(6, 6)) 
+plt.contour(bath_lonsub,bath_latsub,bath_elevsub,levels=[0],colors='k')
+plt.contourf(bath_lonsub,bath_latsub,bath_elevsub,levels=[0,10000],colors='papayawhip',alpha=0.5)
+ax.plot(X,Y,'-k')
+ax.plot(x1,y1,'s',color='cyan',label='0 km')
+ax.plot(X[okdist],Y[okdist],'s',color='blue',label='200 km')
+plt.contourf(lonGOFS[oklonGOFS]-360,latGOFS[oklatGOFS],vel_magn,cmap=cmocean.cm.speed)
+cb = plt.colorbar()
+q = plt.quiver(lonGOFS[oklonGOFS][::3]-360,latGOFS[oklatGOFS][::3],su_GOFS[::3,::3],sv_GOFS[::3,::3],scale=2,scale_units='inches')
+plt.quiverkey(q,np.max(lonGOFS[oklonGOFS]-360),np.max(latGOFS[oklatGOFS])+0.3,1,"1 m/s",coordinates='data',color='k',fontproperties={'size': 14})
+plt.axis('scaled')
+cb.set_label('(m/s)',rotation=90, labelpad=20, fontsize=14)
+plt.title('Surface Velocity \n GOFS on '+str(tGOFS[oktimeGOFS[4]])[0:13],\
+          fontsize=16)
+plt.legend()
+
+file = folder + 'MAB_surf_vel_GOFS'+ \
+                    tGOFS[oktimeGOFS[4]].strftime("%Y-%m-%d-%H")
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
      
 #%% Figures RTOFS  
     
@@ -394,12 +452,6 @@ for tind in range(len(oktimeRTOFS[0])):
         target_tempRTOFS[:,pos] = RTOFS.variables['temperature'][0,:,oklatRTOFS[pos],oklonRTOFS[pos]]
         target_saltRTOFS[:,pos] = RTOFS.variables['salinity'][0,:,oklatRTOFS[pos],oklonRTOFS[pos]]
     
-    '''
-    nc_file = nc_files_RTOFS[i]
-    ncRTOFS = xr.open_dataset(nc_file)
-    target_tempRTOFS[:,i] = ncRTOFS.variables['temperature'][0,:,oklatRTOFS[i],oklonRTOFS[i]]
-    target_saltRTOFS[:,i] = ncRTOFS.variables['salinity'][0,:,oklatRTOFS[i],oklonRTOFS[i]]
-    '''
     fig, ax = plt.subplots(figsize=(9, 3))
     kw = dict(levels = np.linspace(min_valt,max_valt,nlevelst))
     
@@ -557,7 +609,7 @@ for t,tind in enumerate(oktimeDOPP[0][[0,12]]):
             if igrid == 1:
                 for k in np.arange(sc_r.shape[0]):
                     z0 = (sc_r[k]-Cs_r[k])*hc + Cs_r[k]*h
-                    target_zDOPP[k,pos] = z0 + zeta * (1.0 + z0/h);
+                    target_zDOPP[k,pos] = z0 + zeta * (1.0 + z0/h)
     
         if Vtransf == 2:
             if igrid == 1:

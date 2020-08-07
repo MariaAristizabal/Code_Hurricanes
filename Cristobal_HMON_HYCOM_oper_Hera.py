@@ -83,7 +83,7 @@ for x, file in enumerate(afiles):
 
 # Reading 3D variable from binary file
 N = 0
-var_HMON_HYCOM = readBinz(afiles[N][:-2],'3z','temp')
+temp_hycom = readBinz(afiles[N][:-2],'3z','temp')
 
 #%%
 
