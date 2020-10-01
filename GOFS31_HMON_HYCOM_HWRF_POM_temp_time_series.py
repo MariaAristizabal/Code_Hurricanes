@@ -11,7 +11,8 @@ Created on Mon Apr 29 16:18:24 2019
 catalog31_ts = 'http://tds.hycom.org/thredds/dodsC/GLBv0.08/expt_93.0/ts3z'
 
 # files for HMON-HYCOM output
-Dir_HMON_HYCOM= '/Volumes/aristizabal/ncep_model/HMON-HYCOM_Michael/'
+#Dir_HMON_HYCOM= '/Volumes/aristizabal/ncep_model/HMON-HYCOM_Michael/'
+Dir_HMON_HYCOM= '/home/aristizabal/ncep_model/HMON-HYCOM_Michael/'
 # RTOFS grid file name
 gridfile = 'hwrf_rtofs_hat10.basin.regional.grid'
 # RTOFS a/b file name
@@ -20,7 +21,8 @@ prefix_ab = 'michael14l.2018100718.hmon_rtofs_hat10_3z'
 var_name = 'temp'
 
 # files for HWRF-POM
-ncfolder = '/Volumes/aristizabal/ncep_model/HWRF-POM_Michael/'
+#ncfolder = '/Volumes/aristizabal/ncep_model/HWRF-POM_Michael/'
+ncfolder = '/home/aristizabal/ncep_model/HWRF-POM_Michael/'
 # POM grid file name
 grid_file = 'michael14l.2018100718.pom.grid.nc'
 # POM file name
@@ -151,6 +153,8 @@ for x, file in enumerate(afiles):
     oklonHMON_HYCOM = np.int(np.round(np.interp(target_lonG,hlon[0,:],np.arange(len(hlon[0,:])))))
     oklatHMON_HYCOM = np.int(np.round(np.interp(target_latG,hlat[:,0],np.arange(len(hlat[:,0])))))
     
+    print(oklonHMON_HYCOM,oklatHMON_HYCOM)
+    
     # Reading 3D variable from binary file 
     temp_HMON_HYCOM = readBinz(file[:-2],'3z',var_name)
     #ts=readBin(afile,'archive','temp')
@@ -192,7 +196,7 @@ for x,file in enumerate(ncfiles):
     #sublatpom = np.interp(timestamp_pom,timestampg,latg)
     oklonpom = np.int(np.round(np.interp(target_lon,lonc[0,:],np.arange(len(lonc[0,:])))))
     oklatpom = np.int(np.round(np.interp(target_lat,latc[:,0],np.arange(len(latc[:,0])))))
-
+    
     target_temp_pom[x,:] = np.asarray(pom['t'][0,:,oklatpom,oklonpom])
     target_topoz_pom[x] = np.asarray(topoz[oklatpom,oklonpom])
 

@@ -7,8 +7,8 @@ Created on Thu Aug  6 11:52:43 2020
 """
 
 #%%
-storm_id = '94l'
-cycle = '2020080312'
+storm_id = '95l'
+cycle = '2020081018'
 
 # MAB
 lon_lim = [-77,-52]

@@ -9,35 +9,41 @@ Created on Mon Nov  5 13:07:11 2018
 #%% Modules to read HYCOM output 
 
 import sys
-sys.path.append('/Users/aristizabal/Desktop/MARACOOS_project/NCEP_scripts')
+#sys.path.append('/Users/aristizabal/Desktop/MARACOOS_project/NCEP_scripts')
+sys.path.append('/home/aristizabal/NCEP_scripts')
 
 from utils4HYCOM import readBinz, readgrids
+
+#from utils4HYCOM2 import readBinz
 
 import os
 import os.path
 import glob
-from datetime import datetime, timedelta
+from datetime import datetime
 import matplotlib.pyplot as plt
 import numpy as np
 
 import netCDF4
 import time
 import matplotlib.dates as mdates
+import scipy.io as sio
 
 import xarray as xr
 
 #%% User input
 
 # Directories where RTOFS files reside 
-Dir= '/Volumes/aristizabal/ncep_model/old_HMON_RTOFS_michael/'
+#Dir= '/Volumes/aristizabal/ncep_model/old_HMON_RTOFS_michael/'
+Dir= '/home/aristizabal/ncep_model/HMON-HYCOM_Michael/'
 Dir_graph = '/Users/aristizabal/Desktop/MARACOOS_project/NCEP_scripts/Figures/'
 
+# files for HMON-HYCOM output
+#Dir_HMON_HYCOM= '/Volumes/aristizabal/ncep_model/HMON-HYCOM_Michael/'
+Dir_HMON_HYCOM= '/home/aristizabal/ncep_model/HMON-HYCOM_Michael/'
 # RTOFS grid file name
 gridfile = 'hwrf_rtofs_hat10.basin.regional.grid'
-
 # RTOFS a/b file name
-prefix_ab = 'fourteen14l.2018100700.hmon_basin'
-
+prefix_ab = 'michael14l.2018100718.hmon_rtofs_hat10_3z'
 # Name of 3D variable
 var_name = 'temp'
 
@@ -45,7 +51,7 @@ var_name = 'temp'
 
 # ng288
 gdata = 'http://gliders.ioos.us/thredds/dodsC/deployments/rutgers/ng288-20180801T0000/ng288-20180801T0000.nc3.nc'
-
+         
 # date limits
 date_ini = '2018-10-07T00:00:00Z'
 date_end = '2018-10-13T00:00:00Z'
@@ -74,14 +80,14 @@ def T68conv(T90):
 
 #%% Reading glider data
 
-ncglider = xr.open_dataset(gdata,decode_times=False)
-latglider = ncglider.latitude[:]
-longlider = ncglider.longitude[:]
+ncglider = xr.open_dataset(gdata+'#fillmismatch',decode_times=False)
+latglider = np.asarray(ncglider.latitude[:])
+longlider = np.asarray(ncglider.longitude[:])
 time_glider = ncglider.time
 time_glider = netCDF4.num2date(time_glider[:],time_glider.units)
-tempglider = np.array(ncglider.temperature[0,:,:])
-saltglider = np.array(ncglider.salinity[0,:,:])
-depthglider = np.array(ncglider.depth[0,:,:])
+tempglider = np.asarray(ncglider.temperature[0,:,:])
+saltglider = np.asarray(ncglider.salinity[0,:,:])
+depthglider = np.asarray(ncglider.depth[0,:,:])
 #densglider = ncglider.density[0,:,:]
 
 timestamp_glider = []
@@ -89,16 +95,6 @@ for t in time_glider[0,:]:
     timestamp_glider.append(time.mktime(t.timetuple()))
     
 timestamp_glider = np.array(timestamp_glider)
-   
-# Conversion from glider longitude and latitude to RTOFS convention
-target_lon = []
-for lon in longlider[0,:]:
-    if lon < 0: 
-        target_lon.append(360 + lon)
-    else:
-        target_lon.append(lon)
-target_lon = np.array(target_lon)
-target_lat = np.array(latglider[0,:])
 
 #%%
 tmin = datetime.strptime(date_ini,'%Y-%m-%dT%H:%M:%SZ')
@@ -107,11 +103,22 @@ tmax = datetime.strptime(date_end,'%Y-%m-%dT%H:%M:%SZ')
 okg = np.where(np.logical_and(time_glider.T >= tmin, time_glider.T <= tmax))
 
 timeg = time_glider[0,okg[0]]
+timestampg = timestamp_glider[okg[0]]
 latg = latglider[0,okg[0]]
 long = longlider[0,okg[0]]
 depthg = depthglider[okg[0],:]
 tempg = tempglider[okg[0],:]
 saltg = saltglider[okg[0],:]
+
+# Conversion from glider longitude and latitude to RTOFS convention
+target_lon = []
+for lon in long:
+    if lon < 0: 
+        target_lon.append(360 + lon)
+    else:
+        target_lon.append(lon)
+target_lon = np.asarray(target_lon)
+target_lat = np.asarray(latg)
 
 #%%  Calculate density
         
@@ -172,68 +179,56 @@ for t,tt in enumerate(timeg):
         tempg_gridded2[t,okd] = np.interp(densg_gridded[okd],dens_fin[ok],temp_fin[ok]) 
        
 
-#%% Reading RTOFS ab files
+#%% Reading HMON-HYCOM ab files
 
 # Reading lat and lon
-lines_grid=[line.rstrip() for line in open(Dir+gridfile+'.b')]
-hlon = np.array(readgrids(Dir+gridfile,'plon:',[0]))
-hlat = np.array(readgrids(Dir+gridfile,'plat:',[0]))
+lines_grid=[line.rstrip() for line in open(Dir_HMON_HYCOM+gridfile+'.b')]
+hlon = np.array(readgrids(Dir_HMON_HYCOM+gridfile,'plon:',[0]))
+hlat = np.array(readgrids(Dir_HMON_HYCOM+gridfile,'plat:',[0]))
 
 # Extracting the longitudinal and latitudinal size array
 idm=int([line.split() for line in lines_grid if 'longitudinal' in line][0][0])
 jdm=int([line.split() for line in lines_grid if 'latitudinal' in line][0][0])
 
-afiles = sorted(glob.glob(os.path.join(Dir,prefix_ab+'*.a')))
-# Note: the 3D output is 6 hourly. therefore half of the a files only contain 3D output
-afiles_6h = afiles[::2] 
-nz = 41
+afiles = sorted(glob.glob(os.path.join(Dir_HMON_HYCOM,prefix_ab+'*.a')))
 
-target_temp_RTOFS = np.empty((len(afiles_6h),nz,))
-target_temp_RTOFS[:] = np.nan
-target_thknss_RTOFS = np.empty((len(afiles_6h),nz,))
-target_thknss_RTOFS[:] = np.nan
-time_RTOFS = []
-dens = np.empty((len(afiles_6h),nz,))
-dens[:] = np.nan
+# Reading depths
+lines=[line.rstrip() for line in open(afiles[0][:-2]+'.b')]
+z = []
+for line in lines[6:]:
+    if line.split()[2]==var_name:
+        #print(line.split()[1])
+        z.append(float(line.split()[1]))
+z_HMON_HYCOM = np.asarray(z) 
 
-for x, file in enumerate(afiles_6h):
+nz = len(z_HMON_HYCOM) 
+
+target_temp_HMON_HYCOM = np.empty((len(afiles),nz,))
+target_temp_HMON_HYCOM[:] = np.nan
+time_HMON_HYCOM = []
+for x, file in enumerate(afiles):
     print(x)
     lines=[line.rstrip() for line in open(file[:-2]+'.b')]
 
     #Reading time stamp
-    time_stamp = lines[-1].split()[2]
-    hycom_days = lines[-1].split()[3]
-    tzero = datetime(1901,1,1,0,0)
-    time_RT = tzero+timedelta(float(hycom_days))
-    time_RTOFS.append(time_RT)
-    timestamp_RTOFS = time.mktime(time_RT.timetuple())
-    depths=[1,3,5,7.5,]
-    depths=[]
-    # Reading layer density
-    for line in lines:
-        if line[0:5] == 'field':
-            print(line)
-            for i in range(len(line.split())):
-                if line.split()[i] == 'dens':
-                    pos_dens = i
- 
-    den = []              
-    for line in lines:
-        if line.split()[0] == var_name:
-            den.append(line.split()[pos_dens-1])
-        
-    dens[x,:] = den
+    year = int(file.split('.')[1][0:4])
+    month = int(file.split('.')[1][4:6])
+    day = int(file.split('.')[1][6:8])
+    hour = int(file.split('.')[1][8:10])
+    dt = int(file.split('.')[3][1:])
+    timestamp_HMON_HYCOM = mdates.date2num(datetime(year,month,day,hour)) + dt/24
+    time_HMON_HYCOM.append(mdates.num2date(timestamp_HMON_HYCOM))
     
-    # Interpolating latgfrom utilslider and longlider into RTOFS grid
-    sublonRTOFS = np.interp(timestamp_RTOFS,timestamp_glider,target_lon)
-    sublatRTOFS = np.interp(timestamp_RTOFS,timestamp_glider,target_lat)
-    oklonRTOFS = np.int(np.round(np.interp(sublonRTOFS,hlon[0,:],np.arange(len(hlon[0,:])))))
-    oklatRTOFS = np.int(np.round(np.interp(sublatRTOFS,hlat[:,0],np.arange(len(hlat[:,0])))))
+    # Interpolating latg and longlider into RTOFS grid
+    sublonHMON_HYCOM = np.interp(timestamp_HMON_HYCOM,timestampg,target_lon)
+    sublatHMON_HYCOM = np.interp(timestamp_HMON_HYCOM,timestampg,target_lat)
+    oklonHMON_HYCOM = np.int(np.round(np.interp(sublonHMON_HYCOM,hlon[0,:],np.arange(len(hlon[0,:])))))
+    oklatHMON_HYCOM = np.int(np.round(np.interp(sublatHMON_HYCOM,hlat[:,0],np.arange(len(hlat[:,0])))))
     
     # Reading 3D variable from binary file 
-    temp_RTOFS = readBinz(file[:-2],'3z',var_name)
-    #temp_RTOFS = readBin(file[:-2],'archive','temp')
-    target_temp_RTOFS[x,:] = temp_RTOFS[oklatRTOFS,oklonRTOFS,:]
+    temp_HMON_HYCOM = readBinz(file[:-2],'3z',var_name)
+    #ts=readBin(afile,'archive','temp')
+    target_temp_HMON_HYCOM[x,:] = temp_HMON_HYCOM[oklatHMON_HYCOM,oklonHMON_HYCOM,:]
     
     # Extracting list of variables
     #count=0
@@ -244,25 +239,35 @@ for x, file in enumerate(afiles_6h):
 
     #lines=lines[count:]
     #vars=[line.split()[0] for line in lines]
+    
+time_HMON_HYCOM = np.asarray(time_HMON_HYCOM)
+timestamp_HMON_HYCOM = mdates.date2num(time_HMON_HYCOM) 
+
 
 #%% Figure
 
-time_matrixR = np.transpose(np.tile(time_RTOFS,(dens.shape[1],1)))
+time_HMON_HYCOM_string = [datetime.strftime(tt,'%Y-%m-%d %H-%M') for tt in time_HMON_HYCOM] 
+
+mdic = {"time_HMON_HYCOM_string": time_HMON_HYCOM_string, "z_HMON_HYCOM": z_HMON_HYCOM,\
+        "target_temp_HMON_HYCOM":target_temp_HMON_HYCOM}
+sio.savemat("ng288_HMON_HYCOM_Michael_2018.mat",mdic)
+
+time_matrixR = np.transpose(np.tile(time_HMON_HYCOM,(len(z_HMON_HYCOM),1)))
 
 kw = dict(levels = np.linspace(np.floor(np.nanmin(tempg_gridded)),\
                                np.ceil(np.nanmax(tempg_gridded)),17))
 
 fig, ax = plt.subplots(figsize=(10, 3))
-plt.contour(time_matrixR,dens,target_temp_RTOFS,colors = 'lightgrey',**kw)
-plt.contour(time_matrixR,dens,target_temp_RTOFS,[26],colors = 'k')
-plt.contourf(time_matrixR,dens,target_temp_RTOFS,cmap='RdYlBu_r',**kw)
-plt.plot(np.tile(datetime(2018, 10, 10, 6),len(dens[0,:])),dens[0,:],'--k')
-ax.set_ylim(36,22.5)
-ax.set_xlim(datetime(2018,10,7),datetime(2018,10,13))
-yl = ax.set_ylabel('Density',fontsize=16,labelpad=20)
+plt.contour(time_HMON_HYCOM,-1*z_HMON_HYCOM,target_temp_HMON_HYCOM.T,colors = 'lightgrey',**kw)
+plt.contour(time_HMON_HYCOM,-1*z_HMON_HYCOM,target_temp_HMON_HYCOM.T,[26],colors = 'k')
+plt.contourf(time_HMON_HYCOM,-1*z_HMON_HYCOM,target_temp_HMON_HYCOM.T,cmap='RdYlBu_r',**kw)
+plt.plot(np.tile(datetime(2018, 10, 10, 6),len(z_HMON_HYCOM)),-1*z_HMON_HYCOM,'--k')
+ax.set_ylim(-300,0)
+ax.set_xlim(datetime(2018,10,8),datetime(2018,10,13))
+yl = ax.set_ylabel('Depth',fontsize=16,labelpad=20)
 cbar = plt.colorbar()
 cbar.ax.set_ylabel('Temperature ($^\circ$C)',fontsize=16)
-ax.set_title('RTOFS Temperature',fontsize=20)
+ax.set_title('HMON-HYCOM',fontsize=20)
 xfmt = mdates.DateFormatter('%H:%Mh\n%d-%b')
 ax.xaxis.set_major_formatter(xfmt)
 

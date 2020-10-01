@@ -8,7 +8,8 @@ Created on Thu Apr  4 13:27:57 2019
 
 #%% User input
 
-ncfolder = '/Volumes/aristizabal/ncep_model/HWRF-POM_Michael/'
+#ncfolder = '/Volumes/aristizabal/ncep_model/HWRF-POM_Michael/'
+ncfolder = '/home/aristizabal/ncep_model/HWRF-POM_Michael/'
 
 Dir_graph = '/Users/aristizabal/Desktop/MARACOOS_project/NCEP_scripts/Figures/'
 
@@ -39,31 +40,33 @@ import numpy as np
 from datetime import datetime 
 import matplotlib.dates as mdates
 from matplotlib.dates import date2num, num2date
-
+import scipy.io as sio
 import os
 import os.path
 import glob
 
 #%% Reading glider data
 
-ncglider = xr.open_dataset(gdata,decode_times=False)
+ncglider = xr.open_dataset(gdata+'#fillmismatch') #,decode_times=False)
 latglider = ncglider.latitude[:]
 longlider = ncglider.longitude[:]
-time_glider = ncglider.time
-time_glider = netCDF4.num2date(time_glider[:],time_glider.units)
+time_glider = np.asarray(ncglider.time[0])
+time_glider = np.asarray(mdates.num2date(mdates.date2num(time_glider)))
+#time_glider = netCDF4.num2date(time_glider[:],time_glider.units)
 tempglider = np.array(ncglider.temperature[0,:,:])
 saltglider = np.array(ncglider.salinity[0,:,:])
 depthglider = np.array(ncglider.depth[0,:,:])
 
-timestamp_glider = date2num(time_glider)[0]
+timestamp_glider = date2num(time_glider)
 
 #%%
 tmin = datetime.strptime(date_ini,'%Y-%m-%dT%H:%M:%SZ')
 tmax = datetime.strptime(date_end,'%Y-%m-%dT%H:%M:%SZ')
 
-okg = np.where(np.logical_and(time_glider.T >= tmin, time_glider.T <= tmax))
+okg = np.where(np.logical_and(mdates.date2num(time_glider) >= mdates.date2num(tmin),\
+                              mdates.date2num(time_glider) <= mdates.date2num(tmax)))
 
-timeg = time_glider[0,okg[0]]
+timeg = time_glider[okg[0]]
 timestampg = timestamp_glider[okg[0]]
 latg = np.asarray(latglider[0,okg[0]])
 long = np.asarray(longlider[0,okg[0]])
@@ -148,6 +151,12 @@ timestamp_pom = date2num(time_pom)
 
 time_matrix_pom = np.tile(timestamp_pom,(zlevc.shape[0],1)).T
 z_matrix_pom = np.dot(target_topoz_pom.reshape(-1,1),zlevc.reshape(1,-1))
+ 
+time_pom_string = [datetime.strftime(tt,'%Y-%m-%d %H-%M') for tt in time_pom] 
+
+mdic = {"time_pom_string": time_pom_string, "z_matrix_pom": z_matrix_pom,\
+        "target_temp_pom":target_temp_pom}
+sio.savemat("ng288_HWRF_POM_Michael_2018.mat",mdic)
 
 kw = dict(levels = np.linspace(np.floor(np.nanmin(tempg_gridded)),\
                                np.ceil(np.nanmax(tempg_gridded)),17))

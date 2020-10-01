@@ -42,7 +42,7 @@ os.system('mkdir ' +  folder_fig)
 
 
 #%% Bathymetry file
-'''
+
 bath_file = '/scratch2/NOS/nosofs/Maria.Aristizabal/bathymetry_files/GEBCO_2014_2D_-100.0_0.0_-10.0_70.0.nc'
 
 #%% Reading bathymetry data
@@ -57,7 +57,7 @@ bath_latsub = bath_lat[oklatbath]
 bath_lonsub = bath_lon[oklonbath]
 bath_elevs = bath_elev[oklatbath,:]
 bath_elevsub = bath_elevs[:,oklonbath]
-'''
+
 #%% folder and file names
 ti = datetime.today() - timedelta(1)
 
@@ -113,7 +113,7 @@ sv_POM = np.asarray(pom['v'][0,0,oklat_POM,oklon_POM])
 sv_POM[sv_POM==0] = np.nan
 '''
 
-#%% Figure temp transect along chosen transect
+#%% Figure temp transect along Endurance line
 
 x1 = -74.1
 y1 = 39.4
@@ -154,7 +154,7 @@ cbar.ax.tick_params(labelsize=16)
 plt.contour(dist_matrix,zmatrix_POM,trans_temp_POM,[26],color='k')
 cbar.ax.set_ylabel('Temperature ($^\circ$C)',fontsize=14)
 cbar.ax.tick_params(labelsize=14)
-plt.title('HWRF-POM Endurance Line ' + 'Storm ' + storm_id + ' Cycle ' + cycle ,fontsize=16)
+plt.title('HWRF-POM Endurance Line MAB ' + 'Storm ' + storm_id + ' Cycle ' + cycle ,fontsize=16)
 plt.ylim([-100,0])
 plt.xlim([0,200])
 ax.set_ylabel('Depth (m)',fontsize=14)
@@ -163,7 +163,20 @@ ax.set_xlabel('Along Transect Distance (km)',fontsize=14)
 file = folder_fig + 'HWRF_POM_temp_MAB_endurance_line_cycle_'+cycle
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 
-#%% Figure temp transect along chosen transect
+#%% Bathymetry GEBCO HYCOM domain
+kw = dict(levels =  np.arange(-5000,1,200))
+
+plt.figure()
+plt.contour(bath_lon,bath_lat,bath_elev,levels=[0],colors='k')
+plt.contourf(bath_lon,bath_lat,bath_elev,cmap=cmocean.cm.topo,**kw)
+plt.plot(X,Y,'-k')
+plt.colorbar()
+plt.axis('scaled')
+plt.title('GEBCO Bathymetry')
+plt.xlim(-76,-70)
+plt.ylim(35,42)
+
+#%% Figure temp transect across GoMex
 
 x1 = -90
 y1 = 20 + 52/60
@@ -200,7 +213,7 @@ cbar.ax.tick_params(labelsize=16)
 plt.contour(dist_matrix,zmatrix_POM,trans_temp_POM,[26],color='k')
 cbar.ax.set_ylabel('($^\circ$C)',fontsize=14)
 cbar.ax.tick_params(labelsize=14)
-plt.title('HWRF-POM Endurance Line ' + 'Storm ' + storm_id + ' Cycle ' + cycle,fontsize=16)
+plt.title('HWRF-POM  Across GoMex ' + 'Storm ' + storm_id + ' Cycle ' + cycle,fontsize=16)
 plt.ylim([-300,0])
 #plt.xlim([0,200])
 ax.set_ylabel('Depth (m)',fontsize=14)
@@ -208,3 +221,16 @@ ax.set_xlabel('Along Transect Distance (km)',fontsize=14)
 
 file = folder_fig + 'HWRF_POM_temp_GoMex_across_cycle_'+cycle
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
+
+#%% Bathymetry GEBCO HYCOM domain
+kw = dict(levels =  np.arange(-5000,1,200))
+
+plt.figure()
+plt.contour(bath_lon,bath_lat,bath_elev,levels=[0],colors='k')
+plt.contourf(bath_lon,bath_lat,bath_elev,cmap=cmocean.cm.topo,**kw)
+plt.plot(X,Y,'-k')
+plt.colorbar()
+plt.axis('scaled')
+plt.title('GEBCO Bathymetry')
+plt.xlim(-98,-80)
+plt.ylim(18,32)

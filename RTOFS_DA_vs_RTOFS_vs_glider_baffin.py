@@ -155,7 +155,7 @@ for t in np.arange(len(nc_files_RTOFS)):
     tRTOFS.append(np.asarray(ncRTOFS.MT[:])[0])
 
 tRTOFS = np.asarray([mdates.num2date(mdates.date2num(tRTOFS[t])) \
-          for t in np.arange(len(nc_files_RTOFS))])
+         for t in np.arange(len(nc_files_RTOFS))])
 
 #%% Reading RTOFS-DA  grid
 print('Retrieving coordinates from RTOFS')

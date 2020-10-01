@@ -36,14 +36,17 @@ This dataset is similar to the OSTM/Jason-2 Operation Geophysical Data Record (O
  SSHA.
  '''
 
-
 # Florence
 #jason_url = 'https://podaac-opendap.jpl.nasa.gov:443/opendap/allData/ostm/preview/L2/GPS-OGDR/c605/' 
 #date = ['20180911','20180910','20180909','20180908','20180907']
 
 # Michael
-jason_url = 'https://podaac-opendap.jpl.nasa.gov/opendap/allData/ostm/preview/L2/GPS-OGDR/c608/'
-date = ['20181010','20181009','20181008','20181007','20181006']
+#jason_url = 'https://podaac-opendap.jpl.nasa.gov/opendap/allData/ostm/preview/L2/GPS-OGDR/c608/'
+#date = ['20181010','20181009','20181008','20181007','20181006']
+
+jason_url = 'https://podaac-opendap.jpl.nasa.gov/opendap/allData/jason3/preview/L2/GPS-OGDR/'
+cc = 'c161/'
+date = ['20200701']
 
 # Bathymetry file
 #bath_file = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/nc_files/GEBCO_2014_2D_-100.0_0.0_-60.0_45.0.nc'
@@ -54,7 +57,7 @@ lat_lim = [0,50]
 
 #%% Find url list
 
-r = requests.get(jason_url)
+r = requests.get(jason_url+cc)
 data = r.text
 soup = BeautifulSoup(data,"lxml")
 
@@ -86,23 +89,24 @@ bath_lonsub = bath_lon[oklonbath]
 bath_elevsub = bath_elev[oklatbath,oklonbath]
 
 #%%
+'''
 fig = plt.figure(1, figsize=(13,8))
 ax = plt.subplot()
 ax.contour(bath_lonsub,bath_latsub,bath_elevsub,levels=[0],colors='k')
 ax.contourf(bath_lonsub,bath_latsub,bath_elevsub,levels=[0,10000],colors='grey')
 ax.axis('equal')
-    
+'''    
 #%% global map
 
 fig = plt.figure(1, figsize=(13,8))
 ax = plt.subplot(projection=ccrs.PlateCarree())
 
 for l in nc_list:
-    ncjason = xr.open_dataset(jason_url + l, decode_times=False) 
+    ncjason = xr.open_dataset(jason_url + cc + l, decode_times=False) 
     #mssh = ncjason.mean_sea_surface
-    ssha = ncjason.ssha
-    lat_jason = ncjason.lat
-    lon_jason = ncjason.lon
+    ssha = np.asarray(ncjason.ssha)
+    lat_jason = np.asarray(ncjason.lat)
+    lon_jason = np.asarray(ncjason.lon)
     time_jason = ncjason.time
     time_jason = np.transpose(netCDF4.num2date(time_jason[:],time_jason.units))
     
@@ -111,7 +115,7 @@ for l in nc_list:
 
 cbar = fig.colorbar(cs, orientation='vertical')
 cbar.set_label('(m)',rotation=270,size = 18,labelpad = 20)
-plt.title('{0} {1}-{2}-{3}'.format('Sea Surface Height Anomaly',\
+plt.title('{0} {1}-{2}-{3}'.format('Sea Surface Height Anomaly Jason3',\
           time_jason[0].year,time_jason[0].month,time_jason[0].day))
    
 # Draw coastlines
@@ -128,7 +132,7 @@ gl.xlabel_style = {'size': 14}
 gl.ylabel_style = {'size': 14}
 
 folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'
-file = folder + '{0}_{1}_{2}_{3}.nc'.format('SSHA',\
+file = folder + '{0}_{1}_{2}_{3}'.format('SSHA',\
           time_jason[0].year,time_jason[0].month,time_jason[0].day) 
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1) 
 
@@ -188,7 +192,7 @@ ax.contourf(bath_lonsub,bath_latsub,bath_elevsub,levels=[0,10000],colors='papaya
 ax.contourf(bath_lonsub,bath_latsub,bath_elevsub,levels=[-10000,0],colors='lightskyblue',alpha=0.5)
 for l in nc_list:
     print(l)
-    ncjason = xr.open_dataset(jason_url + l, decode_times=False) 
+    ncjason = xr.open_dataset(jason_url + cc + l, decode_times=False) 
     #mssh = ncjason.mean_sea_surface
     ssha = ncjason.ssha
     lat_jason = ncjason.lat
@@ -211,7 +215,7 @@ plt.grid('on')
 
 cbar = fig.colorbar(cs, orientation='vertical')
 cbar.set_label('(m)',rotation=270,size = 18,labelpad = 20)
-plt.title('{0} {1}-{2}-{3}'.format('Sea Surface Height Anomaly',\
+plt.title('{0} {1}-{2}-{3}'.format('Sea Surface Height Anomaly Jason3',\
           time_jason[-1].year,time_jason[-1].month,time_jason[-1].day))
 
 folder = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'
