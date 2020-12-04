@@ -38,8 +38,8 @@ lon_lim = [-76,-70]
 lat_lim = [35,42]
 
 # date limits
-date_ini = '2020/07/01/00'
-date_end = '2020/08/07/00'
+date_ini = '2020/07/31/00'
+date_end = '2020/08/08/00'
 
 #folder_fig = ''
 
@@ -60,10 +60,10 @@ contour_plot = 'no' # default value is 'yes'
 delta_z = 0.4     # default value is 0.3    
     
 tempg_gridded, timegg, depthg_gridded = \
-                    grid_glider_data('temperature',dataset_id,tempg,timeg,latg,long,depthg,delta_z,contour_plot)
+                    grid_glider_data('temperature',dataset_id,tempg,timeg,depthg,delta_z,contour_plot)
                     
 #saltg_gridded, timegg, depthg_gridded = \
-#                    grid_glider_data('salinity',dataset_id,saltg,timeg,latg,long,depthg,delta_z,contour_plot)
+#                    grid_glider_data('salinity',dataset_id,saltg,timeg,depthg,delta_z,contour_plot)
 
 #%% RU33
 # variable to retrieve
@@ -88,10 +88,10 @@ ax.set_xlim(timeg[0], timeg[-1])
 ax.set_ylabel('Depth (m)',fontsize=14)
 cbar = plt.colorbar(cs)
 cbar.ax.set_ylabel(clabel,fontsize=14)
-ax.set_title('Temperature Transect ' + dataset_id,fontsize=16)
+#ax.set_title('Temperature Transect ' + dataset_id,fontsize=16)
 
-ti = datetime(2020,7,30)
-xvec = [ti + dt*timedelta(1) for dt in np.arange(10)]
+ti = datetime(2020,7,31)
+xvec = [ti + dt*timedelta(2) for dt in np.arange(4)]
 plt.xticks(xvec,fontsize=12)
 xfmt = mdates.DateFormatter('%b-%d')
 ax.xaxis.set_major_formatter(xfmt)

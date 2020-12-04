@@ -6,7 +6,9 @@ Created on Tue Aug 25 10:39:56 2020
 @author: aristizabal
 """
 
-file_track = '/home/aristizabal/HWRF_POM_13l_2020/HWRF_POM_13l_2020082318/laura13l.2020082318.trak.hwrf.atcfunix'
+file_track = '/home/aristizabal/HWRF_POM_26l_2020/HWRF_POM_26l_2020100618/delta26l.2020100618.trak.hwrf.atcfunix'
+
+time = '2020/10/07/00'
 
 temp_lim = [25,31.6]
 salt_lim = [31,37.1]
@@ -15,7 +17,7 @@ salt200_lim = [35.5,37.6]
 tempb_lim = [0,25.6]
 tempt_lim = [6,31.1]
 
-folder_fig = '/home/aristizabal/Figures/'
+folder_fig = '/www/web/rucool/aristizabal/Figures/'
 
 #%% 
 import numpy as np
@@ -23,7 +25,7 @@ import sys
 
 sys.path.append('/home/aristizabal/Code/surf_fields_and_Argo_compar_hurric')
 
-from Surf_fields_models_baffin import GOFS31_baffin, RTOFS_oper_baffin
+from Surf_fields_models_2_baffin import GOFS31_baffin, RTOFS_oper_baffin
 
 #%% Read track files 
 ff_oper = open(file_track,'r')
@@ -67,9 +69,9 @@ lat_lim = [np.min(lat_forec_track)-5,np.max(lat_forec_track)+5]
 
 RTOFS_oper_baffin(lon_forec_track,lat_forec_track,lon_forec_cone,lat_forec_cone,\
                   lon_best_track,lat_best_track,lon_lim,lat_lim,temp_lim,salt_lim,
-                  temp200_lim,salt200_lim,tempb_lim,tempt_lim,folder_fig)
+                  temp200_lim,salt200_lim,tempb_lim,tempt_lim,folder_fig,time)
 
        
 GOFS31_baffin(lon_forec_track,lat_forec_track,lon_forec_cone,lat_forec_cone,\
               lon_best_track,lat_best_track,lon_lim,lat_lim,temp_lim,salt_lim,\
-                  temp200_lim,salt200_lim,tempb_lim,tempt_lim,folder_fig)
+                  temp200_lim,salt200_lim,tempb_lim,tempt_lim,folder_fig,time)

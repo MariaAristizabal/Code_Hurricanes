@@ -32,17 +32,17 @@ lon_lim = [-90.0,-75.0]
 lat_lim = [25.0,33.0]
 
 # date limits
-date_ini = '2020/07/01/00'
-date_end = '2020/08/05/00'
+date_ini = '2020/07/31/00'
+date_end = '2020/08/08/00'
 
-#folder_fig = ''
+folder_fig = '/Users/aristizabal/Desktop/MARACOOS_project/Maria_scripts/Figures/Model_glider_comp/'
 
 gliders = retrieve_dataset_id_erddap_server(url_erddap,lat_lim,lon_lim,date_ini,date_end)
 print(gliders)
 
 #%% Sam
 
-dataset_id = gliders[4]
+dataset_id = [id for id in gliders if id.split('-')[0] == 'sam'][0]  
 
 kwargs = dict(date_ini=date_ini,date_end=date_end)
 scatter_plot = 'no'
@@ -55,10 +55,10 @@ contour_plot = 'no' # default value is 'yes'
 delta_z = 0.4     # default value is 0.3    
     
 tempg_gridded, timegg, depthg_gridded = \
-                    grid_glider_data('temperature',dataset_id,tempg,timeg,latg,long,depthg,delta_z,contour_plot)
+                    grid_glider_data('temperature',dataset_id,tempg,timeg,depthg,delta_z,contour_plot)
                     
 saltg_gridded, timegg, depthg_gridded = \
-                    grid_glider_data('salinity',dataset_id,saltg,timeg,latg,long,depthg,delta_z,contour_plot)
+                    grid_glider_data('salinity',dataset_id,saltg,timeg,depthg,delta_z,contour_plot)
                     
 #%%    
 # variable to retrieve
@@ -91,14 +91,16 @@ ax.set_xlim(timeg[0], timeg[-1])
 ax.set_ylabel('Depth (m)',fontsize=14)
 cbar = plt.colorbar(cs)
 cbar.ax.set_ylabel(clabel,fontsize=14)
-ax.set_title('Temperature Transect ' + dataset_id,fontsize=16)
+#ax.set_title('Temperature Transect ' + dataset_id,fontsize=16)
 
-ti = datetime(2020,7,17)
-xvec = [ti + dt*timedelta(2) for dt in np.arange(10)]
+ti = datetime(2020,7,31)
+xvec = [ti + dt*timedelta(2) for dt in np.arange(4)]
 plt.xticks(xvec,fontsize=12)
 xfmt = mdates.DateFormatter('%b-%d')
 ax.xaxis.set_major_formatter(xfmt)
 plt.ylim([-np.nanmax(dg),0])
+file = folder_fig + dataset_id + '_around_Isaias_2020'
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 
 #%%   
 var_name = 'salinity'    
