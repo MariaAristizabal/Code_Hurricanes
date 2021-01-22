@@ -27,7 +27,7 @@ glid_ids = ['SG601'] #['ng314','ng645']#['ng645'] #,'ng314'] #,'Stommel']#,'SG66
 # Server location
 url_erddap = 'https://data.ioos.us/gliders/erddap'
 url_GOFS = 'http://tds.hycom.org/thredds/dodsC/GLBy0.08/expt_93.0/ts3z'
-    
+
 # RTOFS-DA files
 folder_RTOFS_DA = '/home/aristizabal/RTOFS-DA/'
 
@@ -41,10 +41,10 @@ bath_file = '/home/aristizabal/bathymetry_files/GEBCO_2014_2D_-100.0_0.0_-10.0_7
 
 folder_fig = '/www/web/rucool/aristizabal/Figures'
 
-#%% Cell #5: Search for glider data sets given a 
-#   latitude and longitude box and time window, choose one those data sets 
-#   (glider_id), plot a scatter plot of the chosen glider transect, grid 
-#   and plot a contour plot of the chosen glider transect 
+#%% Cell #5: Search for glider data sets given a
+#   latitude and longitude box and time window, choose one those data sets
+#   (glider_id), plot a scatter plot of the chosen glider transect, grid
+#   and plot a contour plot of the chosen glider transect
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -55,7 +55,7 @@ import xarray as xr
 
 import sys
 sys.path.append('/home/aristizabal/glider_model_comparisons_Python')
-       
+
 from read_glider_data import retrieve_dataset_id_erddap_server
 from read_glider_data import read_glider_data_erddap_server
 from process_glider_data import grid_glider_data
@@ -67,39 +67,39 @@ plt.rc('ytick',labelsize=14)
 plt.rc('legend',fontsize=14)
 
 #%% Map
-    
+
 def glider_track_map(bath_lon,bath_lat,bath_elev,long,latg,dataset_id):
-        
+
     lev = np.arange(-9000,9100,100)
     fig, ax = plt.subplots(figsize=(6,5))
     plt.contourf(bath_lon,bath_lat,bath_elev,lev,cmap=cmocean.cm.topo)
     plt.plot(long,latg,'.-k')
     plt.plot(long[0],latg[0],'s',color='skyblue',markeredgecolor='k',markersize=5,label=str(timeg[0])[0:16])
     plt.plot(long[-1],latg[-1],'s',color='royalblue',markeredgecolor='k',markersize=5,label=str(timeg[-1])[0:16])
-    plt.axis('scaled') 
-    plt.legend()   
+    plt.axis('scaled')
+    plt.legend()
     plt.title('Glider Track ' + dataset_id,fontsize=16)
 
 #%% RTOFS
-                 
+
 def get_glider_transect_from_RTOFS(folder_RTOFS,ncfiles_RTOFS,date_ini,date_end,long,latg,tstamp_glider):
-                  
+
     #Time window
     year_ini = int(date_ini.split('/')[0])
     month_ini = int(date_ini.split('/')[1])
     day_ini = int(date_ini.split('/')[2])
-    
+
     year_end = int(date_end.split('/')[0])
     month_end = int(date_end.split('/')[1])
     day_end = int(date_end.split('/')[2])
-    
+
     tini = datetime(year_ini, month_ini, day_ini)
-    tend = datetime(year_end, month_end, day_end)  
+    tend = datetime(year_end, month_end, day_end)
     tvec = [tini + timedelta(int(i)) for i in np.arange((tend-tini).days+1)]
-    
+
     # Read RTOFS grid and time
     print('Retrieving coordinates from RTOFS')
-    
+
     if tini.month < 10:
         if tini.day < 10:
             fol = 'rtofs.' + str(tini.year) + '0' + str(tini.month) + '0' + str(tini.day)
@@ -110,12 +110,12 @@ def get_glider_transect_from_RTOFS(folder_RTOFS,ncfiles_RTOFS,date_ini,date_end,
             fol = 'rtofs.' + str(tini.year) + str(tini.month) + '0' + str(tini.day)
         else:
             fol = 'rtofs.' + str(tini.year) + str(tini.month) + str(tini.day)
-            
+
     ncRTOFS = xr.open_dataset(folder_RTOFS + fol + '/' + ncfiles_RTOFS[0])
     lat_RTOFS = np.asarray(ncRTOFS.Latitude[:])
     lon_RTOFS = np.asarray(ncRTOFS.Longitude[:])
     depth_RTOFS = np.asarray(ncRTOFS.Depth[:])
-    
+
     tRTOFS = []
     nc_allfiles_RTOFS = []
     for tt in tvec:
@@ -130,21 +130,21 @@ def get_glider_transect_from_RTOFS(folder_RTOFS,ncfiles_RTOFS,date_ini,date_end,
                 fol = 'rtofs.' + str(tt.year) + str(tt.month) + '0' + str(tt.day)
             else:
                 fol = 'rtofs.' + str(tt.year) + str(tt.month) + str(tt.day)
-    
+
         for t in np.arange(len(ncfiles_RTOFS)):
             ncRTOFS = xr.open_dataset(folder_RTOFS + fol + '/' + ncfiles_RTOFS[t])
             nc_allfiles_RTOFS.append(folder_RTOFS + fol + '/' + ncfiles_RTOFS[t])
             tRTOFS.append(np.asarray(ncRTOFS.MT[:])[0])
-            
+
     tstamp_RTOFS = [mdates.date2num(tRTOFS[i]) for i in np.arange(len(tRTOFS))]
-    
+
     sublonRTOFS = np.interp(tstamp_RTOFS,tstamp_glider,long)
     sublatRTOFS = np.interp(tstamp_RTOFS,tstamp_glider,latg)
-    
+
     # getting the model grid positions for sublonm and sublatm
     oklonRTOFS = np.round(np.interp(sublonRTOFS,lon_RTOFS[0,:],np.arange(len(lon_RTOFS[0,:])))).astype(int)
     oklatRTOFS = np.round(np.interp(sublatRTOFS,lat_RTOFS[:,0],np.arange(len(lat_RTOFS[:,0])))).astype(int)
-    
+
     # Getting glider transect from RTOFS
     print('Getting glider transect from RTOFS')
     if len(tRTOFS) == 0:
@@ -163,24 +163,24 @@ def get_glider_transect_from_RTOFS(folder_RTOFS,ncfiles_RTOFS,date_ini,date_end,
             ncRTOFS = xr.open_dataset(nc_file)
             temp_RTOFS[:,i] = ncRTOFS.variables['temperature'][0,:,oklatRTOFS[i],oklonRTOFS[i]]
             salt_RTOFS[:,i] = ncRTOFS.variables['salinity'][0,:,oklatRTOFS[i],oklonRTOFS[i]]
-        
+
     return temp_RTOFS, salt_RTOFS, tRTOFS, depth_RTOFS
 
-#%% 
+#%%
 def figure_transect_temp(time,depth,temp,date_ini,date_end,max_depth,kw):
-    
+
     #Time window
     year_ini = int(date_ini.split('/')[0])
     month_ini = int(date_ini.split('/')[1])
     day_ini = int(date_ini.split('/')[2])
-    
+
     year_end = int(date_end.split('/')[0])
     month_end = int(date_end.split('/')[1])
     day_end = int(date_end.split('/')[2])
-    
+
     tini = datetime(year_ini, month_ini, day_ini)
-    tend = datetime(year_end, month_end, day_end)  
-    
+    tend = datetime(year_end, month_end, day_end)
+
     fig, ax = plt.subplots(figsize=(10, 3))
     cs = plt.contourf(time,depth,temp,cmap=cmocean.cm.thermal,**kw)
     plt.contour(time,depth,temp,levels=[26],colors = 'k')
@@ -188,7 +188,7 @@ def figure_transect_temp(time,depth,temp,date_ini,date_end,max_depth,kw):
     ax.set_ylabel('Depth (m)',fontsize=14)
     cbar = plt.colorbar(cs)
     cbar.ax.set_ylabel('($^oC$)',fontsize=14)
-    
+
     xvec = [tini + timedelta(int(dt)) for dt in np.arange((tend-tini).days+1)[::2]]
     plt.xticks(xvec,fontsize=12)
     xfmt = mdates.DateFormatter('%b-%d')
@@ -196,28 +196,28 @@ def figure_transect_temp(time,depth,temp,date_ini,date_end,max_depth,kw):
     plt.ylim(-np.abs(max_depth),0)
     plt.xlim(tini,timeg[-1])
 
-#%%    
+#%%
 def figure_transect_salt(time,depth,salt,date_ini,date_end,max_depth,kw):
-    
+
     #Time window
     year_ini = int(date_ini.split('/')[0])
     month_ini = int(date_ini.split('/')[1])
     day_ini = int(date_ini.split('/')[2])
-    
+
     year_end = int(date_end.split('/')[0])
     month_end = int(date_end.split('/')[1])
     day_end = int(date_end.split('/')[2])
-    
+
     tini = datetime(year_ini, month_ini, day_ini)
-    tend = datetime(year_end, month_end, day_end)  
-    
+    tend = datetime(year_end, month_end, day_end)
+
     fig, ax = plt.subplots(figsize=(10, 3))
     cs = plt.contourf(time,depth,salt,cmap=cmocean.cm.haline,**kw)
     ax.set_xlim(time[0], time[-1])
     ax.set_ylabel('Depth (m)',fontsize=14)
     cbar = plt.colorbar(cs)
     cbar.ax.set_ylabel(' ',fontsize=14)
-    
+
     xvec = [tini + timedelta(int(dt)) for dt in np.arange((tend-tini).days+1)[::2]]
     plt.xticks(xvec,fontsize=12)
     xfmt = mdates.DateFormatter('%b-%d')
@@ -242,87 +242,87 @@ month_end = int(date_end.split('/')[1])
 day_end = int(date_end.split('/')[2])
 
 tini = datetime(year_ini, month_ini, day_ini)
-tend = datetime(year_end, month_end, day_end)  
+tend = datetime(year_end, month_end, day_end)
 
-#%% 
+#%%
 
 gliders = retrieve_dataset_id_erddap_server(url_erddap,lat_lim,lon_lim,date_ini,date_end)
 print(gliders)
 
-for i,ids in enumerate(glid_ids): 
+for i,ids in enumerate(glid_ids):
     print(ids)
     okglid = [j for j,id in enumerate(gliders) if id.split('-')[0] == glid_ids[i]][0]
-    
+
     dataset_id = gliders[okglid]
-    
+
     kwargs = dict(date_ini=date_ini,date_end=date_end)
     scatter_plot = 'no'
-    
+
     tempg, saltg, timeg, latg, long, depthg = read_glider_data_erddap_server(url_erddap,dataset_id,\
                                        lat_lim,lon_lim,scatter_plot,**kwargs)
-        
+
     contour_plot = 'no' # default value is 'yes'
-    delta_z = 0.3     # default value is 0.3    
-        
+    delta_z = 0.3     # default value is 0.3
+
     tempg_gridded, timegg, depthg_gridded = \
                         grid_glider_data('temperature',dataset_id,tempg,timeg,latg,long,depthg,delta_z,contour_plot)
-                        
+
     saltg_gridded, timegg, depthg_gridded = \
                         grid_glider_data('salinity',dataset_id,saltg,timeg,latg,long,depthg,delta_z,contour_plot)
-    
+
     tstamp_glider = [mdates.date2num(timeg[i]) for i in np.arange(len(timeg))]
-    
+
     #%% GOFS
-                        
+
     # model variable name
     model_name = 'GOFS 3.1'
     var_name_model = 'water_temp'
-    contour_plot = 'no'                   
-                        
+    contour_plot = 'no'
+
     temp_GOFS, time_GOFS, depth_GOFS, lat_GOFS, lon_GOFS = \
                   get_glider_transect_from_GOFS(url_GOFS,var_name_model,model_name,\
                                             tempg,timeg,latg,long,depthg,contour_plot)
-     
-    var_name_model = 'salinity'                 
+
+    var_name_model = 'salinity'
     salt_GOFS, time_GOFS, depth_GOFS, lat_GOFS, lon_GOFS = \
                   get_glider_transect_from_GOFS(url_GOFS,var_name_model,model_name,\
-                                            tempg,timeg,latg,long,depthg,contour_plot)    
-    
+                                            tempg,timeg,latg,long,depthg,contour_plot)
+
     #%% RTOFS-DA
-    
+
     temp_RTOFS, salt_RTOFS, tRTOFS, depth_RTOFS = \
         get_glider_transect_from_RTOFS(folder_RTOFS_DA,ncfiles_RTOFS_DA,date_ini,date_end,\
-                                       long,latg,tstamp_glider)   
+                                       long,latg,tstamp_glider)
 
     #%% Depth limit
-    
+
     if np.nanmax(depthg) <= 200:
         max_depth = np.nanmax(depthg)
     else:
         max_depth = 200
-                                            
+
     #%% Color limits for plots
-        
-    maxtg = np.max(tempg[depthg <= max_depth])  
+
+    maxtg = np.max(tempg[depthg <= max_depth])
     maxtG = np.max(temp_GOFS[depth_GOFS <= max_depth])
     maxtR = np.max(temp_RTOFS[depth_RTOFS <= max_depth])
-    
-    mintg = np.min(tempg[depthg <= max_depth])  
+
+    mintg = np.min(tempg[depthg <= max_depth])
     mintG = np.min(temp_GOFS[depth_GOFS <= max_depth])
     mintR = np.min(temp_RTOFS[depth_RTOFS <= max_depth])
-    
+
     maxt = np.ceil(np.max([maxtg,maxtG,maxtR]))
     mint = np.floor(np.min([mintg,mintG,mintR]))
     kw_temp = dict(levels = np.arange(mint,maxt+1,1))
-    
-    maxsg = np.max(saltg[depthg <= max_depth])  
+
+    maxsg = np.max(saltg[depthg <= max_depth])
     maxsG = np.max(salt_GOFS[depth_GOFS <= max_depth])
     maxsR = np.max(salt_RTOFS[depth_RTOFS <= max_depth])
-    
-    minsg = np.min(saltg[depthg <= max_depth])  
+
+    minsg = np.min(saltg[depthg <= max_depth])
     minsG = np.min(salt_GOFS[depth_GOFS <= max_depth])
     minsR = np.min(salt_RTOFS[depth_RTOFS <= max_depth])
-    
+
     maxs = np.ceil(np.max([maxsg,maxsG,maxsR]))
     mins = np.floor(np.min([minsg,minsG,minsR]))
     if mins <= 30 :
@@ -334,47 +334,47 @@ for i,ids in enumerate(glid_ids):
     else:
         maxs = 38
     kw_salt = dict(levels = np.arange(mins,maxs+0.2,0.2))
-    
+
     #%% Glider track map
-    
+
     oklatbath = np.logical_and(bath_lat >= latg[0]-5,bath_lat <= latg[-1]+5)
-    oklonbath = np.logical_and(bath_lon >= long[0]-5,bath_lon <= long[-1]+5)   
+    oklonbath = np.logical_and(bath_lon >= long[0]-5,bath_lon <= long[-1]+5)
     bath_latsub = bath_lat[oklatbath]
     bath_lonsub = bath_lon[oklonbath]
     bath_elevsub = bath_elev[oklatbath,:][:,oklonbath]
-    
+
     glider_track_map(bath_lonsub,bath_latsub,bath_elevsub,long,latg,dataset_id)
     file = folder_fig + 'glider_track_' + dataset_id + '_' + str(tini)[0:10] + '_' + str(tend)[0:10]
     plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
-          
+
     #%% Glider
     figure_transect_temp(timegg,-depthg_gridded,tempg_gridded,date_ini,date_end,max_depth,kw_temp)
     plt.title('Temperature Transect ' + dataset_id,fontsize=16)
     file = folder_fig + 'temp_transect_' + dataset_id + '_' + str(tini)[0:10] + '_' + str(tend)[0:10]
     plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
-    
+
     figure_transect_salt(timegg,-depthg_gridded,saltg_gridded,date_ini,date_end,max_depth,kw_salt)
     plt.title('Salinity Transect ' + dataset_id,fontsize=16)
     file = folder_fig + 'salt_transect_' + dataset_id + '_' + str(tini)[0:10] + '_' + str(tend)[0:10]
     plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
-    
+
     #%% GOFS
     figure_transect_temp(time_GOFS,-depth_GOFS,temp_GOFS,date_ini,date_end,max_depth,kw_temp)
     plt.title('Along Track Temperature GOFS 3.1 ' + dataset_id ,fontsize=16)
     file = folder_fig + 'GOFS31_along_track_temp_' + dataset_id + '_' + str(tini)[0:10] + '_' + str(tend)[0:10]
     plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
-    
+
     figure_transect_salt(time_GOFS,-depth_GOFS,salt_GOFS,date_ini,date_end,max_depth,kw_salt)
     plt.title('Along Track Salinity GOFS 3.1 '+ dataset_id,fontsize=16)
     file = folder_fig + 'GOFS31_along_track_salt_' + dataset_id + '_' + str(tini)[0:10] + '_' + str(tend)[0:10]
     plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
-    
+
     #%% RTOFS
     figure_transect_temp(tRTOFS,-depth_RTOFS,temp_RTOFS,date_ini,date_end,max_depth,kw_temp)
     plt.title('Along Track Temperature RTOFS-DA '+ dataset_id,fontsize=16)
     file = folder_fig + 'RTOFS_DA_along_track_temp_' + dataset_id + '_' + str(tini)[0:10] + '_' + str(tend)[0:10]
     plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
-    
+
     figure_transect_salt(tRTOFS,-depth_RTOFS,salt_RTOFS,date_ini,date_end,max_depth,kw_salt)
     plt.title('Along Track Salinity RTOFS-DA '+ dataset_id,fontsize=16)
     file = folder_fig + 'RTOFS_DA_along_track_salt_' + dataset_id + '_' + str(tini)[0:10] + '_' + str(tend)[0:10]
