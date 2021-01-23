@@ -386,16 +386,16 @@ def MLD_temp_and_dens_criteria(dt,drho,time,depth,temp,salt,dens):
     Tmean_temp_crit[:] = np.nan
     Smean_temp_crit = np.empty(len(time))
     Smean_temp_crit[:] = np.nan
-    Td_temp_crit = np.empty(len(time))
-    Td_temp_crit[:] = np.nan
+    #Td_temp_crit = np.empty(len(time))
+    #Td_temp_crit[:] = np.nan
     MLD_dens_crit = np.empty(len(time))
     MLD_dens_crit[:] = np.nan
     Tmean_dens_crit = np.empty(len(time))
     Tmean_dens_crit[:] = np.nan
     Smean_dens_crit = np.empty(len(time))
     Smean_dens_crit[:] = np.nan
-    Td_dens_crit = np.empty(len(time))
-    Td_dens_crit[:] = np.nan
+    #Td_dens_crit = np.empty(len(time))
+    #Td_dens_crit[:] = np.nan
     for t,tt in enumerate(time):
         if depth.ndim == 1:
             d10 = np.where(depth >= 10)[0][0]
@@ -410,38 +410,38 @@ def MLD_temp_and_dens_criteria(dt,drho,time,depth,temp,salt,dens):
 
         if ok_mld_temp.size == 0:
             MLD_temp_crit[t] = np.nan
-            Td_temp_crit[t] = np.nan
+            #Td_temp_crit[t] = np.nan
             Tmean_temp_crit[t] = np.nan
             Smean_temp_crit[t] = np.nan
         else:
             if depth.ndim == 1:
                 MLD_temp_crit[t] = depth[ok_mld_temp[-1]]
-                ok_mld_plus1m = np.where(depth >= depth[ok_mld_temp[-1]] + 1)[0][0]
+                #ok_mld_plus1m = np.where(depth >= depth[ok_mld_temp[-1]] + 1)[0][0]
             if depth.ndim == 2:
                 MLD_temp_crit[t] = depth[ok_mld_temp[-1],t]
-                ok_mld_plus1m = np.where(depth >= depth[ok_mld_temp[-1],t] + 1)[0][0]
-            Td_temp_crit[t] = temp[ok_mld_plus1m,t]
+                #ok_mld_plus1m = np.where(depth >= depth[ok_mld_temp[-1],t] + 1)[0][0]
+            #Td_temp_crit[t] = temp[ok_mld_plus1m,t]
             Tmean_temp_crit[t] = np.nanmean(temp[ok_mld_temp,t])
             Smean_temp_crit[t] = np.nanmean(salt[ok_mld_temp,t])
 
         if ok_mld_rho.size == 0:
             MLD_dens_crit[t] = np.nan
-            Td_dens_crit[t] = np.nan
+            #Td_dens_crit[t] = np.nan
             Tmean_dens_crit[t] = np.nan
             Smean_dens_crit[t] = np.nan
         else:
             if depth.ndim == 1:
                 MLD_dens_crit[t] = depth[ok_mld_rho[-1]]
-                ok_mld_plus1m = np.where(depth >= depth[ok_mld_rho[-1]] + 1)[0][0]
+                #ok_mld_plus1m = np.where(depth >= depth[ok_mld_rho[-1]] + 1)[0][0]
             if depth.ndim == 2:
                 MLD_dens_crit[t] = depth[ok_mld_rho[-1],t]
-                ok_mld_plus1m = np.where(depth >= depth[ok_mld_rho[-1],t] + 1)[0][0]
-            Td_dens_crit[t] = temp[ok_mld_plus1m,t]
+                #ok_mld_plus1m = np.where(depth >= depth[ok_mld_rho[-1],t] + 1)[0][0]
+            #Td_dens_crit[t] = temp[ok_mld_plus1m,t]
             Tmean_dens_crit[t] = np.nanmean(temp[ok_mld_rho,t])
             Smean_dens_crit[t] = np.nanmean(salt[ok_mld_rho,t])
 
-    return MLD_temp_crit,Tmean_temp_crit,Smean_temp_crit,Td_temp_crit,\
-           MLD_dens_crit,Tmean_dens_crit,Smean_dens_crit,Td_dens_crit
+    return MLD_temp_crit,Tmean_temp_crit,Smean_temp_crit,\
+           MLD_dens_crit,Tmean_dens_crit,Smean_dens_crit
 
 #%% Function Ocean Heat Content
 def OHC_surface(time,temp,depth,dens):
@@ -648,19 +648,19 @@ for f,dataset_id in enumerate(gliders):
         drho = 0.125
 
         # for glider data
-        _, _, _, _, MLD_dens_crit_glid, Tmean_dens_crit_glid, Smean_dens_crit_glid, _ = \
+        _, _, _, MLD_dens_crit_glid, Tmean_dens_crit_glid, Smean_dens_crit_glid = \
         MLD_temp_and_dens_criteria(dt,drho,timeg,depthg_gridded,tempg_gridded,saltg_gridded,densg_gridded)
 
         # for RTOFS
-        _, _, _, _, MLD_dens_crit_RTOFS, Tmean_dens_crit_RTOFS, Smean_dens_crit_RTOFS, _ = \
+        _, _, _, MLD_dens_crit_RTOFS, Tmean_dens_crit_RTOFS, Smean_dens_crit_RTOFS = \
         MLD_temp_and_dens_criteria(dt,drho,tstamp_RTOFS,depth_RTOFS,target_temp_RTOFS,target_salt_RTOFS,target_dens_RTOFS)
 
         # for RTOFS-DA
-        _, _, _, _, MLD_dens_crit_RTOFS_DA, Tmean_dens_crit_RTOFS_DA, Smean_dens_crit_RTOFS_DA, _ = \
+        _, _, _, MLD_dens_crit_RTOFS_DA, Tmean_dens_crit_RTOFS_DA, Smean_dens_crit_RTOFS_DA = \
         MLD_temp_and_dens_criteria(dt,drho,tstamp_RTOFS_DA,depth_RTOFS_DA,target_temp_RTOFS_DA,target_salt_RTOFS_DA,target_dens_RTOFS_DA)
 
         # for GOFS 3.1 output
-        _, _, _, _, MLD_dens_crit_GOFS, Tmean_dens_crit_GOFS, Smean_dens_crit_GOFS, _ = \
+        _, _, _, MLD_dens_crit_GOFS, Tmean_dens_crit_GOFS, Smean_dens_crit_GOFS = \
         MLD_temp_and_dens_criteria(dt,drho,time_GOFS,depth_GOFS,target_temp_GOFS,target_salt_GOFS,target_dens_GOFS)
 
         #%% Surface Ocean Heat Content
