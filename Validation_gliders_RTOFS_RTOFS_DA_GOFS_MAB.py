@@ -1,16 +1,21 @@
 """
-Created on Monday Jan 18 2021
+Created on Monday Jan 25 2021
 
 @author: aristizabal
 """
 
 #%% User input
 
-# Limits Caribbean
-lon_lim = [-87,-60]
-lat_lim = [10,23]
+# Limits SAB
+#lon_lim = [-70,-82]
+#lat_lim = [25,36]
+
+# Limits MAB
+lon_lim = [-75,-65]
+lat_lim = [35,45]
 
 date_ini = '2020/06/19/06'
+#date_end = '2020/06/20/06'
 date_end = '2020/10/25/06'
 
 # RTOFS files
@@ -490,6 +495,96 @@ def depth_aver_top_100(depth,var):
 
     return varmean100
 
+def Potential_Energy_Anomaly(time,depth,density):
+    g = 9.8 #m/s
+    PEA = np.empty((len(time)))
+    PEA[:] = np.nan
+    for t,tstamp in enumerate(time):
+        print(t)
+        if np.ndim(depth) == 2:
+            dindex = np.fliplr(np.where(np.asarray(np.abs(depth[:,t])) <= 100))[0]
+        else:
+            dindex = np.fliplr(np.where(np.asarray(np.abs(depth)) <= 100))[0]
+        if len(dindex) == 0:
+            PEA[t] = np.nan
+        else:
+            if np.ndim(depth) == 2:
+                zz = np.asarray(np.abs(depth[dindex,t]))
+            else:
+                zz = np.asarray(np.abs(depth[dindex]))
+            denss = np.asarray(density[dindex,t])
+            ok = np.isfinite(denss)
+            z = zz[ok]
+            dens = denss[ok]
+            if len(z)==0 or len(dens)==0 or np.min(zz) > 10 or np.max(zz) < 30:
+                PEA[t] = np.nan
+            else:
+                if z[-1] - z[0] > 0:
+                    # So PEA is < 0
+                    #sign = -1
+                    # Adding 0 to sigma integral is normalized
+                    z = np.append(0,z)
+                else:
+                    # So PEA is < 0
+                    #sign = 1
+                    # Adding 0 to sigma integral is normalized
+                    z = np.flipud(z)
+                    z = np.append(0,z)
+                    dens = np.flipud(dens)
+
+                # adding density at depth = 0
+                densit = np.interp(z,z[1:],dens)
+                densit = np.flipud(densit)
+
+                # defining sigma
+                max_depth = np.nanmax(zz[ok])
+                sigma = -1*z/max_depth
+                sigma = np.flipud(sigma)
+
+                rhomean = np.trapz(densit,sigma,axis=0)
+                drho = rhomean-densit
+                torque = drho * sigma
+                PEA[t] = g* max_depth * np.trapz(torque,sigma,axis=0)
+                #print(max_depth, ' ',PEA[t])
+
+    return PEA
+
+#%% Calculate non-dimensional potential Energy Anomaly for GOFS 3.1
+def Non_Dim_Potential_Energy_Anomaly(temp,salt,dens,depth):
+
+    zz = depth
+    zs = np.tile(zz,(1,temp.shape[1]))
+    zss = np.tile(zs,(1,temp.shape[2]))
+    zmat = np.reshape(zss,(temp.shape[0],temp.shape[1],temp.shape[2]), order='F')
+    land = np.isnan(dens)
+    zmat[land] = np.nan
+
+    sigma = np.empty((temp.shape[0],temp.shape[1],temp.shape[2]))
+    sigma[:] = -1.0
+    for x,xx in enumerate(np.arange(temp.shape[1])):
+        for y,yy in enumerate(np.arange(temp.shape[2])):
+            sigma[:,x,y] = -zmat[:,x,y]/np.nanmax(zmat[:,x,y])
+            sigma[np.isnan(sigma[:,x,y]),x,y] = -1
+
+    denss = np.copy(dens)
+    denss[np.isnan(denss)] = 0
+    rhomean = -np.trapz(denss,sigma,axis=0)
+    lands = np.isnan(dens[0,:,:])
+    rhomean[lands] = np.nan
+
+    drho = np.empty((temp.shape[0],temp.shape[1],temp.shape[2]))
+    drho[:] = np.nan
+    for k,dind in enumerate(np.arange(temp.shape[0])):
+        drho[k,:,:] = (rhomean - dens[k,:,:])/rhomean
+    drho[land] = 0
+
+    torque = drho * sigma
+
+    NPEA = np.trapz(torque,sigma,axis=0)
+    NPEA[lands] = np.nan
+
+    return NPEA
+
 #%% Time window
 tini = datetime.strptime(date_ini,"%Y/%m/%d/%H")
 tend = datetime.strptime(date_end,"%Y/%m/%d/%H")
@@ -569,8 +664,9 @@ DF_GOFS_OHC = pd.DataFrame()
 DF_RTOFS_T100 = pd.DataFrame()
 DF_RTOFS_DA_T100 = pd.DataFrame()
 DF_GOFS_T100 = pd.DataFrame()
-
-
+DF_RTOFS_PEA = pd.DataFrame()
+DF_RTOFS_DA_PEA = pd.DataFrame()
+DF_GOFS_PEA = pd.DataFrame()
 
 for f,dataset_id in enumerate(gliders):
 
@@ -689,6 +785,19 @@ for f,dataset_id in enumerate(gliders):
         # GOFS
         T100_GOFS = depth_aver_top_100(depth_GOFS,target_temp_GOFS)
 
+        # Calculate Potetial Energy anomaly
+        # glider
+        PEA_glid = Potential_Energy_Anomaly(timeg,depthg,densg)
+
+        # RTOFS
+        PEA_RTOFS = Potential_Energy_Anomaly(tstamp_RTOFS,depth_RTOFS,target_dens_RTOFS)
+
+        # RTOFS-DA
+        PEA_RTOFS_DA = Potential_Energy_Anomaly(tstamp_RTOFS_DA,depth_RTOFS_DA,target_dens_RTOFS_DA)
+
+        # GOFS
+        PEA_GOFS = Potential_Energy_Anomaly(tstamp_GOFS,depth_GOFS,target_dens_GOFS)
+
         #%% Interpolate glider transect onto RTOFS time and depth
         oktimeg_rtofs = np.round(np.interp(tstamp_RTOFS,tstamp_glider,np.arange(len(tstamp_glider)))).astype(int)
         temp_orig = tempg
@@ -706,6 +815,7 @@ for f,dataset_id in enumerate(gliders):
         Smean_dens_crit_glid_to_RTOFS = Smean_dens_crit_glid[oktimeg_rtofs]
         OHC_glid_to_RTOFS = OHC_glid[oktimeg_rtofs]
         T100_glid_to_RTOFS = T100_glid[oktimeg_rtofs]
+        PEA_glid_to_RTOFS = PEA_glid[oktimeg_rtofs]
 
         #%% Interpolate glider transect onto RTOFS-DA time and depth
         oktimeg_rtofs_da = np.round(np.interp(tstamp_RTOFS_DA,tstamp_glider,np.arange(len(tstamp_glider)))).astype(int)
@@ -724,6 +834,7 @@ for f,dataset_id in enumerate(gliders):
         Smean_dens_crit_glid_to_RTOFS_DA = Smean_dens_crit_glid[oktimeg_rtofs_da]
         OHC_glid_to_RTOFS_DA = OHC_glid[oktimeg_rtofs_da]
         T100_glid_to_RTOFS_DA = T100_glid[oktimeg_rtofs_da]
+        PEA_glid_to_RTOFS_DA = PEA_glid[oktimeg_rtofs_da]
 
         #%% Interpolate glider transect onto GOFS time and depth
         oktimeg_gofs = np.round(np.interp(tstamp_GOFS,tstamp_glider,np.arange(len(tstamp_glider)))).astype(int)
@@ -742,6 +853,7 @@ for f,dataset_id in enumerate(gliders):
         Smean_dens_crit_glid_to_GOFS = Smean_dens_crit_glid[oktimeg_gofs]
         OHC_glid_to_GOFS = OHC_glid[oktimeg_gofs]
         T100_glid_to_GOFS = T100_glid[oktimeg_gofs]
+        PEA_glid_to_GOFS = PEA_glid[oktimeg_gofs]
 
         #%% Define dataframe
         df_RTOFS_temp_salt = pd.DataFrame(data=np.array([np.ravel(tempg_to_RTOFS,order='F'),\
@@ -818,6 +930,18 @@ for f,dataset_id in enumerate(gliders):
         df_GOFS_T100 = pd.DataFrame(data=np.array([T100_glid_to_GOFS,T100_GOFS]).T,\
                           columns=['T100_obs','T100_GOFS'])
 
+        #%% Define dataframe
+        df_RTOFS_PEA = pd.DataFrame(data=np.array([PEA_glid_to_RTOFS,PEA_RTOFS]).T,\
+                          columns=['PEA_obs','PEA_RTOFS'])
+
+        #%% Define dataframe
+        df_RTOFS_DA_PEA = pd.DataFrame(data=np.array([PEA_glid_to_RTOFS_DA,PEA_RTOFS_DA]).T,\
+                          columns=['PEA_obs','PEA_RTOFS_DA'])
+
+        #%% Define dataframe
+        df_GOFS_PEA = pd.DataFrame(data=np.array([PEA_glid_to_GOFS,PEA_GOFS]).T,\
+                          columns=['PEA_obs','PEA_GOFS'])
+
         #%% Concatenate data frames
         DF_RTOFS_temp_salt = pd.concat([DF_RTOFS_temp_salt, df_RTOFS_temp_salt])
         DF_RTOFS_DA_temp_salt = pd.concat([DF_RTOFS_DA_temp_salt, df_RTOFS_DA_temp_salt])
@@ -831,6 +955,9 @@ for f,dataset_id in enumerate(gliders):
         DF_RTOFS_T100 = pd.concat([DF_RTOFS_T100, df_RTOFS_T100])
         DF_RTOFS_DA_T100 = pd.concat([DF_RTOFS_DA_T100, df_RTOFS_DA_T100])
         DF_GOFS_T100 = pd.concat([DF_GOFS_T100, df_GOFS_T100])
+        DF_RTOFS_PEA = pd.concat([DF_RTOFS_PEA, df_RTOFS_PEA])
+        DF_RTOFS_DA_PEA = pd.concat([DF_RTOFS_DA_PEA, df_RTOFS_DA_PEA])
+        DF_GOFS_PEA = pd.concat([DF_GOFS_PEA, df_GOFS_PEA])
 
 #%% Save all data frames
 import feather
@@ -839,16 +966,19 @@ feather.write_dataframe(DF_RTOFS_temp_salt,'DF_GOFS_temp_salt.feather')
 feather.write_dataframe(DF_RTOFS_MLD,'DF_GOFS_MLD.feather')
 feather.write_dataframe(DF_RTOFS_OHC,'DF_GOFS_OHC.feather')
 feather.write_dataframe(DF_RTOFS_T100,'DF_GOFS_T100.feather')
+feather.write_dataframe(DF_RTOFS_PEA,'DF_GOFS_PEA.feather')
 
 feather.write_dataframe(DF_RTOFS_DA_temp_salt,'DF_GOFS_temp_salt.feather')
 feather.write_dataframe(DF_RTOFS_DA_MLD,'DF_GOFS_MLD.feather')
 feather.write_dataframe(DF_RTOFS_DA_OHC,'DF_GOFS_OHC.feather')
 feather.write_dataframe(DF_RTOFS_DA_T100,'DF_GOFS_T100.feather')
+feather.write_dataframe(DF_RTOFS_DA_PEA,'DF_GOFS_PEA.feather')
 
 feather.write_dataframe(DF_GOFS_temp_salt,'DF_GOFS_temp_salt.feather')
 feather.write_dataframe(DF_GOFS_MLD,'DF_GOFS_MLD.feather')
 feather.write_dataframe(DF_GOFS_OHC,'DF_GOFS_OHC.feather')
 feather.write_dataframe(DF_GOFS_T100,'DF_GOFS_T100.feather')
+feather.write_dataframe(DF_GOFS_PEA,'DF_GOFS_PEA.feather')
 
 #%% Temperature statistics.
 DF_RTOFS = DF_RTOFS_temp_salt.dropna()
@@ -893,7 +1023,7 @@ tskill[1,4] = DF_RTOFS_DA.mean().temp_obs - DF_RTOFS_DA.mean().temp_RTOFS_DA
 tskill[2,4] = DF_GOFS.mean().temp_obs - DF_GOFS.mean().temp_GOFS
 
 #color
-colors = ['indianred','seagreen','darkorchid','darkorange']
+colors = ['indianred','seagreen','darkorchid','darkorange','cadetblue']
 
 temp_skillscores = pd.DataFrame(tskill,
                         index=['RTOFS','RTOFS_DA','GOFS'],
@@ -944,7 +1074,7 @@ tskill[1,4] = DF_RTOFS_DA.mean().salt_obs - DF_RTOFS_DA.mean().salt_RTOFS_DA
 tskill[2,4] = DF_GOFS.mean().salt_obs - DF_GOFS.mean().salt_GOFS
 
 #color
-colors = ['indianred','seagreen','darkorchid','darkorange']
+colors = ['indianred','seagreen','darkorchid','darkorange','cadetblue']
 
 salt_skillscores = pd.DataFrame(tskill,
                         index=['RTOFS','RTOFS_DA','GOFS'],
@@ -994,7 +1124,7 @@ tskill[1,4] = DF_RTOFS_DA.mean().Tmean_obs - DF_RTOFS_DA.mean().Tmean_RTOFS_DA
 tskill[2,4] = DF_GOFS.mean().Tmean_obs - DF_GOFS.mean().Tmean_GOFS
 
 # colors
-colors = ['indianred','seagreen','darkorchid','darkorange']
+colors = ['indianred','seagreen','darkorchid','darkorange','cadetblue']
 
 Tmean_mld_skillscores = pd.DataFrame(tskill,
                         index=['RTOFS','RTOFS_DA','GOFS'],
@@ -1043,7 +1173,7 @@ tskill[1,4] = DF_RTOFS_DA.mean().Smean_obs - DF_RTOFS_DA.mean().Smean_RTOFS_DA
 tskill[2,4] = DF_GOFS.mean().Smean_obs - DF_GOFS.mean().Smean_GOFS
 
 # colors
-colors = ['indianred','seagreen','darkorchid','darkorange']
+colors = ['indianred','seagreen','darkorchid','darkorange','cadetblue']
 
 Smean_mld_skillscores = pd.DataFrame(tskill,
                         index=['RTOFS','RTOFS_DA','GOFS'],
@@ -1092,7 +1222,7 @@ tskill[1,4] = DF_RTOFS_DA.mean().OHC_obs - DF_RTOFS_DA.mean().OHC_RTOFS_DA
 tskill[2,4] = DF_GOFS.mean().OHC_obs - DF_GOFS.mean().OHC_GOFS
 
 #color
-colors = ['indianred','seagreen','darkorchid','darkorange']
+colors = ['indianred','seagreen','darkorchid','darkorange','cadetblue']
 
 OHC_skillscores = pd.DataFrame(tskill,
                         index=['RTOFS','RTOFS_DA','GOFS'],
@@ -1142,18 +1272,67 @@ tskill[1,4] = DF_RTOFS_DA.mean().T100_obs - DF_RTOFS_DA.mean().T100_RTOFS_DA
 tskill[2,4] = DF_GOFS.mean().T100_obs - DF_GOFS.mean().T100_GOFS
 
 #color
-colors = ['indianred','seagreen','darkorchid','darkorange']
+colors = ['indianred','seagreen','darkorchid','darkorange','cadetblue']
 
 T100_skillscores = pd.DataFrame(tskill,
                         index=['RTOFS','RTOFS_DA','GOFS'],
                         columns=cols)
 print(T100_skillscores)
 
+#%% PEA statistics
+DF_RTOFS = DF_RTOFS_PEA.dropna()
+DF_RTOFS_DA = DF_RTOFS_DA_PEA.dropna()
+DF_GOFS = DF_GOFS_PEA.dropna()
+
+NRTOFS = len(DF_RTOFS)-1  #For Unbiased estimmator.
+NRTOFS_DA = len(DF_RTOFS_DA)-1
+NGOFS = len(DF_GOFS)-1
+
+cols = ['CORRELATION','OSTD','MSTD','CRMSE','BIAS']
+
+tskill = np.empty((3,5))
+tskill[:] = np.nan
+
+#CORR
+tskill[0,0] = DF_RTOFS.corr()['PEA_obs']['PEA_RTOFS']
+tskill[1,0] = DF_RTOFS_DA.corr()['PEA_obs']['PEA_RTOFS_DA']
+tskill[2,0] = DF_GOFS.corr()['PEA_obs']['PEA_GOFS']
+
+#OSTD
+tskill[0,1] = DF_RTOFS.std().PEA_obs
+tskill[1,1] = DF_RTOFS_DA.std().PEA_obs
+tskill[2,1] = DF_GOFS.std().PEA_obs
+
+#MSTD
+tskill[0,2] = DF_RTOFS.std().PEA_RTOFS
+tskill[1,2] = DF_RTOFS_DA.std().PEA_RTOFS_DA
+tskill[2,2] = DF_GOFS.std().PEA_GOFS
+
+#CRMSE
+tskill[0,3] = np.sqrt(np.nansum(((DF_RTOFS.PEA_obs-DF_RTOFS.mean().PEA_obs)-\
+                                 (DF_RTOFS.PEA_RTOFS-DF_RTOFS.mean().PEA_RTOFS))**2)/NRTOFS)
+tskill[1,3] = np.sqrt(np.nansum(((DF_RTOFS_DA.PEA_obs-DF_RTOFS_DA.mean().PEA_obs)-\
+                                 (DF_RTOFS_DA.PEA_RTOFS_DA-DF_RTOFS_DA.mean().PEA_RTOFS_DA))**2)/NRTOFS_DA)
+tskill[2,3] = np.sqrt(np.nansum(((DF_GOFS.PEA_obs-DF_GOFS.mean().PEA_obs)-\
+                                 (DF_GOFS.PEA_GOFS-DF_GOFS.mean().PEA_GOFS))**2)/NGOFS)
+
+#BIAS
+tskill[0,4] = DF_RTOFS.mean().PEA_obs - DF_RTOFS.mean().PEA_RTOFS
+tskill[1,4] = DF_RTOFS_DA.mean().PEA_obs - DF_RTOFS_DA.mean().PEA_RTOFS_DA
+tskill[2,4] = DF_GOFS.mean().PEA_obs - DF_GOFS.mean().PEA_GOFS
+
+#color
+colors = ['indianred','seagreen','darkorchid','darkorange','cadetblue']
+
+PEA_skillscores = pd.DataFrame(tskill,
+                        index=['RTOFS','RTOFS_DA','GOFS'],
+                        columns=cols)
+print(PEA_skillscores)
 
 ##############
 #%% Combine all metrics into one normalized Taylor diagram
 angle_lim = np.pi/2
-std_lim = 1.5
+std_lim = 2.5
 
 fig,ax1 = taylor_template(angle_lim,std_lim)
 markers = ['X','^','s','H']
@@ -1162,45 +1341,80 @@ scores = temp_skillscores
 for i,r in enumerate(scores.iterrows()):
     theta=np.arccos(r[1].CORRELATION)
     rr=r[1].MSTD/r[1].OSTD
-    ax1.plot(theta,rr,markers[i],color = 'darkorange',markersize=8,markeredgecolor='k')
-ax1.plot(theta,rr,markers[i],label='Temp',color = 'darkorange',markersize=8,markeredgecolor='k')
+    if i==2:
+        ax1.plot(theta,rr,markers[i],label='Temp',color = 'darkorange',alpha=0.7,markersize=8,markeredgecolor='k')
+        ax1.plot(theta,rr,markers[i],fillstyle='none',markersize=8,markeredgecolor='k')
+    else:
+        ax1.plot(theta,rr,markers[i],color = 'darkorange',alpha=0.7,markersize=8,markeredgecolor='k')
+        ax1.plot(theta,rr,markers[i],fillstyle='none',markersize=8,markeredgecolor='k')
 
 scores = salt_skillscores
 for i,r in enumerate(scores.iterrows()):
     theta=np.arccos(r[1].CORRELATION)
     rr=r[1].MSTD/r[1].OSTD
-    ax1.plot(theta,rr,markers[i],color = 'seagreen',markersize=8,markeredgecolor='k')
-ax1.plot(theta,rr,markers[i],label='Salt',color = 'seagreen',markersize=8,markeredgecolor='k')
+    if i==2:
+        ax1.plot(theta,rr,markers[i],label='Salt',color = 'seagreen',alpha=0.7,markersize=8,markeredgecolor='k')
+        ax1.plot(theta,rr,markers[i],fillstyle='none',markersize=8,markeredgecolor='k')
+    else:
+        ax1.plot(theta,rr,markers[i],color = 'seagreen',alpha=0.7,markersize=8,markeredgecolor='k')
+        ax1.plot(theta,rr,markers[i],fillstyle='none',markersize=8,markeredgecolor='k')
 
 scores = Tmean_mld_skillscores
 for i,r in enumerate(scores.iterrows()):
     theta=np.arccos(r[1].CORRELATION)
     rr=r[1].MSTD/r[1].OSTD
-    ax1.plot(theta,rr,markers[i],color = 'darkorchid',markersize=8,markeredgecolor='k')
-ax1.plot(theta,rr,markers[i],label='MLT',color = 'darkorchid',markersize=8,markeredgecolor='k')
+    if i==2:
+        ax1.plot(theta,rr,markers[i],label='MLT',color = 'darkorchid',alpha=0.7,markersize=8,markeredgecolor='k')
+        ax1.plot(theta,rr,markers[i],fillstyle='none',markersize=8,markeredgecolor='k')
+    else:
+        ax1.plot(theta,rr,markers[i],color = 'darkorchid',alpha=0.7,markersize=8,markeredgecolor='k')
+        ax1.plot(theta,rr,markers[i],fillstyle='none',markersize=8,markeredgecolor='k')
 
 scores = Smean_mld_skillscores
 for i,r in enumerate(scores.iterrows()):
     theta=np.arccos(r[1].CORRELATION)
     rr=r[1].MSTD/r[1].OSTD
-    ax1.plot(theta,rr,markers[i],color = 'y',markersize=8,markeredgecolor='k')
-ax1.plot(theta,rr,markers[i],label='MLS',color = 'y',markersize=8,markeredgecolor='k')
+    if i==2:
+        ax1.plot(theta,rr,markers[i],label='MLS',color = 'y',alpha=0.7,markersize=8,markeredgecolor='k')
+        ax1.plot(theta,rr,markers[i],fillstyle='none',markersize=8,markeredgecolor='k')
+    else:
+        ax1.plot(theta,rr,markers[i],color = 'y',alpha=0.7,markersize=8,markeredgecolor='k')
+        ax1.plot(theta,rr,markers[i],fillstyle='none',markersize=8,markeredgecolor='k')
 
 scores = OHC_skillscores
 for i,r in enumerate(scores.iterrows()):
     theta=np.arccos(r[1].CORRELATION)
     rr=r[1].MSTD/r[1].OSTD
-    ax1.plot(theta,rr,markers[i],color = 'indianred',markersize=8,markeredgecolor='k')
-ax1.plot(theta,rr,markers[i],label='OHC',color = 'indianred',markersize=8,markeredgecolor='k')
+    if i==2:
+        ax1.plot(theta,rr,markers[i],label='OHC',color = 'indianred',alpha=0.7,markersize=8,markeredgecolor='k')
+        ax1.plot(theta,rr,markers[i],fillstyle='none',markersize=8,markeredgecolor='k')
+    else:
+        ax1.plot(theta,rr,markers[i],color = 'indianred',alpha=0.7,markersize=8,markeredgecolor='k')
+        ax1.plot(theta,rr,markers[i],fillstyle='none',markersize=8,markeredgecolor='k')
 
 scores = T100_skillscores
 for i,r in enumerate(scores.iterrows()):
     theta=np.arccos(r[1].CORRELATION)
     rr=r[1].MSTD/r[1].OSTD
-    ax1.plot(theta,rr,markers[i],color = 'royalblue',markersize=8,markeredgecolor='k')
-ax1.plot(theta,rr,markers[i],label='T100',color = 'royalblue',markersize=8,markeredgecolor='k')
+    if i==2:
+        ax1.plot(theta,rr,markers[i],label='T100',color = 'royalblue',alpha=0.7,markersize=8,markeredgecolor='k')
+        ax1.plot(theta,rr,markers[i],fillstyle='none',markersize=8,markeredgecolor='k')
+    else:
+        ax1.plot(theta,rr,markers[i],color = 'royalblue',alpha=0.7,markersize=8,markeredgecolor='k')
+        ax1.plot(theta,rr,markers[i],fillstyle='none',markersize=8,markeredgecolor='k')
 
-ax1.plot(0,1,'o',label='Obs',markersize=8,markeredgecolor='k')
+scores = PEA_skillscores
+for i,r in enumerate(scores.iterrows()):
+    theta=np.arccos(r[1].CORRELATION)
+    rr=r[1].MSTD/r[1].OSTD
+    if i==2:
+        ax1.plot(theta,rr,markers[i],label='PEA',color = 'cadetblue',alpha=0.7,markersize=8,markeredgecolor='k')
+        ax1.plot(theta,rr,markers[i],fillstyle='none',markersize=8,markeredgecolor='k')
+    else:
+        ax1.plot(theta,rr,markers[i],color = 'cadetblue',alpha=0.7,markersize=8,markeredgecolor='k')
+        ax1.plot(theta,rr,markers[i],fillstyle='none',markersize=8,markeredgecolor='k')
+
+ax1.plot(0,1,'o',label='Obs',color='dodgerblue',markersize=8,markeredgecolor='k')
 ax1.plot(0,0,'Xk',label='RTOFS',markersize=8)
 ax1.plot(0,0,'^k',label='RTOFS-DA',markersize=8)
 ax1.plot(0,0,'sk',label='GOFS 3.1',markersize=8)
@@ -1214,5 +1428,5 @@ contours = ax1.contour(ts, rs, rms,3,colors='0.5')
 plt.clabel(contours, inline=1, fontsize=10)
 plt.grid(linestyle=':',alpha=0.5)
 
-file = folder_fig + 'Taylor_norm_RTOFS_RTOFS_DA_GOFS_Caribbean'
+file = folder_fig + 'Taylor_norm_RTOFS_RTOFS_DA_GOFS_MAB'
 plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)

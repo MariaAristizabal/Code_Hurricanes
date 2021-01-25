@@ -554,9 +554,9 @@ depth_RTOFS_DA = np.asarray(ncRTOFS_DA.Depth[:])
 
 #%% Reading glider data
 gliders = retrieve_dataset_id_erddap_server(url_erddap,lat_lim,lon_lim,date_ini,date_end)
-print(gliders)
 gliders = [dataset_id for dataset_id in gliders if dataset_id != 'silbo-20190717T1917']
 gliders = [dataset_id for dataset_id in gliders if dataset_id.split('-')[-1] != 'delayed']
+print(gliders)
 
 DF_RTOFS_temp_salt = pd.DataFrame()
 DF_RTOFS_DA_temp_salt = pd.DataFrame()
