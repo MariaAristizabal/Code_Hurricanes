@@ -35,6 +35,8 @@ url_erddap = 'https://data.ioos.us/gliders/erddap'
 # url for GOFS 3.1
 url_GOFS = 'http://tds.hycom.org/thredds/dodsC/GLBy0.08/expt_93.0/ts3z'
 
+bath_file = '/home/aristizabal/bathymetry_files/GEBCO_2014_2D_-100.0_0.0_-10.0_70.0.nc'
+
 folder_fig = '/www/web/rucool/aristizabal/Figures/'
 
 #%%
@@ -49,6 +51,8 @@ import matplotlib.dates as mdates
 import glob
 import os
 import seawater as sw
+from erddapy import ERDDAP
+import feather
 
 import sys
 sys.path.append('/home/aristizabal/glider_model_comparisons_Python')
@@ -61,6 +65,7 @@ plt.rc('xtick',labelsize=14)
 plt.rc('ytick',labelsize=14)
 plt.rc('legend',fontsize=14)
 
+#%%
 def taylor_template(angle_lim,std_lim):
 
     import mpl_toolkits.axisartist.floating_axes as floating_axes
@@ -586,10 +591,125 @@ def Non_Dim_Potential_Energy_Anomaly(temp,salt,dens,depth):
     return NPEA
 
 #%% Time window
+
 tini = datetime.strptime(date_ini,"%Y/%m/%d/%H")
 tend = datetime.strptime(date_end,"%Y/%m/%d/%H")
 
-# Get coordinates from GOFS
+#%% Reading glider data
+gliders = retrieve_dataset_id_erddap_server(url_erddap,lat_lim,lon_lim,date_ini,date_end)
+gliders = [dataset_id for dataset_id in gliders if dataset_id != 'silbo-20190717T1917']
+gliders = [dataset_id for dataset_id in gliders if dataset_id != 'sam-20201008T0000']
+gliders = [dataset_id for dataset_id in gliders if dataset_id.split('-')[-1] != 'delayed']
+print(gliders)
+
+#%% Reading bathymetry data
+ncbath = xr.open_dataset(bath_file)
+bath_lat = ncbath.variables['lat'][:]
+bath_lon = ncbath.variables['lon'][:]
+bath_elev = ncbath.variables['elevation'][:]
+
+oklatbath = np.logical_and(bath_lat >= lat_lim[0],bath_lat <= lat_lim[-1])
+oklonbath = np.logical_and(bath_lon >= lon_lim[0],bath_lon <= lon_lim[-1])
+
+bath_latsub = bath_lat[oklatbath]
+bath_lonsub = bath_lon[oklonbath]
+bath_elevs = bath_elev[oklatbath,:]
+bath_elevsub = bath_elevs[:,oklonbath]
+
+#%% Make map with glider tracks
+
+constraints = {
+    'time>=': date_ini,
+    'time<=': date_end,
+    'latitude>=': lat_lim[0],
+    'latitude<=': lat_lim[-1],
+    'longitude>=': lon_lim[0],
+    'longitude<=': lon_lim[-1],
+}
+
+variables = [
+ 'time','latitude','longitude'
+]
+
+e = ERDDAP(
+    server=url_erddap,
+    protocol='tabledap',
+    response='nc'
+)
+
+lev = np.arange(-9000,9100,100)
+fig, ax = plt.subplots(figsize=(10, 10))
+plt.contourf(bath_lonsub,bath_latsub,bath_elevsub,lev,cmap=cmocean.cm.topo)
+plt.axis('scaled')
+
+
+for id in gliders:
+    e.dataset_id = id
+    e.constraints = constraints
+    e.variables = variables
+
+    df = e.to_pandas(
+    parse_dates=True)
+
+    print(id,df.index[-1])
+    ax.plot(df['longitude (degrees_east)'],\
+                df['latitude (degrees_north)'],'.',color='orange',markersize=1)
+
+markers = ['o','v','^','<','>','8','s','p','P','*','h','H','x','X','D','d']
+colors = ['green','indianred','purple','c','cadetblue','y','r','b','seagreen',\
+          'blueviolet','lightcoral']
+
+for id in gliders:
+    e.dataset_id = id
+    e.constraints = constraints
+    e.variables = variables
+
+    df = e.to_pandas(
+    parse_dates=True)
+
+    if id.split('-')[0] == 'amelia':
+        marker = markers[0]
+        color = colors[0]
+    if id.split('-')[0] == 'blue':
+        marker = markers[1]
+        color = colors[1]
+    if id.split('-')[0][0:2] == 'cp':
+        marker = markers[2]
+        color = colors[2]
+    if id.split('-')[0] == 'franklin':
+        marker = markers[3]
+        color = colors[3]
+    if id.split('-')[0] == 'maracoos':
+        marker = markers[4]
+        color = colors[4]
+    if id.split('-')[0][0:2] == 'ng':
+        marker = markers[5]
+        color = colors[5]
+    if id.split('-')[0][0:2] == 'ru':
+        marker = markers[6]
+        color = colors[6]
+    if id.split('-')[0] == 'sam':
+        marker = markers[7]
+        color = colors[7]
+    if id.split('-')[0][0:2] == 'sp':
+        marker = markers[8]
+        color = colors[8]
+    if id.split('-')[0] == 'sylvia':
+        marker = markers[9]
+        color = colors[9]
+    if id.split('-')[0][0:2] == 'ud':
+        marker = markers[10]
+        color = colors[10]
+    ax.plot(np.nanmean(df['longitude (degrees_east)']),\
+                np.nanmean(df['latitude (degrees_north)']),marker,markersize=10,color=color,label=id.split('-')[0])
+
+plt.legend(loc='lower right',fontsize=12) #,bbox_to_anchor=[1,0-0.15])
+
+file = folder_fig + 'Map_MAB_20200619_20201025'
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
+
+#%% Get coordinates from GOFS
+
 print('Retrieving coordinates from GOFS')
 GOFS = xr.open_dataset(url_GOFS,decode_times=False)
 tt_G = GOFS.time
@@ -646,11 +766,9 @@ latRTOFS_DA = np.asarray(ncRTOFS_DA.Latitude[:])
 lonRTOFS_DA = np.asarray(ncRTOFS_DA.Longitude[:])
 depth_RTOFS_DA = np.asarray(ncRTOFS_DA.Depth[:])
 
-#%% Reading glider data
-gliders = retrieve_dataset_id_erddap_server(url_erddap,lat_lim,lon_lim,date_ini,date_end)
-gliders = [dataset_id for dataset_id in gliders if dataset_id != 'silbo-20190717T1917']
-gliders = [dataset_id for dataset_id in gliders if dataset_id.split('-')[-1] != 'delayed']
-print(gliders)
+
+
+#%%
 
 DF_RTOFS_temp_salt = pd.DataFrame()
 DF_RTOFS_DA_temp_salt = pd.DataFrame()
@@ -962,23 +1080,44 @@ for f,dataset_id in enumerate(gliders):
 #%% Save all data frames
 import feather
 
-feather.write_dataframe(DF_RTOFS_temp_salt,'DF_GOFS_temp_salt.feather')
-feather.write_dataframe(DF_RTOFS_MLD,'DF_GOFS_MLD.feather')
-feather.write_dataframe(DF_RTOFS_OHC,'DF_GOFS_OHC.feather')
-feather.write_dataframe(DF_RTOFS_T100,'DF_GOFS_T100.feather')
-feather.write_dataframe(DF_RTOFS_PEA,'DF_GOFS_PEA.feather')
+feather.write_dataframe(DF_RTOFS_temp_salt,'DF_RTOFS_temp_salt_MAB.feather')
+feather.write_dataframe(DF_RTOFS_MLD,'DF_RTOFS_MLD_MAB.feather')
+feather.write_dataframe(DF_RTOFS_OHC,'DF_RTOFS_OHC_MAB.feather')
+feather.write_dataframe(DF_RTOFS_T100,'DF_RTOFS_T100_MAB.feather')
+feather.write_dataframe(DF_RTOFS_PEA,'DF_RTOFS_PEA_MAB.feather')
 
-feather.write_dataframe(DF_RTOFS_DA_temp_salt,'DF_GOFS_temp_salt.feather')
-feather.write_dataframe(DF_RTOFS_DA_MLD,'DF_GOFS_MLD.feather')
-feather.write_dataframe(DF_RTOFS_DA_OHC,'DF_GOFS_OHC.feather')
-feather.write_dataframe(DF_RTOFS_DA_T100,'DF_GOFS_T100.feather')
-feather.write_dataframe(DF_RTOFS_DA_PEA,'DF_GOFS_PEA.feather')
+feather.write_dataframe(DF_RTOFS_DA_temp_salt,'DF_RTOFS_DA_temp_salt_MAB.feather')
+feather.write_dataframe(DF_RTOFS_DA_MLD,'DF_RTOFS_DA_MLD_MAB.feather')
+feather.write_dataframe(DF_RTOFS_DA_OHC,'DF_RTOFS_DA_OHC_MAB.feather')
+feather.write_dataframe(DF_RTOFS_DA_T100,'DF_RTOFS_DA_T100_MAB.feather')
+feather.write_dataframe(DF_RTOFS_DA_PEA,'DF_RTOFS_DA_PEA_MAB.feather')
 
-feather.write_dataframe(DF_GOFS_temp_salt,'DF_GOFS_temp_salt.feather')
-feather.write_dataframe(DF_GOFS_MLD,'DF_GOFS_MLD.feather')
-feather.write_dataframe(DF_GOFS_OHC,'DF_GOFS_OHC.feather')
-feather.write_dataframe(DF_GOFS_T100,'DF_GOFS_T100.feather')
-feather.write_dataframe(DF_GOFS_PEA,'DF_GOFS_PEA.feather')
+feather.write_dataframe(DF_GOFS_temp_salt,'DF_GOFS_temp_salt_MAB.feather')
+feather.write_dataframe(DF_GOFS_MLD,'DF_GOFS_MLD_MAB.feather')
+feather.write_dataframe(DF_GOFS_OHC,'DF_GOFS_OHC_MAB.feather')
+feather.write_dataframe(DF_GOFS_T100,'DF_GOFS_T100_MAB.feather')
+feather.write_dataframe(DF_GOFS_PEA,'DF_GOFS_PEA_MAB.feather')
+
+#%% Load all data frames
+'''
+DF_RTOFS_temp_salt = feather.read_dataframe('DF_RTOFS_temp_salt_MAB.feather')
+DF_RTOFS_MLD = feather.read_dataframe('DF_RTOFS_MLD_MAB.feather')
+DF_RTOFS_OHC = feather.read_dataframe('DF_RTOFS_OHC_MAB.feather')
+DF_RTOFS_T100 = feather.read_dataframe('DF_RTOFS_T100_MAB.feather')
+DF_RTOFS_PEA = feather.read_dataframe('DF_RTOFS_PEA_MAB.feather')
+
+DF_RTOFS_DA_temp_salt = feather.read_dataframe('DF_RTOFS_DA_temp_salt_MAB.feather')
+DF_RTOFS_DA_MLD = feather.read_dataframe('DF_RTOFS_DA_MLD_MAB.feather')
+DF_RTOFS_DA_OHC = feather.read_dataframe('DF_RTOFS_DA_OHC_MAB.feather')
+DF_RTOFS_DA_T100 = feather.read_dataframe('DF_RTOFS_DA_T100_MAB.feather')
+DF_RTOFS_DA_PEA = feather.read_dataframe('DF_RTOFS_DA_PEA_MAB.feather')
+
+DF_GOFS_temp_salt = feather.read_dataframe('DF_GOFS_temp_salt_MAB.feather')
+DF_GOFS_MLD = feather.read_dataframe('DF_GOFS_MLD_MAB.feather')
+DF_GOFS_OHC = feather.read_dataframe('DF_GOFS_OHC_MAB.feather')
+DF_GOFS_T100 = feather.read_dataframe('DF_GOFS_T100_MAB.feather')
+DF_GOFS_PEA = feather.read_dataframe('DF_GOFS_PEA_MAB.feather')
+'''
 
 #%% Temperature statistics.
 DF_RTOFS = DF_RTOFS_temp_salt.dropna()

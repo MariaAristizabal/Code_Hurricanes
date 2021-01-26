@@ -31,6 +31,8 @@ url_erddap = 'https://data.ioos.us/gliders/erddap'
 # url for GOFS 3.1
 url_GOFS = 'http://tds.hycom.org/thredds/dodsC/GLBy0.08/expt_93.0/ts3z'
 
+bath_file = '/home/aristizabal/bathymetry_files/GEBCO_2014_2D_-100.0_0.0_-10.0_70.0.nc'
+
 folder_fig = '/www/web/rucool/aristizabal/Figures/'
 
 #%%
@@ -45,6 +47,7 @@ import matplotlib.dates as mdates
 import glob
 import os
 import seawater as sw
+from erddapy import ERDDAP
 
 import sys
 sys.path.append('/home/aristizabal/glider_model_comparisons_Python')
@@ -56,6 +59,8 @@ from process_glider_data import grid_glider_data
 plt.rc('xtick',labelsize=14)
 plt.rc('ytick',labelsize=14)
 plt.rc('legend',fontsize=14)
+
+#%%
 
 def taylor_template(angle_lim,std_lim):
 
@@ -558,6 +563,105 @@ gliders = [dataset_id for dataset_id in gliders if dataset_id != 'silbo-20190717
 gliders = [dataset_id for dataset_id in gliders if dataset_id.split('-')[-1] != 'delayed']
 print(gliders)
 
+#%% Reading bathymetry data
+ncbath = xr.open_dataset(bath_file)
+bath_lat = ncbath.variables['lat'][:]
+bath_lon = ncbath.variables['lon'][:]
+bath_elev = ncbath.variables['elevation'][:]
+
+oklatbath = np.logical_and(bath_lat >= lat_lim[0],bath_lat <= lat_lim[-1])
+oklonbath = np.logical_and(bath_lon >= lon_lim[0],bath_lon <= lon_lim[-1])
+
+bath_latsub = bath_lat[oklatbath]
+bath_lonsub = bath_lon[oklonbath]
+bath_elevs = bath_elev[oklatbath,:]
+bath_elevsub = bath_elevs[:,oklonbath] 
+
+#%% Make map with glider tracks
+
+constraints = {
+    'time>=': date_ini,
+    'time<=': date_end,
+    'latitude>=': lat_lim[0],
+    'latitude<=': lat_lim[-1],
+    'longitude>=': lon_lim[0],
+    'longitude<=': lon_lim[-1],
+}
+
+variables = [
+ 'time','latitude','longitude'
+]
+
+e = ERDDAP(
+    server=url_erddap,
+    protocol='tabledap',
+    response='nc'
+)
+
+lev = np.arange(-9000,9100,100)
+fig, ax = plt.subplots(figsize=(10, 10))
+plt.contourf(bath_lonsub,bath_latsub,bath_elevsub,lev,cmap=cmocean.cm.topo) 
+plt.axis('scaled')
+
+
+for id in gliders:
+    e.dataset_id = id
+    e.constraints = constraints
+    e.variables = variables
+    
+    df = e.to_pandas(
+    parse_dates=True)
+    
+    print(id,df.index[-1])
+    ax.plot(df['longitude (degrees_east)'],\
+                df['latitude (degrees_north)'],'.',color='orange',markersize=1)
+        
+markers = ['o','v','^','<','>','8','s','p','P','*','h','H','x','X','D','d']
+colors = ['y','r','b','green','orange','purple','c','indianred','cadetblue']
+        
+for id in gliders:
+    e.dataset_id = id
+    e.constraints = constraints
+    e.variables = variables
+    
+    df = e.to_pandas(
+    parse_dates=True)
+    
+    
+    if id.split('-')[0] == 'franklin':
+        marker = markers[0]
+        color = colors[0]
+    if id.split('-')[0] == 'mote':
+        marker = markers[1]
+        color = colors[1]
+    if id.split('-')[0][0:2] == 'ng':
+        marker = markers[2]
+        color = colors[2]
+    if id.split('-')[0] == 'sam':
+        marker = markers[3]
+        color = colors[3]
+    if id.split('-')[0] == 'SG601':
+        marker = markers[4]
+        color = colors[4]
+    if id.split('-')[0] == 'stella':
+        marker = markers[5]
+        color = colors[5]
+    if id.split('-')[0] == 'Stommel':
+        marker = markers[6]
+        color = colors[6]
+    if id.split('-')[0] == 'Sverdrup':
+        marker = markers[7]
+        color = colors[7]
+    if id.split('-')[0] == 'usf':
+        marker = markers[8]
+        color = colors[8]
+    ax.plot(np.nanmean(df['longitude (degrees_east)']),\
+                np.nanmean(df['latitude (degrees_north)']),marker,markersize=10,color=color,label=id.split('-')[0])
+        
+plt.legend(loc='lower left')
+
+#%% 
+
 DF_RTOFS_temp_salt = pd.DataFrame()
 DF_RTOFS_DA_temp_salt = pd.DataFrame()
 DF_GOFS_temp_salt = pd.DataFrame()
@@ -570,8 +674,6 @@ DF_GOFS_OHC = pd.DataFrame()
 DF_RTOFS_T100 = pd.DataFrame()
 DF_RTOFS_DA_T100 = pd.DataFrame()
 DF_GOFS_T100 = pd.DataFrame()
-
-
 
 for f,dataset_id in enumerate(gliders):
 
