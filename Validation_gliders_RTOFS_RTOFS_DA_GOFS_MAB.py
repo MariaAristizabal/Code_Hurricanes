@@ -505,7 +505,6 @@ def Potential_Energy_Anomaly(time,depth,density):
     PEA = np.empty((len(time)))
     PEA[:] = np.nan
     for t,tstamp in enumerate(time):
-        print(t)
         if np.ndim(depth) == 2:
             dindex = np.fliplr(np.where(np.asarray(np.abs(depth[:,t])) <= 100))[0]
         else:
@@ -766,10 +765,7 @@ latRTOFS_DA = np.asarray(ncRTOFS_DA.Latitude[:])
 lonRTOFS_DA = np.asarray(ncRTOFS_DA.Longitude[:])
 depth_RTOFS_DA = np.asarray(ncRTOFS_DA.Depth[:])
 
-
-
 #%%
-
 DF_RTOFS_temp_salt = pd.DataFrame()
 DF_RTOFS_DA_temp_salt = pd.DataFrame()
 DF_GOFS_temp_salt = pd.DataFrame()
@@ -1078,11 +1074,6 @@ for f,dataset_id in enumerate(gliders):
         DF_GOFS_PEA = pd.concat([DF_GOFS_PEA, df_GOFS_PEA])
 
 #%% Save all data frames
-
-DF_RTOFS_temp_salt.to_pickle('DF_RTOFS_temp_salt_MAB.pkl')
-aa = pd.read_pickle('DF_RTOFS_temp_salt_MAB.pkl')
-
-
 DF_RTOFS_temp_salt.to_pickle('DF_RTOFS_temp_salt_MAB.pkl')
 DF_RTOFS_MLD.to_pickle('DF_RTOFS_MLD_MAB.pkl')
 DF_RTOFS_OHC.to_pickle('DF_RTOFS_OHC_MAB.pkl')

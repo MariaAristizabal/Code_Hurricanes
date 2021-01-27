@@ -572,10 +572,9 @@ oklonbath = np.logical_and(bath_lon >= lon_lim[0],bath_lon <= lon_lim[-1])
 bath_latsub = bath_lat[oklatbath]
 bath_lonsub = bath_lon[oklonbath]
 bath_elevs = bath_elev[oklatbath,:]
-bath_elevsub = bath_elevs[:,oklonbath] 
+bath_elevsub = bath_elevs[:,oklonbath]
 
 #%% Make map with glider tracks
-
 constraints = {
     'time>=': date_ini,
     'time<=': date_end,
@@ -597,7 +596,7 @@ e = ERDDAP(
 
 lev = np.arange(-9000,9100,100)
 fig, ax = plt.subplots(figsize=(10, 10))
-plt.contourf(bath_lonsub,bath_latsub,bath_elevsub,lev,cmap=cmocean.cm.topo) 
+plt.contourf(bath_lonsub,bath_latsub,bath_elevsub,lev,cmap=cmocean.cm.topo)
 plt.axis('scaled')
 
 
@@ -605,25 +604,25 @@ for id in gliders:
     e.dataset_id = id
     e.constraints = constraints
     e.variables = variables
-    
+
     df = e.to_pandas(
     parse_dates=True)
-    
+
     print(id,df.index[-1])
     ax.plot(df['longitude (degrees_east)'],\
                 df['latitude (degrees_north)'],'.',color='orange',markersize=1)
-        
+
 markers = ['o','v','^','<','>','8','s','p','P','*','h','H','x','X','D','d']
 colors = ['green','indianred','purple','c','cadetblue','y','r','b',]
-        
+
 for id in gliders:
     e.dataset_id = id
     e.constraints = constraints
     e.variables = variables
-    
+
     df = e.to_pandas(
     parse_dates=True)
-    
+
     if id.split('-')[0][0:2] == 'ng':
         marker = markers[0]
         color = colors[0]
@@ -635,8 +634,11 @@ for id in gliders:
         color = colors[2]
     ax.plot(np.nanmean(df['longitude (degrees_east)']),\
                 np.nanmean(df['latitude (degrees_north)']),marker,markersize=10,color=color,label=id.split('-')[0])
-        
+
 plt.legend(loc='lower left')
+
+file = folder_fig + 'Map_Caribbean_20200619_20201025'
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 
 #%%
 DF_RTOFS_temp_salt = pd.DataFrame()
@@ -651,8 +653,6 @@ DF_GOFS_OHC = pd.DataFrame()
 DF_RTOFS_T100 = pd.DataFrame()
 DF_RTOFS_DA_T100 = pd.DataFrame()
 DF_GOFS_T100 = pd.DataFrame()
-
-
 
 for f,dataset_id in enumerate(gliders):
 
@@ -915,22 +915,44 @@ for f,dataset_id in enumerate(gliders):
         DF_GOFS_T100 = pd.concat([DF_GOFS_T100, df_GOFS_T100])
 
 #%% Save all data frames
-import feather
+DF_RTOFS_temp_salt.to_pickle('DF_RTOFS_temp_salt_Caribbean.pkl')
+DF_RTOFS_MLD.to_pickle('DF_RTOFS_MLD_Caribbean.pkl')
+DF_RTOFS_OHC.to_pickle('DF_RTOFS_OHC_Caribbean.pkl')
+DF_RTOFS_T100.to_pickle('DF_RTOFS_T100_Caribbean.pkl')
+DF_RTOFS_PEA.to_pickle('DF_RTOFS_PEA_Caribbean.pkl')
 
-feather.write_dataframe(DF_RTOFS_temp_salt,'DF_GOFS_temp_salt.feather')
-feather.write_dataframe(DF_RTOFS_MLD,'DF_GOFS_MLD.feather')
-feather.write_dataframe(DF_RTOFS_OHC,'DF_GOFS_OHC.feather')
-feather.write_dataframe(DF_RTOFS_T100,'DF_GOFS_T100.feather')
+DF_RTOFS_DA_temp_salt.to_pickle('DF_RTOFS_DA_temp_salt_Caribbean.pkl')
+DF_RTOFS_DA_MLD.to_pickle('DF_RTOFS_DA_MLD_Caribbean.pkl')
+DF_RTOFS_DA_OHC.to_pickle('DF_RTOFS_DA_OHC_Caribbean.pkl')
+DF_RTOFS_DA_T100.to_pickle('DF_RTOFS_DA_T100_Caribbean.pkl')
+DF_RTOFS_DA_PEA.to_pickle('DF_RTOFS_DA_PEA_Caribbean.pkl')
 
-feather.write_dataframe(DF_RTOFS_DA_temp_salt,'DF_GOFS_temp_salt.feather')
-feather.write_dataframe(DF_RTOFS_DA_MLD,'DF_GOFS_MLD.feather')
-feather.write_dataframe(DF_RTOFS_DA_OHC,'DF_GOFS_OHC.feather')
-feather.write_dataframe(DF_RTOFS_DA_T100,'DF_GOFS_T100.feather')
+DF_GOFS_temp_salt.to_pickle('DF_GOFS_temp_salt_Caribbean.pkl')
+DF_GOFS_MLD.to_pickle('DF_GOFS_MLD_Caribbean.pkl')
+DF_GOFS_OHC.to_pickle('DF_GOFS_OHC_Caribbean.pkl')
+DF_GOFS_T100.to_pickle('DF_GOFS_T100_Caribbean.pkl')
+DF_GOFS_PEA.to_pickle('DF_GOFS_PEA_Caribbean.pkl')
 
-feather.write_dataframe(DF_GOFS_temp_salt,'DF_GOFS_temp_salt.feather')
-feather.write_dataframe(DF_GOFS_MLD,'DF_GOFS_MLD.feather')
-feather.write_dataframe(DF_GOFS_OHC,'DF_GOFS_OHC.feather')
-feather.write_dataframe(DF_GOFS_T100,'DF_GOFS_T100.feather')
+#%% Load all data frames
+'''
+DF_RTOFS_temp_salt = pd.read_pickle('DF_RTOFS_temp_salt_Caribbean.pkl')
+DF_RTOFS_MLD = pd.read_pickle('DF_RTOFS_MLD_Caribbean.pkl')
+DF_RTOFS_OHC = pd.read_pickle('DF_RTOFS_OHC_Caribbean.pkl')
+DF_RTOFS_T100 = pd.read_pickle('DF_RTOFS_T100_Caribbean.pkl')
+DF_RTOFS_PEA = pd.read_pickle('DF_RTOFS_PEA_Caribbean.pkl')
+
+DF_RTOFS_DA_temp_salt = pd.read_pickle('DF_RTOFS_DA_temp_salt_Caribbean.pkl')
+DF_RTOFS_DA_MLD = pd.read_pickle('DF_RTOFS_DA_MLD_Caribbean.pkl')
+DF_RTOFS_DA_OHC = pd.read_pickle('DF_RTOFS_DA_OHC_Caribbean.pkl')
+DF_RTOFS_DA_T100 = pd.read_pickle('DF_RTOFS_DA_T100_Caribbean.pkl')
+DF_RTOFS_DA_PEA = pd.read_pickle('DF_RTOFS_DA_PEA_Caribbean.pkl')
+
+DF_GOFS_temp_salt = pd.read_pickle('DF_GOFS_temp_salt_Caribbean.pkl')
+DF_GOFS_MLD = pd.read_pickle('DF_GOFS_MLD_Caribbean.pkl')
+DF_GOFS_OHC = pd.read_pickle('DF_GOFS_OHC_Caribbean.pkl')
+DF_GOFS_T100 = pd.read_pickle('DF_GOFS_T100_Caribbean.pkl')
+DF_GOFS_PEA = pd.read_pickle('DF_GOFS_PEA_Caribbean.pkl')
+'''
 
 #%% Temperature statistics.
 DF_RTOFS = DF_RTOFS_temp_salt.dropna()
@@ -1235,7 +1257,7 @@ print(T100_skillscores)
 ##############
 #%% Combine all metrics into one normalized Taylor diagram
 angle_lim = np.pi/2
-std_lim = 1.5
+std_lim = 2.5
 
 fig,ax1 = taylor_template(angle_lim,std_lim)
 markers = ['X','^','s','H']
@@ -1244,44 +1266,68 @@ scores = temp_skillscores
 for i,r in enumerate(scores.iterrows()):
     theta=np.arccos(r[1].CORRELATION)
     rr=r[1].MSTD/r[1].OSTD
-    ax1.plot(theta,rr,markers[i],color = 'darkorange',markersize=8,markeredgecolor='k')
-ax1.plot(theta,rr,markers[i],label='Temp',color = 'darkorange',markersize=8,markeredgecolor='k')
+    if i==2:
+        ax1.plot(theta,rr,markers[i],label='Temp',color = 'darkorange',alpha=0.7,markersize=8,markeredgecolor='k')
+        ax1.plot(theta,rr,markers[i],fillstyle='none',markersize=8,markeredgecolor='k')
+    else:
+        ax1.plot(theta,rr,markers[i],color = 'darkorange',alpha=0.7,markersize=8,markeredgecolor='k')
+        ax1.plot(theta,rr,markers[i],fillstyle='none',markersize=8,markeredgecolor='k')
 
 scores = salt_skillscores
 for i,r in enumerate(scores.iterrows()):
     theta=np.arccos(r[1].CORRELATION)
     rr=r[1].MSTD/r[1].OSTD
-    ax1.plot(theta,rr,markers[i],color = 'seagreen',markersize=8,markeredgecolor='k')
-ax1.plot(theta,rr,markers[i],label='Salt',color = 'seagreen',markersize=8,markeredgecolor='k')
+    if i==2:
+        ax1.plot(theta,rr,markers[i],label='Salt',color = 'seagreen',alpha=0.7,markersize=8,markeredgecolor='k')
+        ax1.plot(theta,rr,markers[i],fillstyle='none',markersize=8,markeredgecolor='k')
+    else:
+        ax1.plot(theta,rr,markers[i],color = 'seagreen',alpha=0.7,markersize=8,markeredgecolor='k')
+        ax1.plot(theta,rr,markers[i],fillstyle='none',markersize=8,markeredgecolor='k')
 
 scores = Tmean_mld_skillscores
 for i,r in enumerate(scores.iterrows()):
     theta=np.arccos(r[1].CORRELATION)
     rr=r[1].MSTD/r[1].OSTD
-    ax1.plot(theta,rr,markers[i],color = 'darkorchid',markersize=8,markeredgecolor='k')
-ax1.plot(theta,rr,markers[i],label='MLT',color = 'darkorchid',markersize=8,markeredgecolor='k')
+    if i==2:
+        ax1.plot(theta,rr,markers[i],label='MLT',color = 'darkorchid',alpha=0.7,markersize=8,markeredgecolor='k')
+        ax1.plot(theta,rr,markers[i],fillstyle='none',markersize=8,markeredgecolor='k')
+    else:
+        ax1.plot(theta,rr,markers[i],color = 'darkorchid',alpha=0.7,markersize=8,markeredgecolor='k')
+        ax1.plot(theta,rr,markers[i],fillstyle='none',markersize=8,markeredgecolor='k')
 
 scores = Smean_mld_skillscores
 for i,r in enumerate(scores.iterrows()):
     theta=np.arccos(r[1].CORRELATION)
     rr=r[1].MSTD/r[1].OSTD
-    ax1.plot(theta,rr,markers[i],color = 'y',markersize=8,markeredgecolor='k')
-ax1.plot(theta,rr,markers[i],label='MLS',color = 'y',markersize=8,markeredgecolor='k')
+    if i==2:
+        ax1.plot(theta,rr,markers[i],label='MLS',color = 'y',alpha=0.7,markersize=8,markeredgecolor='k')
+        ax1.plot(theta,rr,markers[i],fillstyle='none',markersize=8,markeredgecolor='k')
+    else:
+        ax1.plot(theta,rr,markers[i],color = 'y',alpha=0.7,markersize=8,markeredgecolor='k')
+        ax1.plot(theta,rr,markers[i],fillstyle='none',markersize=8,markeredgecolor='k')
 
 scores = OHC_skillscores
 for i,r in enumerate(scores.iterrows()):
     theta=np.arccos(r[1].CORRELATION)
     rr=r[1].MSTD/r[1].OSTD
-    ax1.plot(theta,rr,markers[i],color = 'indianred',markersize=8,markeredgecolor='k')
-ax1.plot(theta,rr,markers[i],label='OHC',color = 'indianred',markersize=8,markeredgecolor='k')
+    if i==2:
+        ax1.plot(theta,rr,markers[i],label='OHC',color = 'indianred',alpha=0.7,markersize=8,markeredgecolor='k')
+        ax1.plot(theta,rr,markers[i],fillstyle='none',markersize=8,markeredgecolor='k')
+    else:
+        ax1.plot(theta,rr,markers[i],color = 'indianred',alpha=0.7,markersize=8,markeredgecolor='k')
+        ax1.plot(theta,rr,markers[i],fillstyle='none',markersize=8,markeredgecolor='k')
 
 scores = T100_skillscores
 for i,r in enumerate(scores.iterrows()):
     theta=np.arccos(r[1].CORRELATION)
     rr=r[1].MSTD/r[1].OSTD
-    ax1.plot(theta,rr,markers[i],color = 'royalblue',markersize=8,markeredgecolor='k')
-ax1.plot(theta,rr,markers[i],label='T100',color = 'royalblue',markersize=8,markeredgecolor='k')
-
+    if i==2:
+        ax1.plot(theta,rr,markers[i],label='T100',color = 'royalblue',alpha=0.7,markersize=8,markeredgecolor='k')
+        ax1.plot(theta,rr,markers[i],fillstyle='none',markersize=8,markeredgecolor='k')
+    else:
+        ax1.plot(theta,rr,markers[i],color = 'royalblue',alpha=0.7,markersize=8,markeredgecolor='k')
+        ax1.plot(theta,rr,markers[i],fillstyle='none',markersize=8,markeredgecolor='k')
+        
 ax1.plot(0,1,'o',label='Obs',markersize=8,markeredgecolor='k')
 ax1.plot(0,0,'Xk',label='RTOFS',markersize=8)
 ax1.plot(0,0,'^k',label='RTOFS-DA',markersize=8)
