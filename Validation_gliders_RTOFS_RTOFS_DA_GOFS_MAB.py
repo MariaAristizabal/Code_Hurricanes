@@ -15,8 +15,8 @@ lon_lim = [-75,-65]
 lat_lim = [35,45]
 
 date_ini = '2020/06/19/06'
-#date_end = '2020/06/20/06'
-date_end = '2020/10/25/06'
+date_end = '2020/06/20/06'
+#date_end = '2020/10/25/06'
 
 # RTOFS files
 folder_RTOFS = '/home/coolgroup/RTOFS/forecasts/domains/hurricanes/RTOFS_6hourly_North_Atlantic/'
@@ -1078,45 +1078,48 @@ for f,dataset_id in enumerate(gliders):
         DF_GOFS_PEA = pd.concat([DF_GOFS_PEA, df_GOFS_PEA])
 
 #%% Save all data frames
-import feather
 
-feather.write_dataframe(DF_RTOFS_temp_salt,'DF_RTOFS_temp_salt_MAB.feather')
-feather.write_dataframe(DF_RTOFS_MLD,'DF_RTOFS_MLD_MAB.feather')
-feather.write_dataframe(DF_RTOFS_OHC,'DF_RTOFS_OHC_MAB.feather')
-feather.write_dataframe(DF_RTOFS_T100,'DF_RTOFS_T100_MAB.feather')
-feather.write_dataframe(DF_RTOFS_PEA,'DF_RTOFS_PEA_MAB.feather')
+DF_RTOFS_temp_salt.to_pickle('DF_RTOFS_temp_salt_MAB.pkl')
+aa = pd.read_pickle('DF_RTOFS_temp_salt_MAB.pkl')
 
-feather.write_dataframe(DF_RTOFS_DA_temp_salt,'DF_RTOFS_DA_temp_salt_MAB.feather')
-feather.write_dataframe(DF_RTOFS_DA_MLD,'DF_RTOFS_DA_MLD_MAB.feather')
-feather.write_dataframe(DF_RTOFS_DA_OHC,'DF_RTOFS_DA_OHC_MAB.feather')
-feather.write_dataframe(DF_RTOFS_DA_T100,'DF_RTOFS_DA_T100_MAB.feather')
-feather.write_dataframe(DF_RTOFS_DA_PEA,'DF_RTOFS_DA_PEA_MAB.feather')
 
-feather.write_dataframe(DF_GOFS_temp_salt,'DF_GOFS_temp_salt_MAB.feather')
-feather.write_dataframe(DF_GOFS_MLD,'DF_GOFS_MLD_MAB.feather')
-feather.write_dataframe(DF_GOFS_OHC,'DF_GOFS_OHC_MAB.feather')
-feather.write_dataframe(DF_GOFS_T100,'DF_GOFS_T100_MAB.feather')
-feather.write_dataframe(DF_GOFS_PEA,'DF_GOFS_PEA_MAB.feather')
+DF_RTOFS_temp_salt.to_pickle('DF_RTOFS_temp_salt_MAB.pkl')
+DF_RTOFS_MLD.to_pickle('DF_RTOFS_MLD_MAB.pkl')
+DF_RTOFS_OHC.to_pickle('DF_RTOFS_OHC_MAB.pkl')
+DF_RTOFS_T100.to_pickle('DF_RTOFS_T100_MAB.pkl')
+DF_RTOFS_PEA.to_pickle('DF_RTOFS_PEA_MAB.pkl')
+
+DF_RTOFS_DA_temp_salt.to_pickle('DF_RTOFS_DA_temp_salt_MAB.pkl')
+DF_RTOFS_DA_MLD.to_pickle('DF_RTOFS_DA_MLD_MAB.pkl')
+DF_RTOFS_DA_OHC.to_pickle('DF_RTOFS_DA_OHC_MAB.pkl')
+DF_RTOFS_DA_T100.to_pickle('DF_RTOFS_DA_T100_MAB.pkl')
+DF_RTOFS_DA_PEA.to_pickle('DF_RTOFS_DA_PEA_MAB.pkl')
+
+DF_GOFS_temp_salt.to_pickle('DF_GOFS_temp_salt_MAB.pkl')
+DF_GOFS_MLD.to_pickle('DF_GOFS_MLD_MAB.pkl')
+DF_GOFS_OHC.to_pickle('DF_GOFS_OHC_MAB.pkl')
+DF_GOFS_T100.to_pickle('DF_GOFS_T100_MAB.pkl')
+DF_GOFS_PEA.to_pickle('DF_GOFS_PEA_MAB.pkl')
 
 #%% Load all data frames
 '''
-DF_RTOFS_temp_salt = feather.read_dataframe('DF_RTOFS_temp_salt_MAB.feather')
-DF_RTOFS_MLD = feather.read_dataframe('DF_RTOFS_MLD_MAB.feather')
-DF_RTOFS_OHC = feather.read_dataframe('DF_RTOFS_OHC_MAB.feather')
-DF_RTOFS_T100 = feather.read_dataframe('DF_RTOFS_T100_MAB.feather')
-DF_RTOFS_PEA = feather.read_dataframe('DF_RTOFS_PEA_MAB.feather')
+DF_RTOFS_temp_salt = pd.read_pickle('DF_RTOFS_temp_salt_MAB.pkl')
+DF_RTOFS_MLD = pd.read_pickle('DF_RTOFS_MLD_MAB.pkl')
+DF_RTOFS_OHC = pd.read_pickle('DF_RTOFS_OHC_MAB.pkl')
+DF_RTOFS_T100 = pd.read_pickle('DF_RTOFS_T100_MAB.pkl')
+DF_RTOFS_PEA = pd.read_pickle('DF_RTOFS_PEA_MAB.pkl')
 
-DF_RTOFS_DA_temp_salt = feather.read_dataframe('DF_RTOFS_DA_temp_salt_MAB.feather')
-DF_RTOFS_DA_MLD = feather.read_dataframe('DF_RTOFS_DA_MLD_MAB.feather')
-DF_RTOFS_DA_OHC = feather.read_dataframe('DF_RTOFS_DA_OHC_MAB.feather')
-DF_RTOFS_DA_T100 = feather.read_dataframe('DF_RTOFS_DA_T100_MAB.feather')
-DF_RTOFS_DA_PEA = feather.read_dataframe('DF_RTOFS_DA_PEA_MAB.feather')
+DF_RTOFS_DA_temp_salt = pd.read_pickle('DF_RTOFS_DA_temp_salt_MAB.pkl')
+DF_RTOFS_DA_MLD = pd.read_pickle('DF_RTOFS_DA_MLD_MAB.pkl')
+DF_RTOFS_DA_OHC = pd.read_pickle('DF_RTOFS_DA_OHC_MAB.pkl')
+DF_RTOFS_DA_T100 = pd.read_pickle('DF_RTOFS_DA_T100_MAB.pkl')
+DF_RTOFS_DA_PEA = pd.read_pickle('DF_RTOFS_DA_PEA_MAB.pkl')
 
-DF_GOFS_temp_salt = feather.read_dataframe('DF_GOFS_temp_salt_MAB.feather')
-DF_GOFS_MLD = feather.read_dataframe('DF_GOFS_MLD_MAB.feather')
-DF_GOFS_OHC = feather.read_dataframe('DF_GOFS_OHC_MAB.feather')
-DF_GOFS_T100 = feather.read_dataframe('DF_GOFS_T100_MAB.feather')
-DF_GOFS_PEA = feather.read_dataframe('DF_GOFS_PEA_MAB.feather')
+DF_GOFS_temp_salt = pd.read_pickle('DF_GOFS_temp_salt_MAB.pkl')
+DF_GOFS_MLD = pd.read_pickle('DF_GOFS_MLD_MAB.pkl')
+DF_GOFS_OHC = pd.read_pickle('DF_GOFS_OHC_MAB.pkl')
+DF_GOFS_T100 = pd.read_pickle('DF_GOFS_T100_MAB.pkl')
+DF_GOFS_PEA = pd.read_pickle('DF_GOFS_PEA_MAB.pkl')
 '''
 
 #%% Temperature statistics.
