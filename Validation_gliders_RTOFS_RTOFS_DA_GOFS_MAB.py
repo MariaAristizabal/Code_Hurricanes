@@ -11,12 +11,12 @@ Created on Monday Jan 25 2021
 #lat_lim = [25,36]
 
 # Limits MAB
-lon_lim = [-75,-65]
+lon_lim = [-76,-65]
 lat_lim = [35,45]
 
 date_ini = '2020/06/19/06'
-date_end = '2020/06/20/06'
-#date_end = '2020/10/25/06'
+#date_end = '2020/06/20/06'
+date_end = '2020/10/25/06'
 
 # RTOFS files
 folder_RTOFS = '/home/coolgroup/RTOFS/forecasts/domains/hurricanes/RTOFS_6hourly_North_Atlantic/'
