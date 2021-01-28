@@ -11,7 +11,7 @@ lon_lim = [-100,-82]
 lat_lim = [7,31]
 
 date_ini = '2020/06/19/06'
-#date_end = '2020/06/20/06'
+#date_end = '2020/06/21/06'
 date_end = '2020/10/25/06'
 
 # RTOFS files
@@ -500,63 +500,6 @@ def depth_aver_top_100(depth,var):
 tini = datetime.strptime(date_ini,"%Y/%m/%d/%H")
 tend = datetime.strptime(date_end,"%Y/%m/%d/%H")
 
-# Get coordinates from GOFS
-print('Retrieving coordinates from GOFS')
-GOFS = xr.open_dataset(url_GOFS,decode_times=False)
-tt_G = GOFS.time
-t_G = netCDF4.num2date(tt_G[:],tt_G.units)
-tmin = datetime.strptime(date_ini,'%Y/%m/%d/%H')
-tmax = datetime.strptime(date_end,'%Y/%m/%d/%H')
-oktime_GOFS = np.where(np.logical_and(t_G >= tmin, t_G <= tmax))
-time_GOFS = np.asarray(t_G[oktime_GOFS])
-ttGOFS = np.asarray([datetime(time_GOFS[i].year,time_GOFS[i].month,time_GOFS[i].day,\
-                    time_GOFS[i].hour) for i in np.arange(len(time_GOFS))])
-tstamp_GOFS = mdates.date2num(ttGOFS)
-
-lat_G = np.asarray(GOFS.lat[:])
-lon_G = np.asarray(GOFS.lon[:])
-
-# Conversion from glider longitude and latitude to GOFS convention
-lon_limG, lat_limG = glider_coor_to_GOFS_coord(lon_lim,lat_lim)
-
-oklat_GOFS = np.where(np.logical_and(lat_G >= lat_limG[0], lat_G <= lat_limG[1]))
-oklon_GOFS = np.where(np.logical_and(lon_G >= lon_limG[0], lon_G <= lon_limG[1]))
-
-lat_GOFS = lat_G[oklat_GOFS]
-lon_GOFS = lon_G[oklon_GOFS]
-depth_GOFS = np.asarray(GOFS.depth[:])
-
-# Conversion from GOFS longitude and latitude to glider convention
-lon_GOFSg, lat_GOFSg = GOFS_coor_to_glider_coord(lon_GOFS,lat_GOFS)
-
-#%% Read RTOFS grid
-print('Retrieving coordinates from RTOFS')
-
-if tini.month < 10:
-    if tini.day < 10:
-        fol = 'rtofs.' + str(tini.year) + '0' + str(tini.month) + '0' + str(tini.day)
-    else:
-        fol = 'rtofs.' + str(tini.year) + '0' + str(tini.month) + str(tini.day)
-else:
-    if tini.day < 10:
-        fol = 'rtofs.' + str(tini.year) + str(tini.month) + '0' + str(tini.day)
-    else:
-        fol = 'rtofs.' + str(tini.year) + str(tini.month) + str(tini.day)
-
-ncRTOFS = xr.open_dataset(folder_RTOFS + fol + '/' + ncfiles_RTOFS[0])
-latRTOFS = np.asarray(ncRTOFS.Latitude[:])
-lonRTOFS = np.asarray(ncRTOFS.Longitude[:])
-depth_RTOFS = np.asarray(ncRTOFS.Depth[:])
-
-#%% Read RTOFS-DA grid
-tini = datetime.strptime(date_ini,"%Y/%m/%d/%H")
-print('Retrieving coordinates from RTOFS-DA')
-
-ncRTOFS_DA = xr.open_dataset(folder_RTOFS_DA + fol + '/' + ncfiles_RTOFS[0])
-latRTOFS_DA = np.asarray(ncRTOFS_DA.Latitude[:])
-lonRTOFS_DA = np.asarray(ncRTOFS_DA.Longitude[:])
-depth_RTOFS_DA = np.asarray(ncRTOFS_DA.Depth[:])
-
 #%% Reading glider data
 gliders = retrieve_dataset_id_erddap_server(url_erddap,lat_lim,lon_lim,date_ini,date_end)
 gliders = [dataset_id for dataset_id in gliders if dataset_id != 'silbo-20190717T1917']
@@ -601,7 +544,6 @@ lev = np.arange(-9000,9100,100)
 fig, ax = plt.subplots(figsize=(10, 10))
 plt.contourf(bath_lonsub,bath_latsub,bath_elevsub,lev,cmap=cmocean.cm.topo)
 plt.axis('scaled')
-
 
 for id in gliders:
     e.dataset_id = id
@@ -659,8 +601,67 @@ for id in gliders:
 
 plt.legend(loc='lower left')
 
-#%%
+file = folder_fig + 'Map_GoMex_20200619_20201025'
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 
+#%% Get coordinates from GOFS
+print('Retrieving coordinates from GOFS')
+GOFS = xr.open_dataset(url_GOFS,decode_times=False)
+tt_G = GOFS.time
+t_G = netCDF4.num2date(tt_G[:],tt_G.units)
+tmin = datetime.strptime(date_ini,'%Y/%m/%d/%H')
+tmax = datetime.strptime(date_end,'%Y/%m/%d/%H')
+oktime_GOFS = np.where(np.logical_and(t_G >= tmin, t_G <= tmax))
+time_GOFS = np.asarray(t_G[oktime_GOFS])
+ttGOFS = np.asarray([datetime(time_GOFS[i].year,time_GOFS[i].month,time_GOFS[i].day,\
+                    time_GOFS[i].hour) for i in np.arange(len(time_GOFS))])
+tstamp_GOFS = mdates.date2num(ttGOFS)
+
+lat_G = np.asarray(GOFS.lat[:])
+lon_G = np.asarray(GOFS.lon[:])
+
+# Conversion from glider longitude and latitude to GOFS convention
+lon_limG, lat_limG = glider_coor_to_GOFS_coord(lon_lim,lat_lim)
+
+oklat_GOFS = np.where(np.logical_and(lat_G >= lat_limG[0], lat_G <= lat_limG[1]))
+oklon_GOFS = np.where(np.logical_and(lon_G >= lon_limG[0], lon_G <= lon_limG[1]))
+
+lat_GOFS = lat_G[oklat_GOFS]
+lon_GOFS = lon_G[oklon_GOFS]
+depth_GOFS = np.asarray(GOFS.depth[:])
+
+# Conversion from GOFS longitude and latitude to glider convention
+lon_GOFSg, lat_GOFSg = GOFS_coor_to_glider_coord(lon_GOFS,lat_GOFS)
+
+#%% Read RTOFS grid
+print('Retrieving coordinates from RTOFS')
+
+if tini.month < 10:
+    if tini.day < 10:
+        fol = 'rtofs.' + str(tini.year) + '0' + str(tini.month) + '0' + str(tini.day)
+    else:
+        fol = 'rtofs.' + str(tini.year) + '0' + str(tini.month) + str(tini.day)
+else:
+    if tini.day < 10:
+        fol = 'rtofs.' + str(tini.year) + str(tini.month) + '0' + str(tini.day)
+    else:
+        fol = 'rtofs.' + str(tini.year) + str(tini.month) + str(tini.day)
+
+ncRTOFS = xr.open_dataset(folder_RTOFS + fol + '/' + ncfiles_RTOFS[0])
+latRTOFS = np.asarray(ncRTOFS.Latitude[:])
+lonRTOFS = np.asarray(ncRTOFS.Longitude[:])
+depth_RTOFS = np.asarray(ncRTOFS.Depth[:])
+
+#%% Read RTOFS-DA grid
+tini = datetime.strptime(date_ini,"%Y/%m/%d/%H")
+print('Retrieving coordinates from RTOFS-DA')
+
+ncRTOFS_DA = xr.open_dataset(folder_RTOFS_DA + fol + '/' + ncfiles_RTOFS[0])
+latRTOFS_DA = np.asarray(ncRTOFS_DA.Latitude[:])
+lonRTOFS_DA = np.asarray(ncRTOFS_DA.Longitude[:])
+depth_RTOFS_DA = np.asarray(ncRTOFS_DA.Depth[:])
+
+#%%
 DF_RTOFS_temp_salt = pd.DataFrame()
 DF_RTOFS_DA_temp_salt = pd.DataFrame()
 DF_GOFS_temp_salt = pd.DataFrame()
@@ -939,19 +940,16 @@ DF_RTOFS_temp_salt.to_pickle('DF_RTOFS_temp_salt_GoMex.pkl')
 DF_RTOFS_MLD.to_pickle('DF_RTOFS_MLD_GoMex.pkl')
 DF_RTOFS_OHC.to_pickle('DF_RTOFS_OHC_GoMex.pkl')
 DF_RTOFS_T100.to_pickle('DF_RTOFS_T100_GoMex.pkl')
-DF_RTOFS_PEA.to_pickle('DF_RTOFS_PEA_GoMex.pkl')
 
 DF_RTOFS_DA_temp_salt.to_pickle('DF_RTOFS_DA_temp_salt_GoMex.pkl')
 DF_RTOFS_DA_MLD.to_pickle('DF_RTOFS_DA_MLD_GoMex.pkl')
 DF_RTOFS_DA_OHC.to_pickle('DF_RTOFS_DA_OHC_GoMex.pkl')
 DF_RTOFS_DA_T100.to_pickle('DF_RTOFS_DA_T100_GoMex.pkl')
-DF_RTOFS_DA_PEA.to_pickle('DF_RTOFS_DA_PEA_GoMex.pkl')
 
 DF_GOFS_temp_salt.to_pickle('DF_GOFS_temp_salt_GoMex.pkl')
 DF_GOFS_MLD.to_pickle('DF_GOFS_MLD_GoMex.pkl')
 DF_GOFS_OHC.to_pickle('DF_GOFS_OHC_GoMex.pkl')
 DF_GOFS_T100.to_pickle('DF_GOFS_T100_GoMex.pkl')
-DF_GOFS_PEA.to_pickle('DF_GOFS_PEA_GoMex.pkl')
 
 #%% Load all data frames
 '''
@@ -959,19 +957,16 @@ DF_RTOFS_temp_salt = pd.read_pickle('DF_RTOFS_temp_salt_GoMex.pkl')
 DF_RTOFS_MLD = pd.read_pickle('DF_RTOFS_MLD_GoMex.pkl')
 DF_RTOFS_OHC = pd.read_pickle('DF_RTOFS_OHC_GoMex.pkl')
 DF_RTOFS_T100 = pd.read_pickle('DF_RTOFS_T100_GoMex.pkl')
-DF_RTOFS_PEA = pd.read_pickle('DF_RTOFS_PEA_GoMex.pkl')
 
 DF_RTOFS_DA_temp_salt = pd.read_pickle('DF_RTOFS_DA_temp_salt_GoMex.pkl')
 DF_RTOFS_DA_MLD = pd.read_pickle('DF_RTOFS_DA_MLD_GoMex.pkl')
 DF_RTOFS_DA_OHC = pd.read_pickle('DF_RTOFS_DA_OHC_GoMex.pkl')
 DF_RTOFS_DA_T100 = pd.read_pickle('DF_RTOFS_DA_T100_GoMex.pkl')
-DF_RTOFS_DA_PEA = pd.read_pickle('DF_RTOFS_DA_PEA_GoMex.pkl')
 
 DF_GOFS_temp_salt = pd.read_pickle('DF_GOFS_temp_salt_GoMex.pkl')
 DF_GOFS_MLD = pd.read_pickle('DF_GOFS_MLD_GoMex.pkl')
 DF_GOFS_OHC = pd.read_pickle('DF_GOFS_OHC_GoMex.pkl')
 DF_GOFS_T100 = pd.read_pickle('DF_GOFS_T100_GoMex.pkl')
-DF_GOFS_PEA = pd.read_pickle('DF_GOFS_PEA_GoMex.pkl')
 '''
 
 #%% Temperature statistics.

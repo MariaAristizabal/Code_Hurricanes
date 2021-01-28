@@ -1441,7 +1441,7 @@ print(PEA_skillscores)
 ##############
 #%% Combine all metrics into one normalized Taylor diagram
 angle_lim = np.pi/2
-std_lim = 2.5
+std_lim = 1.1
 
 fig,ax1 = taylor_template(angle_lim,std_lim)
 markers = ['X','^','s','H']
@@ -1517,10 +1517,10 @@ for i,r in enumerate(scores.iterrows()):
     theta=np.arccos(r[1].CORRELATION)
     rr=r[1].MSTD/r[1].OSTD
     if i==2:
-        ax1.plot(theta,rr,markers[i],label='PEA',color = 'cadetblue',alpha=0.7,markersize=8,markeredgecolor='k')
+        ax1.plot(theta,rr,markers[i],label='PEA',color = 'c',alpha=0.7,markersize=8,markeredgecolor='k')
         ax1.plot(theta,rr,markers[i],fillstyle='none',markersize=8,markeredgecolor='k')
     else:
-        ax1.plot(theta,rr,markers[i],color = 'cadetblue',alpha=0.7,markersize=8,markeredgecolor='k')
+        ax1.plot(theta,rr,markers[i],color = 'c',alpha=0.7,markersize=8,markeredgecolor='k')
         ax1.plot(theta,rr,markers[i],fillstyle='none',markersize=8,markeredgecolor='k')
 
 ax1.plot(0,1,'o',label='Obs',color='dodgerblue',markersize=8,markeredgecolor='k')

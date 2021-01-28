@@ -497,6 +497,91 @@ def depth_aver_top_100(depth,var):
 tini = datetime.strptime(date_ini,"%Y/%m/%d/%H")
 tend = datetime.strptime(date_end,"%Y/%m/%d/%H")
 
+#%% Reading glider data
+gliders = retrieve_dataset_id_erddap_server(url_erddap,lat_lim,lon_lim,date_ini,date_end)
+gliders = [dataset_id for dataset_id in gliders if dataset_id != 'silbo-20190717T1917']
+gliders = [dataset_id for dataset_id in gliders if dataset_id.split('-')[-1] != 'delayed']
+print(gliders)
+
+#%% Reading bathymetry data
+ncbath = xr.open_dataset(bath_file)
+bath_lat = ncbath.variables['lat'][:]
+bath_lon = ncbath.variables['lon'][:]
+bath_elev = ncbath.variables['elevation'][:]
+
+oklatbath = np.logical_and(bath_lat >= lat_lim[0],bath_lat <= lat_lim[-1])
+oklonbath = np.logical_and(bath_lon >= lon_lim[0],bath_lon <= lon_lim[-1])
+
+bath_latsub = bath_lat[oklatbath]
+bath_lonsub = bath_lon[oklonbath]
+bath_elevs = bath_elev[oklatbath,:]
+bath_elevsub = bath_elevs[:,oklonbath]
+
+#%% Make map with glider tracks
+constraints = {
+    'time>=': date_ini,
+    'time<=': date_end,
+    'latitude>=': lat_lim[0],
+    'latitude<=': lat_lim[-1],
+    'longitude>=': lon_lim[0],
+    'longitude<=': lon_lim[-1],
+}
+
+variables = [
+ 'time','latitude','longitude'
+]
+
+e = ERDDAP(
+    server=url_erddap,
+    protocol='tabledap',
+    response='nc'
+)
+
+lev = np.arange(-9000,9100,100)
+fig, ax = plt.subplots(figsize=(10, 10))
+plt.contourf(bath_lonsub,bath_latsub,bath_elevsub,lev,cmap=cmocean.cm.topo)
+plt.axis('scaled')
+
+for id in gliders:
+    e.dataset_id = id
+    e.constraints = constraints
+    e.variables = variables
+
+    df = e.to_pandas(
+    parse_dates=True)
+
+    print(id,df.index[-1])
+    ax.plot(df['longitude (degrees_east)'],\
+                df['latitude (degrees_north)'],'.',color='orange',markersize=1)
+
+markers = ['o','v','^','<','>','8','s','p','P','*','h','H','x','X','D','d']
+colors = ['green','indianred','purple','c','cadetblue','y','r','b',]
+
+for id in gliders:
+    e.dataset_id = id
+    e.constraints = constraints
+    e.variables = variables
+
+    df = e.to_pandas(
+    parse_dates=True)
+
+    if id.split('-')[0][0:2] == 'ng':
+        marker = markers[0]
+        color = colors[0]
+    if id.split('-')[0][0:2] == 'SG':
+        marker = markers[1]
+        color = colors[1]
+    if id.split('-')[0][0:2] == 'ru':
+        marker = markers[2]
+        color = colors[2]
+    ax.plot(np.nanmean(df['longitude (degrees_east)']),\
+                np.nanmean(df['latitude (degrees_north)']),marker,markersize=10,color=color,label=id.split('-')[0])
+
+plt.legend(loc='lower left')
+
+file = folder_fig + 'Map_Caribbean_20200619_20201025'
+plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
+
 # Get coordinates from GOFS
 print('Retrieving coordinates from GOFS')
 GOFS = xr.open_dataset(url_GOFS,decode_times=False)
@@ -553,92 +638,6 @@ ncRTOFS_DA = xr.open_dataset(folder_RTOFS_DA + fol + '/' + ncfiles_RTOFS[0])
 latRTOFS_DA = np.asarray(ncRTOFS_DA.Latitude[:])
 lonRTOFS_DA = np.asarray(ncRTOFS_DA.Longitude[:])
 depth_RTOFS_DA = np.asarray(ncRTOFS_DA.Depth[:])
-
-#%% Reading glider data
-gliders = retrieve_dataset_id_erddap_server(url_erddap,lat_lim,lon_lim,date_ini,date_end)
-gliders = [dataset_id for dataset_id in gliders if dataset_id != 'silbo-20190717T1917']
-gliders = [dataset_id for dataset_id in gliders if dataset_id.split('-')[-1] != 'delayed']
-print(gliders)
-
-#%% Reading bathymetry data
-ncbath = xr.open_dataset(bath_file)
-bath_lat = ncbath.variables['lat'][:]
-bath_lon = ncbath.variables['lon'][:]
-bath_elev = ncbath.variables['elevation'][:]
-
-oklatbath = np.logical_and(bath_lat >= lat_lim[0],bath_lat <= lat_lim[-1])
-oklonbath = np.logical_and(bath_lon >= lon_lim[0],bath_lon <= lon_lim[-1])
-
-bath_latsub = bath_lat[oklatbath]
-bath_lonsub = bath_lon[oklonbath]
-bath_elevs = bath_elev[oklatbath,:]
-bath_elevsub = bath_elevs[:,oklonbath]
-
-#%% Make map with glider tracks
-constraints = {
-    'time>=': date_ini,
-    'time<=': date_end,
-    'latitude>=': lat_lim[0],
-    'latitude<=': lat_lim[-1],
-    'longitude>=': lon_lim[0],
-    'longitude<=': lon_lim[-1],
-}
-
-variables = [
- 'time','latitude','longitude'
-]
-
-e = ERDDAP(
-    server=url_erddap,
-    protocol='tabledap',
-    response='nc'
-)
-
-lev = np.arange(-9000,9100,100)
-fig, ax = plt.subplots(figsize=(10, 10))
-plt.contourf(bath_lonsub,bath_latsub,bath_elevsub,lev,cmap=cmocean.cm.topo)
-plt.axis('scaled')
-
-
-for id in gliders:
-    e.dataset_id = id
-    e.constraints = constraints
-    e.variables = variables
-
-    df = e.to_pandas(
-    parse_dates=True)
-
-    print(id,df.index[-1])
-    ax.plot(df['longitude (degrees_east)'],\
-                df['latitude (degrees_north)'],'.',color='orange',markersize=1)
-
-markers = ['o','v','^','<','>','8','s','p','P','*','h','H','x','X','D','d']
-colors = ['green','indianred','purple','c','cadetblue','y','r','b',]
-
-for id in gliders:
-    e.dataset_id = id
-    e.constraints = constraints
-    e.variables = variables
-
-    df = e.to_pandas(
-    parse_dates=True)
-
-    if id.split('-')[0][0:2] == 'ng':
-        marker = markers[0]
-        color = colors[0]
-    if id.split('-')[0][0:2] == 'SG':
-        marker = markers[1]
-        color = colors[1]
-    if id.split('-')[0][0:2] == 'ru':
-        marker = markers[2]
-        color = colors[2]
-    ax.plot(np.nanmean(df['longitude (degrees_east)']),\
-                np.nanmean(df['latitude (degrees_north)']),marker,markersize=10,color=color,label=id.split('-')[0])
-
-plt.legend(loc='lower left')
-
-file = folder_fig + 'Map_Caribbean_20200619_20201025'
-plt.savefig(file,bbox_inches = 'tight',pad_inches = 0.1)
 
 #%%
 DF_RTOFS_temp_salt = pd.DataFrame()
@@ -919,19 +918,16 @@ DF_RTOFS_temp_salt.to_pickle('DF_RTOFS_temp_salt_Caribbean.pkl')
 DF_RTOFS_MLD.to_pickle('DF_RTOFS_MLD_Caribbean.pkl')
 DF_RTOFS_OHC.to_pickle('DF_RTOFS_OHC_Caribbean.pkl')
 DF_RTOFS_T100.to_pickle('DF_RTOFS_T100_Caribbean.pkl')
-DF_RTOFS_PEA.to_pickle('DF_RTOFS_PEA_Caribbean.pkl')
 
 DF_RTOFS_DA_temp_salt.to_pickle('DF_RTOFS_DA_temp_salt_Caribbean.pkl')
 DF_RTOFS_DA_MLD.to_pickle('DF_RTOFS_DA_MLD_Caribbean.pkl')
 DF_RTOFS_DA_OHC.to_pickle('DF_RTOFS_DA_OHC_Caribbean.pkl')
 DF_RTOFS_DA_T100.to_pickle('DF_RTOFS_DA_T100_Caribbean.pkl')
-DF_RTOFS_DA_PEA.to_pickle('DF_RTOFS_DA_PEA_Caribbean.pkl')
 
 DF_GOFS_temp_salt.to_pickle('DF_GOFS_temp_salt_Caribbean.pkl')
 DF_GOFS_MLD.to_pickle('DF_GOFS_MLD_Caribbean.pkl')
 DF_GOFS_OHC.to_pickle('DF_GOFS_OHC_Caribbean.pkl')
 DF_GOFS_T100.to_pickle('DF_GOFS_T100_Caribbean.pkl')
-DF_GOFS_PEA.to_pickle('DF_GOFS_PEA_Caribbean.pkl')
 
 #%% Load all data frames
 '''
@@ -939,19 +935,16 @@ DF_RTOFS_temp_salt = pd.read_pickle('DF_RTOFS_temp_salt_Caribbean.pkl')
 DF_RTOFS_MLD = pd.read_pickle('DF_RTOFS_MLD_Caribbean.pkl')
 DF_RTOFS_OHC = pd.read_pickle('DF_RTOFS_OHC_Caribbean.pkl')
 DF_RTOFS_T100 = pd.read_pickle('DF_RTOFS_T100_Caribbean.pkl')
-DF_RTOFS_PEA = pd.read_pickle('DF_RTOFS_PEA_Caribbean.pkl')
 
 DF_RTOFS_DA_temp_salt = pd.read_pickle('DF_RTOFS_DA_temp_salt_Caribbean.pkl')
 DF_RTOFS_DA_MLD = pd.read_pickle('DF_RTOFS_DA_MLD_Caribbean.pkl')
 DF_RTOFS_DA_OHC = pd.read_pickle('DF_RTOFS_DA_OHC_Caribbean.pkl')
 DF_RTOFS_DA_T100 = pd.read_pickle('DF_RTOFS_DA_T100_Caribbean.pkl')
-DF_RTOFS_DA_PEA = pd.read_pickle('DF_RTOFS_DA_PEA_Caribbean.pkl')
 
 DF_GOFS_temp_salt = pd.read_pickle('DF_GOFS_temp_salt_Caribbean.pkl')
 DF_GOFS_MLD = pd.read_pickle('DF_GOFS_MLD_Caribbean.pkl')
 DF_GOFS_OHC = pd.read_pickle('DF_GOFS_OHC_Caribbean.pkl')
 DF_GOFS_T100 = pd.read_pickle('DF_GOFS_T100_Caribbean.pkl')
-DF_GOFS_PEA = pd.read_pickle('DF_GOFS_PEA_Caribbean.pkl')
 '''
 
 #%% Temperature statistics.
@@ -1327,7 +1320,7 @@ for i,r in enumerate(scores.iterrows()):
     else:
         ax1.plot(theta,rr,markers[i],color = 'royalblue',alpha=0.7,markersize=8,markeredgecolor='k')
         ax1.plot(theta,rr,markers[i],fillstyle='none',markersize=8,markeredgecolor='k')
-        
+
 ax1.plot(0,1,'o',label='Obs',markersize=8,markeredgecolor='k')
 ax1.plot(0,0,'Xk',label='RTOFS',markersize=8)
 ax1.plot(0,0,'^k',label='RTOFS-DA',markersize=8)

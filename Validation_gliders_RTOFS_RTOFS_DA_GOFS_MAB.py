@@ -1118,6 +1118,10 @@ DF_RTOFS = DF_RTOFS_temp_salt.dropna()
 DF_RTOFS_DA = DF_RTOFS_DA_temp_salt.dropna()
 DF_GOFS = DF_GOFS_temp_salt.dropna()
 
+DF_RTOFS = DF_RTOFS[DF_RTOFS.temp_obs<100]
+DF_RTOFS_DA = DF_RTOFS_DA[DF_RTOFS_DA.temp_obs<100]
+DF_GOFS = DF_GOFS[DF_GOFS.temp_obs<100]
+
 NRTOFS = len(DF_RTOFS)-1 #For Unbiased estimmator.
 NRTOFS_DA = len(DF_RTOFS_DA)-1
 NGOFS = len(DF_GOFS)-1
@@ -1168,6 +1172,10 @@ print(temp_skillscores)
 DF_RTOFS = DF_RTOFS_temp_salt.dropna()
 DF_RTOFS_DA = DF_RTOFS_DA_temp_salt.dropna()
 DF_GOFS = DF_GOFS_temp_salt.dropna()
+
+DF_RTOFS = DF_RTOFS[DF_RTOFS.salt_obs<100]
+DF_RTOFS_DA = DF_RTOFS_DA[DF_RTOFS_DA.salt_obs<100]
+DF_GOFS = DF_GOFS[DF_GOFS.salt_obs<100]
 
 NRTOFS = len(DF_RTOFS)-1  #For Unbiased estimmator.
 NRTOFS_DA = len(DF_RTOFS_DA)-1
@@ -1220,6 +1228,10 @@ DF_RTOFS = DF_RTOFS_MLD.dropna()
 DF_RTOFS_DA = DF_RTOFS_DA_MLD.dropna()
 DF_GOFS = DF_GOFS_MLD.dropna()
 
+DF_RTOFS = DF_RTOFS[DF_RTOFS.Tmean_obs<100]
+DF_RTOFS_DA = DF_RTOFS_DA[DF_RTOFS_DA.Tmean_obs<100]
+DF_GOFS = DF_GOFS[DF_GOFS.Tmean_obs<100]
+
 NRTOFS = len(DF_RTOFS)-1  #For Unbiased estimmator.
 NRTOFS_DA = len(DF_RTOFS_DA)-1
 NGOFS = len(DF_GOFS)-1
@@ -1268,6 +1280,10 @@ print(Tmean_mld_skillscores)
 DF_RTOFS = DF_RTOFS_MLD.dropna()
 DF_RTOFS_DA = DF_RTOFS_DA_MLD.dropna()
 DF_GOFS = DF_GOFS_MLD.dropna()
+
+DF_RTOFS = DF_RTOFS[DF_RTOFS.Smean_obs<100]
+DF_RTOFS_DA = DF_RTOFS_DA[DF_RTOFS_DA.Smean_obs<100]
+DF_GOFS = DF_GOFS[DF_GOFS.Smean_obs<100]
 
 NRTOFS = len(DF_RTOFS)-1  #For Unbiased estimmator.
 NRTOFS_DA = len(DF_RTOFS_DA)-1
@@ -1318,6 +1334,10 @@ DF_RTOFS = DF_RTOFS_OHC.dropna()
 DF_RTOFS_DA = DF_RTOFS_DA_OHC.dropna()
 DF_GOFS = DF_GOFS_OHC.dropna()
 
+DF_RTOFS = DF_RTOFS[DF_RTOFS.OHC_obs<10**10]
+DF_RTOFS_DA = DF_RTOFS_DA[DF_RTOFS_DA.OHC_obs<10**10]
+DF_GOFS = DF_GOFS[DF_GOFS.OHC_obs<10**10]
+
 NRTOFS = len(DF_RTOFS)-1  #For Unbiased estimmator.
 NRTOFS_DA = len(DF_RTOFS_DA)-1
 NGOFS = len(DF_GOFS)-1
@@ -1366,6 +1386,10 @@ print(OHC_skillscores)
 DF_RTOFS = DF_RTOFS_T100.dropna()
 DF_RTOFS_DA = DF_RTOFS_DA_T100.dropna()
 DF_GOFS = DF_GOFS_T100.dropna()
+
+DF_RTOFS = DF_RTOFS[DF_RTOFS.T100_obs<100]
+DF_RTOFS_DA = DF_RTOFS_DA[DF_RTOFS_DA.T100_obs<100]
+DF_GOFS = DF_GOFS[DF_GOFS.T100_obs<100]
 
 NRTOFS = len(DF_RTOFS)-1  #For Unbiased estimmator.
 NRTOFS_DA = len(DF_RTOFS_DA)-1
@@ -1417,6 +1441,10 @@ DF_RTOFS = DF_RTOFS_PEA.dropna()
 DF_RTOFS_DA = DF_RTOFS_DA_PEA.dropna()
 DF_GOFS = DF_GOFS_PEA.dropna()
 
+DF_RTOFS = DF_RTOFS[np.abs(DF_RTOFS.PEA_obs)<1000]
+DF_RTOFS_DA = DF_RTOFS_DA[np.abs(DF_RTOFS_DA.PEA_obs)<1000]
+DF_GOFS = DF_GOFS[np.abs(DF_GOFS.PEA_obs)<1000]
+
 NRTOFS = len(DF_RTOFS)-1  #For Unbiased estimmator.
 NRTOFS_DA = len(DF_RTOFS_DA)-1
 NGOFS = len(DF_GOFS)-1
@@ -1455,7 +1483,7 @@ tskill[1,4] = DF_RTOFS_DA.mean().PEA_obs - DF_RTOFS_DA.mean().PEA_RTOFS_DA
 tskill[2,4] = DF_GOFS.mean().PEA_obs - DF_GOFS.mean().PEA_GOFS
 
 #color
-colors = ['indianred','seagreen','darkorchid','darkorange','cadetblue']
+colors = ['indianred','seagreen','darkorchid','darkorange','c']
 
 PEA_skillscores = pd.DataFrame(tskill,
                         index=['RTOFS','RTOFS_DA','GOFS'],
@@ -1465,7 +1493,7 @@ print(PEA_skillscores)
 ##############
 #%% Combine all metrics into one normalized Taylor diagram
 angle_lim = np.pi/2
-std_lim = 2.5
+std_lim = 1.1
 
 fig,ax1 = taylor_template(angle_lim,std_lim)
 markers = ['X','^','s','H']
@@ -1541,10 +1569,10 @@ for i,r in enumerate(scores.iterrows()):
     theta=np.arccos(r[1].CORRELATION)
     rr=r[1].MSTD/r[1].OSTD
     if i==2:
-        ax1.plot(theta,rr,markers[i],label='PEA',color = 'cadetblue',alpha=0.7,markersize=8,markeredgecolor='k')
+        ax1.plot(theta,rr,markers[i],label='PEA',color = 'c',alpha=0.7,markersize=8,markeredgecolor='k')
         ax1.plot(theta,rr,markers[i],fillstyle='none',markersize=8,markeredgecolor='k')
     else:
-        ax1.plot(theta,rr,markers[i],color = 'cadetblue',alpha=0.7,markersize=8,markeredgecolor='k')
+        ax1.plot(theta,rr,markers[i],color = 'c',alpha=0.7,markersize=8,markeredgecolor='k')
         ax1.plot(theta,rr,markers[i],fillstyle='none',markersize=8,markeredgecolor='k')
 
 ax1.plot(0,1,'o',label='Obs',color='dodgerblue',markersize=8,markeredgecolor='k')
